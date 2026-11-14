@@ -1,0 +1,19 @@
+# Réglages de la passerelle Celodata. À copier sous le nom passerelle.toml.
+
+[ia]
+# Adresse de l'IA, au format OpenAI. Exemples :
+#   https://api.mistral.ai/v1
+#   https://api.openai.com/v1
+#   http://localhost:11434/v1   (Ollama sur la même machine)
+url = "https://api.mistral.ai/v1"
+# Nom de la variable d'environnement qui contient la clé de l'IA.
+# La clé elle-même ne s'écrit jamais dans ce fichier.
+variable_cle = "CELODATA_CLE_IA"
+
+[passerelle]
+# 127.0.0.1 : la passerelle n'est joignable que depuis cette machine.
+# Pour l'ouvrir à d'autres postes, placez-la derrière un serveur qui fait le HTTPS.
+hote = "127.0.0.1"
+port = 8787
+# Dossier des tables chiffrées (une par utilisateur), relatif à ce fichier.
+dossier = "donnees"

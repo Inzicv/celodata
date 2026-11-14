@@ -24,7 +24,7 @@ Ce document décrit ce qu'on construit, dans quel ordre, et pourquoi. Il s'appui
 ## 3. Vue d'ensemble
 
 ```
-   Appli Windows (étape 3)            Passerelle serveur (étape 5)
+   Appli Windows (étapes 3-4)         Passerelle serveur (étape 5)
             │                                   │
             └───────────────┬───────────────────┘
                             ▼
@@ -174,6 +174,31 @@ Limites connues :
 - le journal ne s'exporte pas encore, et ses dates et décomptes sont lisibles dans le fichier de la table ;
 - les boîtes de Windows « Ouvrir un fichier » et « Filtrer un dossier » n'ont pas été essayées dans la vraie fenêtre.
 
+### Résultat de l'étape 5 (14 novembre 2026)
+
+La passerelle (`src/celodata/passerelle`) est un petit relais écrit pour Celodata, au format OpenAI. Elle a été essayée lancée pour de vrai, modèle chargé, face à une fausse IA locale qui répète ce qu'elle reçoit : sur les dix faux documents, aucune valeur annotée n'est arrivée en clair à la fausse IA, et la réponse restaurée est identique à l'original sur neuf documents, y compris quand elle arrive en morceaux de trois caractères. Le dixième diffère d'un mot : un identifiant que le modèle a pris pour un secret et supprimé.
+
+Choix faits :
+
+- **Relais maison plutôt que LiteLLM ou PrivAiTe** : peu de code, tout dans le dépôt, donc facile à auditer. Une entreprise qui veut beaucoup de fournisseurs peut placer LiteLLM derrière.
+- **Trois adresses seulement** : `chat/completions`, `models`, `sante`. Tout le reste est refusé, pour que rien ne parte sans être filtré.
+- **Une table par utilisateur** : la clé d'accès de l'utilisateur sert de mot de passe à sa table. Le serveur ne garde que l'empreinte de la clé et ne peut pas ouvrir une table sans son utilisateur.
+- **La clé de l'IA reste sur le serveur** : les utilisateurs n'ont que leur clé Celodata.
+- **Réponses en flux** : la fin d'un morceau est retenue tant qu'elle peut être le début d'un jeton.
+- **Ce qui ne se filtre pas est refusé** : images et fichiers joints.
+
+Limites connues :
+
+- **elle ne sert qu'aux usages par API** (outil de discussion installé par l'entreprise, applications internes). Elle ne peut pas s'intercaler devant ChatGPT Enterprise ou Claude Team, où le navigateur parle directement à l'éditeur ;
+- pas d'aperçu : un nom raté par le détecteur part vers l'IA, et les fonctions « à vérifier » restent en clair ;
+- le modèle prend parfois une valeur ordinaire pour un secret et la supprime pour de bon (vu sur un identifiant après « password for ») ;
+- une table ouverte reste déchiffrable en mémoire tant que le serveur tourne ;
+- une demande à la fois passe dans le détecteur : compter une à deux secondes par page nouvelle ;
+- pas de HTTPS : pour l'ouvrir à d'autres postes, il faut la placer derrière un serveur qui le fait ;
+- pas de changement de clé pour un utilisateur, pas de quotas ni de suivi des coûts, pas de règles du projet réglables à distance ;
+- les définitions d'outils (`tools`) écrites par un développeur sont transmises telles quelles ;
+- aucun essai avec une vraie IA ni avec un vrai outil de discussion (Open WebUI, LibreChat).
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |
@@ -183,12 +208,15 @@ Limites connues :
 | 2 | Jetons, table chiffrée, réidentification | L'aller-retour redonne le texte d'origine, même avec des jetons déformés |
 | 3 | Appli Windows : coller, aperçu, corriger, copier, restaurer | La boucle complète fonctionne sur un vrai échange avec une IA |
 | 4 | Journal, fichiers Word et PDF, règles personnalisées | Un dossier de documents passe en une fois |
-| 5 | Passerelle serveur | À cadrer à ce moment-là |
+| 5 | Passerelle serveur au format OpenAI | Une demande filtrée et sa réponse restaurée passent par le serveur, face à une fausse IA |
+| 6 | Extension de navigateur, pour les abonnements ChatGPT et Claude | À cadrer à ce moment-là |
 
 ## 8. À revoir plus tard
 
 - Le format des jetons, quand on aura vu comment plusieurs IA les déforment.
 - Le stockage de la clé : trousseau Windows, puis coffre d'entreprise.
 - Le traitement en flux pour les gros logs, et les fausses valeurs qui gardent le format (IP, chemins), au moment du profil logs.
-- La forme de la passerelle : repartir de LiteLLM ou de PrivAiTe, et faire ou non de Celodata la fenêtre de discussion.
-- La formulation « 100 % hors ligne » pour la passerelle, qui envoie par nature le texte filtré vers l'IA.
+- Un adaptateur pour brancher le moteur dans LiteLLM, si une entreprise le demande.
+- La formulation « 100 % hors ligne » : elle vaut pour l'appli. La passerelle envoie par nature le texte filtré vers l'IA, et rien d'autre.
+- L'extension de navigateur (étape 6) : c'est le seul moyen de filtrer automatiquement sur chatgpt.com ou claude.ai. Elle s'appuierait sur l'appli installée sur le poste.
+- Les secrets trouvés par le modèle seul : faut-il les supprimer pour de bon, ou seulement ceux trouvés par une règle ?

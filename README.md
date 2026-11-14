@@ -19,7 +19,8 @@ Celodata réduit le risque de fuite. Il ne garantit pas l'anonymat : une donnée
 | 2 | Jetons, table de correspondance chiffrée, réidentification | fait |
 | 3 | Appli Windows | fait, à essayer sur un vrai échange avec une IA |
 | 4 | Journal, fichiers Word et PDF, règles personnalisées, dossier entier | fait, boîtes « Ouvrir » à essayer dans la vraie fenêtre |
-| 5 | Passerelle serveur | à faire |
+| 5 | Passerelle serveur au format OpenAI | fait, essayé face à une fausse IA seulement |
+| 6 | Extension de navigateur | à cadrer |
 
 La conception est décrite dans [docs/conception.md](docs/conception.md).
 
@@ -44,6 +45,30 @@ Autres possibilités :
 - **Journal** (onglet « Journal ») : date, document, nombre de passages masqués par type et par origine. Aucune vraie valeur n'y figure.
 
 Sans le modèle d'entités, l'appli fonctionne avec les règles seules et l'indique : les noms ne sont alors pas détectés.
+
+## Lancer la passerelle
+
+La passerelle sert aux entreprises qui utilisent une IA par son API : un outil de discussion qu'elles installent elles-mêmes (Open WebUI, LibreChat) ou leurs propres applications. Elle se place entre cet outil et l'IA, filtre chaque demande et restaure chaque réponse, sans geste de l'utilisateur.
+
+Elle ne fonctionne pas avec les abonnements ChatGPT ou Claude utilisés sur le site de l'éditeur : pour ceux-là, il faut l'appli.
+
+1. Copier [docs/passerelle.exemple.toml](docs/passerelle.exemple.toml) sous le nom `passerelle.toml` et y mettre l'adresse de l'IA.
+2. Mettre la clé de l'IA dans la variable d'environnement `CELODATA_CLE_IA`.
+3. Créer un utilisateur. Sa clé d'accès s'affiche une seule fois :
+
+```bash
+uv run --extra passerelle celodata-passerelle utilisateur alice
+```
+
+4. Lancer le serveur :
+
+```bash
+uv run --extra modeles --extra passerelle celodata-passerelle servir
+```
+
+5. Dans l'outil de discussion, indiquer `http://127.0.0.1:8787/v1` comme adresse de l'IA et la clé d'accès de l'utilisateur comme clé.
+
+Chaque utilisateur a sa propre table chiffrée, protégée par sa clé d'accès. Une clé perdue rend ses anciens textes impossibles à restaurer. Il n'y a pas d'aperçu : ce que le détecteur rate part vers l'IA. La passerelle ne fait pas le HTTPS elle-même.
 
 ## Mesurer les modèles de détection
 

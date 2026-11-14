@@ -103,15 +103,18 @@ def pseudonymiser(texte: str, detections: list[Detection], table: Table) -> Filt
     return resultat
 
 
-def _motif_tolerant(types: list[str]) -> re.Pattern | None:
+def texte_motif_jetons(types: list[str]) -> str | None:
+    """L'expression qui reconnaît un jeton de ces types, même déformé. À compiler sans tenir compte de la casse."""
     if not types:
         return None
     # DATE_NAISSANCE accepte « date naissance », « Date-Naissance », « DATE_NAISSANCE ».
     formes = sorted((t.replace("_", "[ _-]?") for t in types), key=len, reverse=True)
-    return re.compile(
-        rf"(?<![A-Za-z0-9_\[])(\[)?({'|'.join(formes)})[ _\-]{{0,2}}(\d+)(?!\d)(?(1)\])",
-        re.IGNORECASE,
-    )
+    return rf"(?<![A-Za-z0-9_\[])(\[)?({'|'.join(formes)})[ _\-]{{0,2}}(\d+)(?!\d)(?(1)\])"
+
+
+def _motif_tolerant(types: list[str]) -> re.Pattern | None:
+    texte = texte_motif_jetons(types)
+    return re.compile(texte, re.IGNORECASE) if texte else None
 
 
 def restaurer(texte: str, table: Table) -> Restauration:
