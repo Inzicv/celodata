@@ -219,4 +219,4 @@ Limites connues :
 - Un adaptateur pour brancher le moteur dans LiteLLM, si une entreprise le demande.
 - La formulation « 100 % hors ligne » : elle vaut pour l'appli. La passerelle envoie par nature le texte filtré vers l'IA, et rien d'autre.
 - L'extension de navigateur (étape 6) : c'est le seul moyen de filtrer automatiquement sur chatgpt.com ou claude.ai. Elle s'appuierait sur l'appli installée sur le poste.
-- Les secrets trouvés par le modèle seul : faut-il les supprimer pour de bon, ou seulement ceux trouvés par une règle ?
+- Les secrets trouvés par le modèle seul. Décision du 14 novembre 2026 : ils sont supprimés pour de bon, comme ceux trouvés par une règle. Sur le faux jeu (trois secrets), le modèle seul trouve un vrai secret que les règles ratent, et un faux. Un faux secret se voit dans la réponse (`[SECRET_SUPPRIMÉ]`) et le document d'origine n'est pas touché ; un vrai secret gardé dans la table ne se verrait pas. À reposer avec un jeu plus grand, après avoir ajouté la règle qui manque.
