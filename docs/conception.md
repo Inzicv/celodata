@@ -132,6 +132,17 @@ Reste à faire dans la détection :
 - les détections hors cible du modèle (89), à réduire par le seuil ou une liste de termes jamais masqués ;
 - le choix des dates à masquer : aujourd'hui toutes les dates complètes le sont.
 
+### Résultat de l'étape 2 (14 novembre 2026)
+
+Les dix faux documents, filtrés puis restaurés, redonnent l'original au caractère près, secrets mis à part (ils sont supprimés). Les formes déformées d'un jeton (`Personne 12`, `PERSONNE-12`, `[PERSONNE_12]`) sont reconnues et signalées comme approximatives.
+
+Limites connues :
+
+- une même personne écrite de deux façons (« Stéphane Girard » puis « Girard ») reçoit deux jetons : l'IA y voit deux personnes ;
+- la lecture tolérante peut prendre un texte ordinaire pour un jeton (« date 3 ») si un jeton `DATE_3` existe : ces cas sont listés comme approximatifs pour vérification ;
+- les types, le nombre de valeurs et leur date d'ajout restent lisibles dans le fichier de la table ;
+- l'aller-retour n'a pas encore été essayé avec la réponse d'une vraie IA.
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |

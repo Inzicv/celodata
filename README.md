@@ -2,7 +2,7 @@
 
 Celodata pseudonymise des documents français sur votre machine avant leur envoi à une IA, puis remet les vraies valeurs dans la réponse.
 
-Le projet est en cours de construction. Rien n'est encore utilisable : la détection existe et se mesure, mais le remplacement par des jetons et l'appli ne sont pas faits.
+Le projet est en cours de construction. Rien n'est encore utilisable : le moteur (détection, jetons, table chiffrée, restauration) existe sous forme de bibliothèque, mais l'appli n'est pas faite.
 
 ## Pourquoi
 
@@ -16,7 +16,7 @@ Celodata réduit le risque de fuite. Il ne garantit pas l'anonymat : une donnée
 |---|---|---|
 | 0 | Structure du dépôt, jeu de faux documents, mesure des modèles | fait |
 | 1 | Détection : règles françaises + modèle d'entités + fusion | fait |
-| 2 | Jetons, table de correspondance chiffrée, réidentification | à faire |
+| 2 | Jetons, table de correspondance chiffrée, réidentification | fait |
 | 3 | Appli Windows | à faire |
 | 4 | Journal, fichiers Word et PDF, règles personnalisées | à faire |
 | 5 | Passerelle serveur | à faire |
