@@ -1,0 +1,22 @@
+[
+  {"categorie": "projet", "valeur": "projet Cormoran"},
+  {"categorie": "nom", "valeur": "Julien"},
+  {"categorie": "nom", "valeur": "Inès Belkacem"},
+  {"categorie": "nom", "valeur": "Pierre-Yves Le Bihan"},
+  {"categorie": "nom", "valeur": "Wójcik"},
+  {"categorie": "organisation", "valeur": "Arkéa Conseil"},
+  {"categorie": "nom", "valeur": "Laure"},
+  {"categorie": "nom", "valeur": "Inès"},
+  {"categorie": "organisation", "valeur": "Laiterie du Val d'Or"},
+  {"categorie": "montant", "valeur": "320 k€"},
+  {"categorie": "montant", "valeur": "410 k€"},
+  {"categorie": "montant", "valeur": "5 000 €"},
+  {"categorie": "nom", "valeur": "Pierre-Yves"},
+  {"categorie": "lieu", "valeur": "site de Lyon"},
+  {"categorie": "lieu", "valeur": "Saint-Malo"},
+  {"categorie": "organisation", "valeur": "Nordik Data"},
+  {"categorie": "nom", "valeur": "Lindqvist"},
+  {"categorie": "nom", "valeur": "Inès B."},
+  {"categorie": "nom", "valeur": "P.-Y. Le Bihan"},
+  {"categorie": "mail", "valeur": "ines.belkacem@groupe-armor-exemple.fr"}
+]

@@ -1,0 +1,6 @@
+id_client;nom;prenom;email;telephone;date_naissance;code_postal;ville;iban;immatriculation
+10231;BERNARD;Lucie;lucie.bernard@courriel-exemple.fr;0145678910;14/03/1988;75011;Paris;FR76 3000 3036 2000 0501 2345 668;AA-229-KM
+10232;N'DIAYE;Ousmane;o.ndiaye@courriel-exemple.fr;+33 6 22 33 44 55;02/11/1975;13008;Marseille;FR76 1820 6002 1060 1234 5678 973;DX-871-QP
+10233;de la Fontaine;Marie-Charlotte;mc.delafontaine@courriel-exemple.fr;04 78 55 66 77;30/06/2001;69006;Lyon;;
+10234;PETIT;Rose;rose.petit@courriel-exemple.fr;06 01 02 03 04;09/09/1964;31000;Toulouse;FR14 2004 1010 0505 0001 3M02 606;1234 AB 31
+10235;Le Gall;Erwan;erwan.legall@courriel-exemple.fr;02.97.11.22.33;25/12/1990;56100;Lorient;;GT-014-ZA

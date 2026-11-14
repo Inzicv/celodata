@@ -1,0 +1,15 @@
+Ticket INC-2026-18834 - Priorité haute
+Ouvert par : Julie Martin (comptabilité fournisseurs), poste PC-COMPTA-17
+Affecté à : Bastien Chevalier, équipe exploitation
+
+Description :
+Depuis ce matin 8h40, Julie ne peut plus ouvrir le partage \\nas-rh-01\paie\2026. Son collègue Nicolas Faure a le même problème depuis le poste voisin. Le compte de service svc_backup semble verrouillé.
+
+Éléments relevés :
+2026-11-12T08:41:17+01:00 sql-prod-03.intra.leclerc-exemple.fr mssql[2291]: Login failed for user 'jmartin'. Client: 10.24.8.113
+2026-11-12T08:41:19+01:00 sql-prod-03 mssql[2291]: Login failed for user 'svc_backup'. Client: 2001:db8:85a3::8a2e:370:7334
+2026-11-12T08:42:03+01:00 fw-edge-01 kernel: DROP IN=eth1 MAC=00:1A:2B:3C:4D:5E SRC=10.24.8.113 DST=10.24.1.20 PROTO=TCP DPT=1433
+2026-11-12T08:43:55+01:00 app-paie-02 tomcat: GET https://paie.intra.leclerc-exemple.fr/api/bulletins?matricule=M-004512&token=sk-demo-0000-cle-factice-ne-pas-utiliser 401
+
+Actions :
+Bastien a réinitialisé le mot de passe de svc_backup (nouveau : Motdepasse!2026, à changer) et demandé à Julie de se reconnecter. Si le problème persiste, appeler l'astreinte au 06 55 44 33 22 (Karim Haddad).

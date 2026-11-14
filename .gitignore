@@ -1,0 +1,15 @@
+.venv/
+.claude/scratchpad/
+.claude/tasks/
+.claude/worktrees/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Tables de correspondance et journaux : ne doivent jamais être versionnés
+*.celodata
+*.sqlite
+*.db

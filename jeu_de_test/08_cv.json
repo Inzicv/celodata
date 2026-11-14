@@ -1,0 +1,17 @@
+[
+  {"categorie": "nom", "valeur": "Clément ROUSSEAU-MEUNIER"},
+  {"categorie": "adresse", "valeur": "17 quai de la Fosse, 44000 Nantes"},
+  {"categorie": "telephone", "valeur": "06 77 88 99 00"},
+  {"categorie": "mail", "valeur": "clement.rousseau.meunier@boite-exemple.fr"},
+  {"categorie": "date_naissance", "valeur": "8 avril 1986"},
+  {"categorie": "identifiant", "valeur": "linkedin.com/in/clement-rousseau-meunier-exemple"},
+  {"categorie": "organisation", "valeur": "Atlantique Mutuelle"},
+  {"categorie": "montant", "valeur": "1,2 M€"},
+  {"categorie": "organisation", "valeur": "Sopra Steria"},
+  {"categorie": "organisation", "valeur": "Crédit Mutuel Arkéa"},
+  {"categorie": "nom", "valeur": "Solène Guégan"},
+  {"categorie": "organisation", "valeur": "Ouest Logiciels"},
+  {"categorie": "organisation", "valeur": "Loire Aviron Nantais"},
+  {"categorie": "nom", "valeur": "Marc Tessier"},
+  {"categorie": "telephone", "valeur": "02 40 11 22 33"}
+]

@@ -1,0 +1,18 @@
+[
+  {"categorie": "nom", "valeur": "lefebvre gérard"},
+  {"categorie": "identifiant", "valeur": "00458712"},
+  {"categorie": "identifiant", "valeur": "CMD-7781-B"},
+  {"categorie": "montant", "valeur": "389,90 euros"},
+  {"categorie": "nom", "valeur": "Josiane"},
+  {"categorie": "telephone", "valeur": "0320112233"},
+  {"categorie": "nom", "valeur": "Mélanie"},
+  {"categorie": "telephone", "valeur": "0612345678"},
+  {"categorie": "telephone", "valeur": "06.98.76.54.32"},
+  {"categorie": "mail", "valeur": "gerard.lefebvre59@mail-exemple.fr"},
+  {"categorie": "adresse", "valeur": "12 rés. les Peupliers bât C, 59000 Lille"},
+  {"categorie": "nom", "valeur": "Vandenberghe"},
+  {"categorie": "plaque", "valeur": "FG-456-HJ"},
+  {"categorie": "lieu", "valeur": "Lesquin"},
+  {"categorie": "iban", "valeur": "FR76 1751 5900 0008 0123 4567 849"},
+  {"categorie": "nom", "valeur": "G. Lefebvre"}
+]

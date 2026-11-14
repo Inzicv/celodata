@@ -1,0 +1,22 @@
+[
+  {"categorie": "organisation", "valeur": "MENUISERIE KERBRAT"},
+  {"categorie": "organisation", "valeur": "Menuiserie Kerbrat"},
+  {"categorie": "adresse", "valeur": "Zone artisanale de Kergaradec, 29850 Gouesnou"},
+  {"categorie": "siret", "valeur": "443 061 841 00013"},
+  {"categorie": "identifiant", "valeur": "FR64443061841"},
+  {"categorie": "telephone", "valeur": "02 98 00 12 34"},
+  {"categorie": "mail", "valeur": "contact@menuiserie-kerbrat-exemple.fr"},
+  {"categorie": "identifiant", "valeur": "FA-2026-0412"},
+  {"categorie": "nom", "valeur": "Élodie Roussel"},
+  {"categorie": "adresse", "valeur": "22 impasse des Hortensias"},
+  {"categorie": "adresse", "valeur": "29200 Brest"},
+  {"categorie": "identifiant", "valeur": "C-01987"},
+  {"categorie": "montant", "valeur": "2 200,00 €"},
+  {"categorie": "montant", "valeur": "2 420,00 €"},
+  {"categorie": "montant", "valeur": "1 720,00 €"},
+  {"categorie": "identifiant", "valeur": "8841207"},
+  {"categorie": "iban", "valeur": "FR76 3000 4008 2300 0123 4567 819"},
+  {"categorie": "bic", "valeur": "BNPAFRPP"},
+  {"categorie": "nom", "valeur": "Yann Kerbrat"},
+  {"categorie": "telephone", "valeur": "06 45 12 78 90"}
+]

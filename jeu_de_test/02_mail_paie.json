@@ -1,0 +1,114 @@
+[
+  {
+    "categorie": "mail",
+    "valeur": "sophie.garnier@transports-leclerc-exemple.fr"
+  },
+  {
+    "categorie": "mail",
+    "valeur": "paie@transports-leclerc-exemple.fr"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "NGUYEN Thi Lan"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Karim"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "nguyen thi lan"
+  },
+  {
+    "categorie": "identifiant",
+    "valeur": "M-004512"
+  },
+  {
+    "categorie": "telephone",
+    "valeur": "07 81 22 33 44"
+  },
+  {
+    "categorie": "montant",
+    "valeur": "1 842,37 €"
+  },
+  {
+    "categorie": "montant",
+    "valeur": "2 150 €"
+  },
+  {
+    "categorie": "organisation",
+    "valeur": "Harmonie Santé"
+  },
+  {
+    "categorie": "organisation",
+    "valeur": "Transports Leclerc"
+  },
+  {
+    "categorie": "date",
+    "valeur": "02/09/2019"
+  },
+  {
+    "categorie": "lieu",
+    "valeur": "Vénissieux"
+  },
+  {
+    "categorie": "sante",
+    "valeur": "mi-temps thérapeutique"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Mohamed El Amrani"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "DUPONT Jean-Pierre"
+  },
+  {
+    "categorie": "date_naissance",
+    "valeur": "21 mars 1968"
+  },
+  {
+    "categorie": "lieu",
+    "valeur": "Clermont-Ferrand"
+  },
+  {
+    "categorie": "iban",
+    "valeur": "FR14 2004 1010 0505 0001 3M02 606"
+  },
+  {
+    "categorie": "organisation",
+    "valeur": "Banque Postale"
+  },
+  {
+    "categorie": "adresse",
+    "valeur": "27 chemin du Moulin, 63100 Clermont-Ferrand"
+  },
+  {
+    "categorie": "nir",
+    "valeur": "1 68 03 63 113 045 66"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Chloé Martin-Dubois"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "O'Brien"
+  },
+  {
+    "categorie": "syndicat",
+    "valeur": "délégué syndical FO"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Sophie"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Sophie GARNIER"
+  },
+  {
+    "categorie": "telephone",
+    "valeur": "04 72 00 11 22"
+  }
+]

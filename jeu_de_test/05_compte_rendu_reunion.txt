@@ -1,0 +1,20 @@
+Compte rendu - comité de pilotage projet Cormoran
+Réunion du 9 novembre 2026, salle Belle-Île
+
+Présents : Julien (DSI), Inès Belkacem, Pierre-Yves Le Bihan, Mme Wójcik (cabinet Arkéa Conseil)
+Excusée : Laure
+
+1. Avancement
+Inès indique que la migration du client Laiterie du Val d'Or a pris trois semaines de retard. Le budget consommé atteint 320 k€ sur les 410 k€ prévus. Pierre-Yves rappelle que la pénalité contractuelle est de 5 000 € par semaine au-delà du 15 décembre.
+
+2. Points de blocage
+La directrice du site de Lyon refuse de libérer ses équipes avant la clôture comptable. Le responsable logistique de Saint-Malo, lui, est favorable à un démarrage anticipé. Julien propose d'en parler directement au PDG.
+
+Mme Wójcik signale que le prestataire Nordik Data n'a toujours pas livré les connecteurs. Elle a relancé leur chef de projet, un certain M. Lindqvist, sans réponse.
+
+3. Décisions
+- Inès B. prépare un nouveau planning pour vendredi.
+- P.-Y. Le Bihan négocie un avenant avec la Laiterie du Val d'Or.
+- Prochain comité : 23 novembre, même salle.
+
+Rédigé par Inès Belkacem - ines.belkacem@groupe-armor-exemple.fr - poste 4417

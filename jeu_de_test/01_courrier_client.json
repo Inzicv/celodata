@@ -1,0 +1,130 @@
+[
+  {
+    "categorie": "nom",
+    "valeur": "Camille Lefèvre"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Thibault Marchand"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Maëlys Le Goff"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Yanis Aït-Ouali"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Boulanger"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Rose Petit"
+  },
+  {
+    "categorie": "nom",
+    "valeur": "Jean-Baptiste Moreau"
+  },
+  {
+    "categorie": "organisation",
+    "valeur": "Atelier Durand"
+  },
+  {
+    "categorie": "adresse",
+    "valeur": "3 bis avenue du Général-Leclerc, 35000 Rennes"
+  },
+  {
+    "categorie": "adresse",
+    "valeur": "14 rue des Lilas, 69003 Lyon"
+  },
+  {
+    "categorie": "telephone",
+    "valeur": "06 12 34 56 78"
+  },
+  {
+    "categorie": "telephone",
+    "valeur": "+33 1 44 55 66 77"
+  },
+  {
+    "categorie": "telephone",
+    "valeur": "01.42.68.53.00"
+  },
+  {
+    "categorie": "mail",
+    "valeur": "camille.lefevre@atelier-durand-exemple.fr"
+  },
+  {
+    "categorie": "mail",
+    "valeur": "compta@atelier-durand-exemple.fr"
+  },
+  {
+    "categorie": "date_naissance",
+    "valeur": "14 juillet 1985"
+  },
+  {
+    "categorie": "date_naissance",
+    "valeur": "03/02/1979"
+  },
+  {
+    "categorie": "nir",
+    "valeur": "2 85 07 69 123 456 23"
+  },
+  {
+    "categorie": "plaque",
+    "valeur": "AB-123-CD"
+  },
+  {
+    "categorie": "iban",
+    "valeur": "FR76 3000 6000 0112 3456 7890 189"
+  },
+  {
+    "categorie": "bic",
+    "valeur": "AGRIFRPP"
+  },
+  {
+    "categorie": "siret",
+    "valeur": "812 345 678 00013"
+  },
+  {
+    "categorie": "identifiant",
+    "valeur": "CLI-2024-00871"
+  },
+  {
+    "categorie": "identifiant",
+    "valeur": "CTR-88213"
+  },
+  {
+    "categorie": "ip",
+    "valeur": "192.168.14.27"
+  },
+  {
+    "categorie": "machine",
+    "valeur": "srv-compta-01.atelier-durand.local"
+  },
+  {
+    "categorie": "machine",
+    "valeur": "srv-fichiers-02"
+  },
+  {
+    "categorie": "login",
+    "valeur": "clefevre"
+  },
+  {
+    "categorie": "secret",
+    "valeur": "Tulipe2024!"
+  },
+  {
+    "categorie": "montant",
+    "valeur": "48 750,00 €"
+  },
+  {
+    "categorie": "projet",
+    "valeur": "Projet Hermine"
+  },
+  {
+    "categorie": "lieu",
+    "valeur": "site de Lyon"
+  }
+]

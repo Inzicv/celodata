@@ -1,0 +1,30 @@
+MENUISERIE KERBRAT SARL
+Zone artisanale de Kergaradec, 29850 Gouesnou
+SIRET 443 061 841 00013 - TVA FR64443061841
+Tél : 02 98 00 12 34 - contact@menuiserie-kerbrat-exemple.fr
+
+FACTURE N° FA-2026-0412
+Date : 3 novembre 2026
+
+Client :
+Mme Élodie Roussel
+22 impasse des Hortensias
+29200 Brest
+Réf. client : C-01987
+
+Désignation                                   Qté    PU HT      Total HT
+Fourniture et pose fenêtre chêne 120x135       3     640,00     1 920,00
+Dépose et évacuation anciennes menuiseries     1     280,00       280,00
+
+Total HT : 2 200,00 €
+TVA 10 % : 220,00 €
+Total TTC : 2 420,00 €
+
+Acompte reçu le 15/10/2026 par chèque n° 8841207 : 700,00 €
+Reste à payer : 1 720,00 €
+
+Règlement par virement sous 30 jours :
+Titulaire : Menuiserie Kerbrat
+IBAN FR76 3000 4008 2300 0123 4567 819 - BIC BNPAFRPP
+
+Chantier suivi par Yann Kerbrat (06 45 12 78 90).

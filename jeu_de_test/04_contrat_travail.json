@@ -1,0 +1,13 @@
+[
+  {"categorie": "organisation", "valeur": "Clinique des Tilleuls"},
+  {"categorie": "siret", "valeur": "53208917400017"},
+  {"categorie": "adresse", "valeur": "41 cours de la Marne, 33800 Bordeaux"},
+  {"categorie": "nom", "valeur": "Antoine Vasseur"},
+  {"categorie": "nom", "valeur": "Fatoumata Diallo"},
+  {"categorie": "date_naissance", "valeur": "12 février 1992"},
+  {"categorie": "adresse", "valeur": "8 allée des Acacias, 33700 Mérignac"},
+  {"categorie": "nir", "valeur": "292023306304567"},
+  {"categorie": "nom", "valeur": "Hélène Marchetti"},
+  {"categorie": "montant", "valeur": "2 480,00 euros"},
+  {"categorie": "iban", "valeur": "FR76 1027 8060 4100 0204 8150 101"}
+]

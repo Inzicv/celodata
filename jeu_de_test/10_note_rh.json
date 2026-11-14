@@ -1,0 +1,21 @@
+[
+  {"categorie": "nom", "valeur": "Stéphane Girard"},
+  {"categorie": "identifiant", "valeur": "20418"},
+  {"categorie": "sante", "valeur": "travailleur handicapé"},
+  {"categorie": "nom", "valeur": "Girard"},
+  {"categorie": "sante", "valeur": "dépression"},
+  {"categorie": "nom", "valeur": "Nathalie Perrin"},
+  {"categorie": "sante", "valeur": "mi-temps thérapeutique"},
+  {"categorie": "nir", "valeur": "1 79 04 75 056 123 75"},
+  {"categorie": "nom", "valeur": "Aurélie Fontaine"},
+  {"categorie": "syndicat", "valeur": "adhérente CFDT"},
+  {"categorie": "nom", "valeur": "Fontaine"},
+  {"categorie": "sante", "valeur": "grossesse"},
+  {"categorie": "nom", "valeur": "Thierry Blanchard"},
+  {"categorie": "nom", "valeur": "Mehdi Bouzid"},
+  {"categorie": "organisation", "valeur": "Lexia Social"},
+  {"categorie": "montant", "valeur": "60 000 €"},
+  {"categorie": "nom", "valeur": "Sandrine Lemoine"},
+  {"categorie": "mail", "valeur": "sandrine.lemoine@fonderies-du-rhone-exemple.fr"},
+  {"categorie": "telephone", "valeur": "04 72 99 88 77"}
+]

@@ -1,0 +1,37 @@
+Atelier Durand SARL
+3 bis avenue du Général-Leclerc, 35000 Rennes
+SIRET : 812 345 678 00013
+
+Objet : dossier client CLI-2024-00871 et renouvellement du contrat CTR-88213
+
+Rennes, le 12 novembre 2026
+
+Madame Camille Lefèvre,
+
+Suite à notre échange téléphonique du 6 novembre avec M. Thibault Marchand, je vous confirme la reprise du dossier par Maëlys Le Goff, qui remplace Yanis Aït-Ouali à compter du 1er décembre. La directrice du site de Lyon a validé ce changement.
+
+Vos coordonnées enregistrées sont les suivantes :
+- Adresse : 14 rue des Lilas, 69003 Lyon
+- Téléphone portable : 06 12 34 56 78
+- Téléphone fixe : +33 1 44 55 66 77
+- Courriel : camille.lefevre@atelier-durand-exemple.fr
+- Date de naissance : 14 juillet 1985
+- Numéro de sécurité sociale : 2 85 07 69 123 456 23
+- Véhicule de fonction immatriculé AB-123-CD
+
+Le prélèvement mensuel de 48 750,00 € sera effectué sur le compte suivant :
+IBAN : FR76 3000 6000 0112 3456 7890 189
+BIC : AGRIFRPP
+
+Concernant l'arrêt maladie de M. Boulanger, né le 03/02/1979, le Dr Rose Petit a transmis le certificat au service RH. Merci de ne pas en parler dans le cadre du Projet Hermine.
+
+Pour toute question, vous pouvez joindre notre standard au 01.42.68.53.00 ou écrire à compta@atelier-durand-exemple.fr.
+
+Extrait du journal technique joint :
+2026-11-10 08:14:02 srv-compta-01.atelier-durand.local sshd[4211]: Accepted password for clefevre from 192.168.14.27 port 51122
+2026-11-10 08:14:09 srv-compta-01 app: connexion base=COMPTA_PROD user=clefevre password=Tulipe2024! depuis \\srv-fichiers-02\partage\RH\bulletins
+
+Cordialement,
+
+Jean-Baptiste Moreau
+Responsable administratif
