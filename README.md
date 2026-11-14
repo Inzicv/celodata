@@ -23,7 +23,7 @@ Celodata réduit le risque de fuite. Il ne garantit pas l'anonymat : une donnée
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | fait, à essayer sur de vrais fichiers ouverts dans Word et Excel |
 | 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | fait, mesuré sur de faux scans seulement |
 
-La conception est décrite dans [docs/conception.md](docs/conception.md).
+La conception est décrite dans [docs/conception.md](docs/conception.md). Pour essayer l'appli et la passerelle pas à pas avec de faux documents, suivre [docs/tutoriel-essai.md](docs/tutoriel-essai.md).
 
 ## Lancer l'appli
 

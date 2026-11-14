@@ -9,6 +9,9 @@ dist/
 build/
 *.egg-info/
 
+# Fichiers et tables d'essai fabriqués par outils/fabriquer_essais.py
+essais/
+
 # Tables de correspondance et journaux : ne doivent jamais être versionnés
 *.celodata
 *.sqlite

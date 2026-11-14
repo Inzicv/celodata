@@ -1,0 +1,205 @@
+# Essayer Celodata : l'appli et la passerelle
+
+Ce tutoriel fait essayer l'appli Windows puis la passerelle, avec de faux documents uniquement. Rien ne sort de la machine, sauf à l'étape facultative « vraie IA », où seul du texte filtré de faux documents est envoyé.
+
+Compter 20 minutes pour l'appli et 10 minutes pour la passerelle.
+
+## 0. Préparer
+
+Toutes les commandes se lancent depuis le dossier du projet. Tant que la branche de travail n'est pas fusionnée, c'est :
+
+```
+D:\Git\celodata\.claude\worktrees\celodata-cnil-cadre-donnees-72c6e8
+```
+
+Installer ce qu'il faut (une seule fois) :
+
+```bash
+uv sync --extra modeles --extra passerelle
+```
+
+Fabriquer les faux fichiers d'essai :
+
+```bash
+uv run python outils/fabriquer_essais.py
+```
+
+Un dossier `essais` apparaît, avec cinq faux documents :
+
+| Fichier | Sert à essayer |
+|---|---|
+| `mail_paie.txt` | le texte collé |
+| `contrat_travail.docx` | un Word, avec du gras |
+| `fichier_clients.xlsx` | un Excel |
+| `reclamation.pdf` | un PDF de texte |
+| `note_rh_scannee.pdf` | un PDF scanné |
+
+Le dossier `essais` n'est pas suivi par git. Il peut être supprimé à tout moment.
+
+## 1. L'appli
+
+### Lancer
+
+```bash
+uv run --extra modeles celodata --table essais/essai.celodata
+```
+
+L'option `--table` range la table d'essai dans le dossier `essais`, à part de la vraie table.
+
+1. Choisir un mot de passe d'au moins 8 caractères et le confirmer.
+2. Attendre que « Chargement du modèle… », en haut à droite, devienne « Règles + modèle d'entités ».
+
+Si l'appli affiche « Règles seules : modèle d'entités absent », le modèle n'est pas sur la machine : les noms ne seront pas détectés.
+
+### Essai 1 : un texte collé
+
+1. Ouvrir `essais/mail_paie.txt` dans le Bloc-notes, tout copier, coller dans l'appli.
+2. Cliquer sur « Analyser ».
+3. Dans l'aperçu, vérifier que les noms, le téléphone, le matricule et l'IBAN sont surlignés.
+4. Cliquer sur un passage surligné : il est barré, et toutes ses autres occurrences aussi.
+5. Sélectionner un mot à la souris : la boîte « Masquer comme » apparaît. Choisir un type, cliquer sur « Masquer ».
+6. Cliquer sur « Copier le texte filtré ». Le texte filtré s'affiche dessous et se trouve dans le presse-papiers.
+
+### Essai 2 : le retour
+
+1. Aller dans l'onglet « 2. Restaurer ».
+2. Coller le texte filtré (il est encore dans le presse-papiers).
+3. Avant de cliquer, abîmer un jeton à la main, par exemple `PERSONNE_1` en `Personne 1`, et ajouter un jeton inventé comme `PERSONNE_99`.
+4. Cliquer sur « Restaurer ».
+
+À vérifier : le texte d'origine revient, `Personne 1` est restauré et signalé « forme approchée », `PERSONNE_99` est laissé tel quel et signalé « absent de la table ».
+
+### Essai 3 : un Word
+
+1. Onglet « 1. Filtrer », « Ouvrir un fichier… », choisir `essais/contrat_travail.docx`.
+2. « Analyser », corriger l'aperçu si besoin.
+3. « Enregistrer le fichier filtré… », garder le nom proposé.
+4. Ouvrir le fichier produit dans Word.
+
+À vérifier dans Word : les jetons à la place des valeurs, le gras toujours là, et dans Fichier > Informations, plus d'auteur « Camille Faux-Nom ».
+
+Puis le retour : onglet « 2. Restaurer », « Restaurer un fichier… », choisir le fichier filtré, enregistrer. Le Word restauré doit être identique à l'original.
+
+### Essai 4 : un Excel
+
+Même parcours avec `essais/fichier_clients.xlsx`. À vérifier dans Excel : chaque cellule a son propre jeton, le tableau a gardé sa forme.
+
+### Essai 5 : un PDF, puis un PDF scanné
+
+1. Ouvrir `essais/reclamation.pdf`, « Analyser », « Enregistrer le fichier filtré… ». Le résultat est un Word qui contient le texte filtré.
+2. Ouvrir `essais/note_rh_scannee.pdf`. L'appli indique que le document est scanné.
+3. « Analyser ». Un avertissement demande de relire tout l'aperçu.
+
+À regarder de près dans l'aperçu du scan : les erreurs de lecture (un `10` lu `IO`, par exemple) et ce qui reste en clair à cause d'elles. C'est la limite à connaître.
+
+### Essai 6 : un dossier entier
+
+1. « Filtrer un dossier… », choisir le dossier `essais`.
+2. Attendre le tableau de résultats.
+
+À vérifier : un sous-dossier `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). Le PDF scanné est refusé, avec un message qui renvoie à l'aperçu. La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
+
+### Essai 7 : les règles et le journal
+
+1. Onglet « Règles ». Ajouter « Toujours masquer ce terme » avec un mot du mail, par exemple `régularisation`.
+2. Revenir à « 1. Filtrer », recoller le mail, « Analyser » : le mot est maintenant surligné.
+3. Dans « Règles », la liste montre aussi les passages démasqués à l'essai 1. « Retirer » les supprime.
+4. Onglet « Journal » : une ligne par traitement, avec des décomptes et aucune vraie valeur.
+
+### Essai 8 (facultatif) : une vraie IA
+
+Uniquement avec le faux mail, jamais avec un vrai document.
+
+1. Filtrer `mail_paie.txt` et copier le texte filtré.
+2. Le coller dans Claude ou ChatGPT avec une demande, par exemple « Résume ce mail en trois points et propose une réponse ».
+3. Copier la réponse, la coller dans « 2. Restaurer ».
+
+À vérifier : la réponse restaurée se lit normalement, avec les vrais noms. Noter ce que l'IA a fait des jetons (recopiés, déformés, inventés).
+
+### Fermer et rouvrir
+
+Fermer la fenêtre, relancer la même commande : l'appli demande le mot de passe. Un mauvais mot de passe est refusé. Recoller le mail : les mêmes valeurs reçoivent les mêmes jetons.
+
+## 2. La passerelle
+
+La passerelle s'essaie avec une fausse IA, qui affiche ce qu'elle reçoit et le répète. Il faut trois terminaux, tous ouverts dans le dossier du projet.
+
+### Terminal 1 : la fausse IA
+
+```bash
+uv run --extra passerelle python outils/fausse_ia.py
+```
+
+Elle reste ouverte et affichera tout ce qui lui arrive.
+
+### Terminal 2 : la passerelle
+
+Créer un utilisateur. Sa clé d'accès s'affiche une seule fois : la copier.
+
+```bash
+uv run --extra passerelle celodata-passerelle --reglages outils/passerelle.essai.toml utilisateur celine
+```
+
+Donner à la passerelle la clé de l'IA. Pour la fausse IA, n'importe quel mot convient. Dans PowerShell :
+
+```bash
+$env:CELODATA_CLE_IA = "essai"
+```
+
+Lancer le serveur, dans le même terminal :
+
+```bash
+uv run --extra modeles --extra passerelle celodata-passerelle --reglages outils/passerelle.essai.toml servir
+```
+
+Le serveur est prêt quand la ligne « Uvicorn running on http://127.0.0.1:8787 » apparaît (le modèle met quelques secondes à se charger).
+
+### Terminal 3 : poser une question
+
+```bash
+uv run --extra passerelle python outils/demander.py essais/mail_paie.txt
+```
+
+Coller la clé d'accès quand elle est demandée (elle ne s'affiche pas), puis Entrée.
+
+À vérifier :
+
+| Où | Ce qu'on doit voir |
+|---|---|
+| Terminal 1, la fausse IA | Le mail avec des jetons, aucun nom ni numéro. La mention « clé d'un utilisateur Celodata reçue : non ». |
+| Terminal 3, la réponse | Le mail avec les vraies valeurs, sauf les secrets, remplacés par `[SECRET_SUPPRIMÉ]`. |
+
+Puis la même chose avec une réponse mot à mot :
+
+```bash
+uv run --extra passerelle python outils/demander.py essais/mail_paie.txt --flux
+```
+
+La réponse s'affiche progressivement et aucun morceau de jeton ne doit apparaître.
+
+### Deux contrôles de sécurité
+
+1. Relancer la commande du terminal 3 et taper une clé fausse : la réponse doit être « Erreur 401 », et le terminal 1 ne doit rien afficher de nouveau.
+2. Regarder le dossier `essais/passerelle` : il contient `celine.celodata` (sa table chiffrée) et `utilisateurs.json`, qui ne contient que l'empreinte de la clé, pas la clé.
+
+### Arrêter
+
+Ctrl+C dans les terminaux 1 et 2.
+
+### Avec une vraie IA ou un vrai outil de discussion (facultatif)
+
+Copier `docs/passerelle.exemple.toml` sous le nom `passerelle.toml`, y mettre l'adresse de l'IA, mettre la vraie clé dans `CELODATA_CLE_IA`, puis lancer `servir` avec `--reglages passerelle.toml`. Dans l'outil de discussion (Open WebUI, par exemple), indiquer `http://127.0.0.1:8787/v1` comme adresse et la clé d'accès Celodata comme clé. À n'essayer qu'avec de faux documents.
+
+## 3. Ce qui doit alerter
+
+| Constat | Ce que ça veut dire |
+|---|---|
+| Un nom ou un numéro en clair dans l'aperçu, non surligné | Le détecteur l'a raté. Le masquer à la main et le noter : c'est un cas à ajouter au jeu de test. |
+| Beaucoup de mots ordinaires surlignés | Le modèle masque trop. Les démasquer : l'appli s'en souvient. |
+| Une valeur en clair dans le terminal de la fausse IA | Fuite par la passerelle, qui n'a pas d'aperçu. À noter avec le texte concerné. |
+| Un Word ou un Excel filtré qui ne s'ouvre pas | Défaut du fichier produit : ils n'ont été relus que par programme. |
+| Un bouton « Ouvrir » ou « Enregistrer » qui ne fait rien | Les boîtes de Windows n'ont pas été essayées dans la vraie fenêtre. |
+
+## 4. Nettoyer
+
+Supprimer le dossier `essais` efface les faux fichiers, la table d'essai de l'appli et celle de la passerelle.

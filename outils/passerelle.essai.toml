@@ -1,0 +1,12 @@
+# Réglages pour essayer la passerelle face à la fausse IA (outils/fausse_ia.py).
+# Rien ne sort de la machine.
+
+[ia]
+url = "http://127.0.0.1:8799/v1"
+variable_cle = "CELODATA_CLE_IA"
+
+[passerelle]
+hote = "127.0.0.1"
+port = 8787
+# Tables d'essai, dans le dossier « essais » (non versionné).
+dossier = "../essais/passerelle"
