@@ -4,6 +4,9 @@ Ces termes sont masqués par défaut (règles 1 et 3 sur les données indirectes
 Les listes sont volontairement courtes : elles grandiront avec le jeu de test.
 """
 
+import re
+
+from celodata.detection.base import Detection
 from celodata.detection.regle import Regle
 
 _SYNDICATS = r"(?:CFDT|CGT|CFTC|CFE-CGC|UNSA|FSU|FO|SUD(?:[- ][A-Z]\w+)?|Solidaires|Force [Oo]uvrière)"
@@ -53,3 +56,24 @@ REGLES_LISTES = [
         0.7,
     ),
 ]
+
+# Règle 2 : une fonction tenue par une seule personne désigne cette personne.
+# Elle n'est pas masquée d'office : l'aperçu la signale « à vérifier ».
+_FONCTIONS_UNIQUES = re.compile(
+    r"\b(?:DRH|PDG|DG|DGA|DAF|DSI|RSSI|DPO|"
+    r"(?:président|présidente|gérant|gérante|maire|trésorier|trésorière|secrétaire générale?)\b|"
+    r"direct(?:eur|rice) (?:général|générale|des ressources humaines|financi(?:er|ère)|technique|"
+    r"commerciale?|juridique|informatique|du site|de l'usine|de l'agence|de l'établissement)|"
+    r"responsable (?:des ressources humaines|RH|paie|de la paie|logistique|informatique|juridique|"
+    r"qualité|sécurité|du site|de l'agence)|"
+    r"chef(?:fe)? d'(?:équipe|atelier|agence|établissement)(?: de (?:nuit|jour))?|"
+    r"médecin du travail|délégué(?:e)? à la protection des données)\b",
+    re.IGNORECASE,
+)
+
+
+def fonctions_a_verifier(texte: str) -> list[Detection]:
+    return [
+        Detection(m.start(), m.end(), "FONCTION", 0.5, "fonction")
+        for m in _FONCTIONS_UNIQUES.finditer(texte)
+    ]

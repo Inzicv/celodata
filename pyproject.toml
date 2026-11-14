@@ -8,6 +8,7 @@ requires-python = ">=3.11,<3.14"
 dependencies = [
     "cryptography>=44",
     "presidio-analyzer>=2.2",
+    "pywebview>=6.2.1",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +26,7 @@ dev = ["pytest>=8"]
 
 [project.scripts]
 celodata-mesure = "celodata.mesure:main"
+celodata = "celodata.appli.fenetre:main"
 
 [build-system]
 requires = ["hatchling"]

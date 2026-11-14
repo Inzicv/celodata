@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS valeurs (
     cree_le TEXT NOT NULL,
     PRIMARY KEY (type, numero)
 );
+CREATE TABLE IF NOT EXISTS ignorees (empreinte BLOB PRIMARY KEY);
 """
 
 
@@ -56,7 +57,8 @@ class Table:
         iterations: int = 3,
     ) -> "Table":
         """Ouvre la table, ou la crée si le fichier n'existe pas. `:memory:` ne laisse rien sur disque."""
-        db = sqlite3.connect(str(chemin))
+        # L'appli appelle la table depuis plusieurs fils, un à la fois (verrou côté appli).
+        db = sqlite3.connect(str(chemin), check_same_thread=False)
         db.executescript(_SCHEMA)
         meta = dict(db.execute("SELECT cle, valeur FROM meta"))
         if not meta:
@@ -122,6 +124,31 @@ class Table:
         if not ligne:
             return None
         return self._aes.decrypt(ligne[0], ligne[1], f"{type_}_{numero}".encode()).decode("utf-8")
+
+    def valeurs(self) -> list[tuple[str, str]]:
+        """Toutes les correspondances déchiffrées (type, valeur), pour les rechercher dans un texte."""
+        lignes = self._db.execute("SELECT type, numero, nonce, chiffre FROM valeurs").fetchall()
+        return [
+            (t, self._aes.decrypt(nonce, chiffre, f"{t}_{n}".encode()).decode("utf-8"))
+            for t, n, nonce, chiffre in lignes
+        ]
+
+    def ignorer(self, valeur: str) -> None:
+        """Retient qu'une valeur ne doit plus être masquée. Seule son empreinte est stockée."""
+        with self._db:
+            self._db.execute("INSERT OR IGNORE INTO ignorees VALUES (?)", (self._empreinte(valeur),))
+
+    def ne_plus_ignorer(self, valeur: str) -> None:
+        with self._db:
+            self._db.execute("DELETE FROM ignorees WHERE empreinte = ?", (self._empreinte(valeur),))
+
+    def est_ignoree(self, valeur: str) -> bool:
+        return (
+            self._db.execute(
+                "SELECT 1 FROM ignorees WHERE empreinte = ?", (self._empreinte(valeur),)
+            ).fetchone()
+            is not None
+        )
 
     def types(self) -> list[str]:
         return [t for (t,) in self._db.execute("SELECT DISTINCT type FROM valeurs")]

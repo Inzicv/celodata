@@ -10,7 +10,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
-from celodata.detection.base import Detection
+from celodata.detection.base import Detecteur, Detection
 from celodata.table import Table
 
 TYPE_SECRET = "SECRET"
@@ -33,6 +33,25 @@ class Restauration:
     inconnus: list[str] = field(default_factory=list)
     # Jetons reconnus sous une forme déformée. À montrer à l'utilisateur pour vérification.
     approximatifs: list[str] = field(default_factory=list)
+
+
+def analyser(texte: str, detecteur: Detecteur, table: Table) -> list[Detection]:
+    """Détecte, puis applique la mémoire du projet.
+
+    - Les valeurs que l'utilisateur a démasquées ne sont plus proposées.
+    - Les valeurs déjà dans la table sont recherchées littéralement dans tout le texte.
+    """
+    detections = [
+        d for d in detecteur.detecter(texte) if not table.est_ignoree(texte[d.debut : d.fin])
+    ]
+    connues = sorted(table.valeurs(), key=lambda tv: -len(tv[1]))
+    for type_, valeur in connues:
+        if len(valeur) < 3 or table.est_ignoree(valeur):
+            continue
+        for m in re.finditer(rf"(?<![\w-]){re.escape(valeur)}(?![\w-])", texte):
+            if all(m.end() <= d.debut or m.start() >= d.fin for d in detections):
+                detections.append(Detection(m.start(), m.end(), type_, 1.0, "table"))
+    return sorted(detections, key=lambda d: d.debut)
 
 
 def pseudonymiser(texte: str, detections: list[Detection], table: Table) -> Filtrage:

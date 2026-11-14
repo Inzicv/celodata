@@ -143,6 +143,17 @@ Limites connues :
 - les types, le nombre de valeurs et leur date d'ajout restent lisibles dans le fichier de la table ;
 - l'aller-retour n'a pas encore été essayé avec la réponse d'une vraie IA.
 
+### Résultat de l'étape 3 (14 novembre 2026)
+
+L'appli (`src/celodata/appli`) ouvre une fenêtre Windows sans serveur ni port ouvert. La boucle a été déroulée dans la vraie fenêtre : mot de passe, analyse, aperçu, filtrage, copie, restauration.
+
+- Cliquer sur un passage le démasque partout où la même valeur apparaît. Sélectionner du texte permet de le masquer.
+- Les corrections deviennent la mémoire du projet : une valeur démasquée n'est plus proposée (seule son empreinte est gardée), une valeur ajoutée est retrouvée dans les textes suivants.
+- Règle 2 : les fonctions uniques (DRH, PDG...) sont signalées « à vérifier » et ne sont masquées que sur un clic.
+- Le texte collé n'est jamais écrit sur disque.
+
+Reste à faire : l'essai sur un vrai échange avec une IA, un installeur, le choix entre plusieurs projets, le changement de mot de passe.
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |

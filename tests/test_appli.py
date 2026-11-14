@@ -1,0 +1,68 @@
+import pytest
+
+from celodata.appli.api import Api
+from celodata.detection.fusion import DetecteurCompose
+from celodata.detection.regles import DetecteurRegles
+
+TEXTE = (
+    "Note pour la DRH. M. Girard (matricule 20418) est en arrêt pour dépression.\n"
+    "Le dossier Zéphyr reste confidentiel. Appeler le 04 72 99 88 77. Zéphyr avance."
+)
+
+
+def regles_seules():
+    return DetecteurCompose("regles", [DetecteurRegles()]), False
+
+
+@pytest.fixture
+def api():
+    a = Api(":memory:", regles_seules, {"memoire_kio": 64, "iterations": 1})
+    assert a.ouvrir("mot de passe de test")["ok"]
+    return a
+
+
+def valeurs(resultat, cle="detections"):
+    return [TEXTE[d["debut"] : d["fin"]] for d in resultat[cle]]
+
+
+def test_mot_de_passe(tmp_path):
+    a = Api(tmp_path / "sous-dossier" / "p.celodata", regles_seules, {"memoire_kio": 64, "iterations": 1})
+    assert a.etat()["table_existe"] is False
+    assert a.ouvrir("court")["ok"] is False
+    assert a.ouvrir("assez long")["ok"] is True
+    b = Api(tmp_path / "sous-dossier" / "p.celodata", regles_seules)
+    assert b.etat()["table_existe"] is True
+    assert b.ouvrir("mauvais mot")["erreur"] == "Mot de passe incorrect."
+
+
+def test_boucle_complete(api):
+    analyse = api.analyser(TEXTE)
+    assert analyse["modele"] is False
+    assert valeurs(analyse) == ["20418", "dépression", "04 72 99 88 77"]
+    assert valeurs(analyse, "suggestions") == ["DRH"]
+
+    filtre = api.filtrer(TEXTE, analyse["detections"], [])
+    assert filtre["ok"] and "20418" not in filtre["texte"] and "IDENTIFIANT_1" in filtre["texte"]
+    assert filtre["par_type"] == {"IDENTIFIANT": 1, "SANTE": 1, "TELEPHONE": 1}
+
+    retour = api.restaurer("Rappeler Telephone 1 pour IDENTIFIANT_1 et IDENTIFIANT_8.")
+    assert retour["texte"] == "Rappeler 04 72 99 88 77 pour 20418 et IDENTIFIANT_8."
+    assert retour["inconnus"] == ["IDENTIFIANT_8"]
+    assert retour["approximatifs"] == ["Telephone 1"]
+
+
+def test_les_corrections_deviennent_la_memoire_du_projet(api):
+    analyse = api.analyser(TEXTE)
+    gardees = [d for d in analyse["detections"] if TEXTE[d["debut"] : d["fin"]] != "dépression"]
+    debut = TEXTE.index("Zéphyr")
+    ajout = {"debut": debut, "fin": debut + 6, "type": "PROJET"}
+    api.filtrer(TEXTE, [*gardees, ajout], ["dépression"])
+
+    suite = api.analyser(TEXTE)
+    # La valeur démasquée n'est plus proposée, la valeur ajoutée est retrouvée partout.
+    assert valeurs(suite) == ["20418", "Zéphyr", "04 72 99 88 77", "Zéphyr"]
+
+
+def test_chevauchement_signale(api):
+    r = api.filtrer("abcdef", [{"debut": 0, "fin": 4, "type": "A"}, {"debut": 2, "fin": 6, "type": "A"}], [])
+    assert r["ok"] is False

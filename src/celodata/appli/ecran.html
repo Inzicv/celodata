@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Celodata</title>
+<style>
+:root {
+  --fond: #f6f5f1; --carte: #ffffff; --texte: #1d1d1b; --discret: #6b6a64; --trait: #dcdad2;
+  --accent: #1f5f8b; --accent-texte: #ffffff; --alerte: #a13d2d; --alerte-fond: #fbeae6;
+  --personne: #cfe3f5; --lieu: #d3ecd6; --numero: #fbe3c0; --sensible: #e6d7f3; --secret: #f6cfcf; --autre: #e3e2dc;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #1b1c1e; --carte: #25272a; --texte: #ecebe6; --discret: #a3a29b; --trait: #3b3d41;
+    --accent: #6bb1e0; --accent-texte: #10202b; --alerte: #f0a493; --alerte-fond: #40231d;
+    --personne: #244a66; --lieu: #26503a; --numero: #5e4520; --sensible: #4a3564; --secret: #6a2c2c; --autre: #45464a;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+header { display: flex; align-items: center; gap: 24px; padding: 12px 24px; border-bottom: 1px solid var(--trait); background: var(--carte); }
+header h1 { font-size: 18px; margin: 0; letter-spacing: .02em; }
+nav { display: flex; gap: 4px; }
+nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; color: var(--discret); font: inherit; cursor: pointer; }
+nav button[aria-selected="true"] { color: var(--texte); border-color: var(--accent); font-weight: 600; }
+#etat { margin-left: auto; color: var(--discret); font-size: 13px; }
+main { max-width: 1060px; margin: 0 auto; padding: 24px; }
+section[hidden] { display: none; }
+h2 { font-size: 16px; margin: 0 0 4px; }
+p.aide { margin: 0 0 12px; color: var(--discret); }
+textarea, .zone { width: 100%; min-height: 220px; padding: 14px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); color: var(--texte); font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
+textarea { resize: vertical; }
+textarea.survol { border-color: var(--accent); border-style: dashed; }
+.zone { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 52vh; overflow: auto; }
+.barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 24px; }
+button.action { background: var(--accent); color: var(--accent-texte); border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+button.second { background: none; color: var(--texte); border: 1px solid var(--trait); border-radius: 6px; padding: 8px 14px; font: inherit; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.info { color: var(--discret); font-size: 13px; }
+.message { padding: 10px 14px; border-radius: 6px; margin: 0 0 14px; background: var(--alerte-fond); color: var(--alerte); }
+.message:empty { display: none; }
+mark { border-radius: 4px; padding: 1px 3px; color: inherit; cursor: pointer; background: var(--autre); }
+mark::after { content: attr(data-type); font: 600 10px "Segoe UI", sans-serif; margin-left: 5px; opacity: .7; vertical-align: 1px; }
+mark.personne { background: var(--personne); } mark.lieu { background: var(--lieu); }
+mark.numero { background: var(--numero); } mark.sensible { background: var(--sensible); }
+mark.secret { background: var(--secret); }
+mark.inactif { background: none; text-decoration: line-through; text-decoration-color: var(--discret); }
+mark.inactif::after { content: "non masqué"; }
+mark.suggestion { background: none; border: 1px dashed var(--alerte); }
+mark.suggestion::after { content: "à vérifier"; color: var(--alerte); opacity: 1; }
+#ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+#ajout[hidden] { display: none; }
+select, input[type=password] { font: inherit; padding: 7px 9px; border: 1px solid var(--trait); border-radius: 6px; background: var(--carte); color: var(--texte); }
+#porte { max-width: 440px; margin: 9vh auto; padding: 28px; background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; }
+#porte label { display: block; margin: 14px 0 4px; font-weight: 600; }
+#porte input { width: 100%; }
+#porte .action { margin-top: 18px; width: 100%; }
+ul.liste { margin: 6px 0 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Celodata</h1>
+  <nav role="tablist" hidden id="onglets">
+    <button role="tab" aria-selected="true" data-onglet="filtrer">1. Filtrer</button>
+    <button role="tab" aria-selected="false" data-onglet="restaurer">2. Restaurer</button>
+  </nav>
+  <span id="etat"></span>
+</header>
+
+<main>
+  <section id="porte">
+    <h2 id="porte-titre">Ouvrir le projet</h2>
+    <p class="aide" id="porte-aide"></p>
+    <div class="message" id="porte-erreur" role="alert"></div>
+    <form id="porte-form">
+      <label for="mdp">Mot de passe</label>
+      <input type="password" id="mdp" autocomplete="off" required>
+      <div id="bloc-confirmation">
+        <label for="mdp2">Confirmer le mot de passe</label>
+        <input type="password" id="mdp2" autocomplete="off">
+      </div>
+      <button class="action" type="submit">Ouvrir</button>
+    </form>
+  </section>
+
+  <section id="filtrer" hidden>
+    <h2>Texte à envoyer à l'IA</h2>
+    <p class="aide">Collez le texte ici, ou déposez un fichier texte. Rien ne quitte cette machine.</p>
+    <textarea id="source" placeholder="Collez votre texte…" spellcheck="false"></textarea>
+    <div class="barre">
+      <button class="action" id="btn-analyser">Analyser</button>
+      <button class="second" id="btn-vider">Vider</button>
+      <span class="info" id="info-analyse"></span>
+    </div>
+
+    <div id="bloc-apercu" hidden>
+      <h2>Aperçu</h2>
+      <p class="aide">Cliquez sur un passage surligné pour ne plus le masquer. Sélectionnez du texte pour le masquer. Les passages « à vérifier » ne sont masqués que si vous cliquez dessus.</p>
+      <div class="zone" id="apercu" tabindex="0"></div>
+      <div class="barre">
+        <button class="action" id="btn-filtrer">Copier le texte filtré</button>
+        <span class="info" id="info-filtre"></span>
+      </div>
+      <div class="message" id="filtre-erreur" role="alert"></div>
+      <div id="bloc-filtre" hidden>
+        <h2>Texte filtré</h2>
+        <p class="aide">C'est ce texte qui est dans le presse-papiers. Collez-le dans votre IA.</p>
+        <div class="zone" id="filtre"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="restaurer" hidden>
+    <h2>Réponse de l'IA</h2>
+    <p class="aide">Collez la réponse. Les jetons sont remplacés par les vraies valeurs.</p>
+    <textarea id="reponse" placeholder="Collez la réponse de l'IA…" spellcheck="false"></textarea>
+    <div class="barre">
+      <button class="action" id="btn-restaurer">Restaurer</button>
+      <span class="info" id="info-restaure"></span>
+    </div>
+    <div id="bloc-restaure" hidden>
+      <div class="message" id="alertes-restaure" role="alert"></div>
+      <h2>Réponse restaurée</h2>
+      <div class="zone" id="restaure"></div>
+      <div class="barre"><button class="action" id="btn-copier-restaure">Copier</button><span class="info" id="info-copie"></span></div>
+    </div>
+  </section>
+</main>
+
+<div id="ajout" hidden>
+  <span>Masquer comme</span>
+  <select id="ajout-type" aria-label="Type du passage">
+    <option value="PERSONNE">personne</option><option value="ORGANISATION">organisation</option>
+    <option value="ADRESSE">adresse</option><option value="LIEU">lieu</option>
+    <option value="IDENTIFIANT">identifiant</option><option value="PROJET">projet</option>
+    <option value="MONTANT">montant</option><option value="SANTE">santé</option>
+    <option value="SECRET">secret (supprimé)</option><option value="AUTRE">autre</option>
+  </select>
+  <button class="action" id="ajout-ok">Masquer</button>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const api = () => window.pywebview.api;
+const FAMILLES = {
+  PERSONNE: "personne", LOGIN: "personne", FONCTION: "personne",
+  ORGANISATION: "lieu", ADRESSE: "lieu", VILLE: "lieu", LIEU: "lieu", PROJET: "lieu",
+  SANTE: "sensible", SYNDICAT: "sensible", SECRET: "secret",
+};
+const NUMEROS = ["TELEPHONE","MAIL","NIR","IBAN","BIC","SIRET","TVA","PLAQUE","IP","MAC","MACHINE","URL",
+  "IDENTIFIANT","MATRICULE","NUM_CLIENT","NUM_CONTRAT","DATE","DATE_NAISSANCE","MONTANT"];
+const famille = t => FAMILLES[t] || (NUMEROS.includes(t) ? "numero" : "autre");
+
+let texte = "";          // texte analysé
+let passages = [];       // {debut, fin, type, actif, suggestion}
+let selection = null;    // {debut, fin} en attente d'ajout
+
+function copier(contenu) {
+  const z = document.createElement("textarea");
+  z.value = contenu; z.style.position = "fixed"; z.style.opacity = "0";
+  document.body.appendChild(z); z.select();
+  const ok = document.execCommand("copy");
+  z.remove();
+  return ok;
+}
+
+// ---------- ouverture ----------
+async function demarrer() {
+  const e = await api().etat();
+  if (e.ouverte) return entrer();
+  $("porte-titre").textContent = e.table_existe ? "Ouvrir le projet" : "Créer le projet";
+  $("porte-aide").textContent = e.table_existe
+    ? "Entrez le mot de passe de la table de correspondance."
+    : "Choisissez un mot de passe d'au moins 8 caractères. Il protège la table de correspondance. S'il est perdu, les textes déjà filtrés ne pourront plus être restaurés.";
+  $("bloc-confirmation").hidden = e.table_existe;
+  $("porte").dataset.nouvelle = e.table_existe ? "" : "1";
+  $("mdp").focus();
+}
+$("porte-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const erreur = $("porte-erreur");
+  erreur.textContent = "";
+  if ($("porte").dataset.nouvelle && $("mdp").value !== $("mdp2").value) {
+    erreur.textContent = "Les deux mots de passe sont différents."; return;
+  }
+  const r = await api().ouvrir($("mdp").value);
+  $("mdp").value = $("mdp2").value = "";
+  if (!r.ok) { erreur.textContent = r.erreur; return; }
+  entrer();
+});
+function entrer() {
+  $("porte").hidden = true; $("onglets").hidden = false; $("filtrer").hidden = false;
+  $("etat").textContent = "Chargement du modèle…";
+  api().preparer().then(r => {
+    $("etat").textContent = r.modele ? "Règles + modèle d'entités" : "Règles seules : modèle d'entités absent";
+  });
+  $("source").focus();
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  $("filtrer").hidden = b.dataset.onglet !== "filtrer";
+  $("restaurer").hidden = b.dataset.onglet !== "restaurer";
+  $("ajout").hidden = true;
+}));
+
+// ---------- analyse et aperçu ----------
+$("btn-analyser").addEventListener("click", async () => {
+  texte = $("source").value.replace(/\r\n?/g, "\n");
+  if (!texte.trim()) return;
+  $("btn-analyser").disabled = true;
+  $("info-analyse").textContent = "Analyse en cours…";
+  try {
+    const r = await api().analyser(texte);
+    passages = [
+      ...r.detections.map(d => ({...d, actif: true, suggestion: false})),
+      ...r.suggestions.map(d => ({...d, actif: false, suggestion: true})),
+    ].sort((a, b) => a.debut - b.debut);
+    $("info-analyse").textContent = r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.";
+    $("bloc-apercu").hidden = false; $("bloc-filtre").hidden = true; $("info-filtre").textContent = "";
+    dessiner();
+  } catch (e) {
+    $("info-analyse").textContent = "Erreur : " + e;
+  }
+  $("btn-analyser").disabled = false;
+});
+$("btn-vider").addEventListener("click", () => {
+  $("source").value = ""; texte = ""; passages = [];
+  $("bloc-apercu").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
+  $("source").focus();
+});
+
+function dessiner() {
+  const zone = $("apercu");
+  zone.textContent = "";
+  let position = 0;
+  passages.forEach((p, i) => {
+    zone.append(texte.slice(position, p.debut));
+    const m = document.createElement("mark");
+    m.textContent = texte.slice(p.debut, p.fin);
+    m.dataset.i = i; m.dataset.type = p.type; m.tabIndex = 0; m.setAttribute("role", "button");
+    m.className = p.actif ? famille(p.type) : (p.suggestion ? "suggestion" : "inactif");
+    m.title = p.actif ? "Cliquer pour ne plus masquer" : "Cliquer pour masquer";
+    zone.append(m);
+    position = p.fin;
+  });
+  zone.append(texte.slice(position));
+  const n = passages.filter(p => p.actif).length;
+  const v = passages.filter(p => p.suggestion && !p.actif).length;
+  $("info-filtre").textContent = `${n} passage${n > 1 ? "s" : ""} masqué${n > 1 ? "s" : ""}` + (v ? `, ${v} à vérifier` : "");
+  $("bloc-filtre").hidden = true;
+}
+function basculer(i) {
+  const valeur = texte.slice(passages[i].debut, passages[i].fin);
+  const actif = !passages[i].actif;
+  // Une même valeur est masquée partout ou nulle part.
+  passages.forEach(p => { if (texte.slice(p.debut, p.fin) === valeur) p.actif = actif; });
+  dessiner();
+}
+$("apercu").addEventListener("click", ev => {
+  const m = ev.target.closest("mark");
+  if (m && window.getSelection().isCollapsed) basculer(+m.dataset.i);
+});
+$("apercu").addEventListener("keydown", ev => {
+  if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches("mark")) { ev.preventDefault(); basculer(+ev.target.dataset.i); }
+});
+
+// Sélection à la souris : proposer de masquer le passage.
+function position(noeud, decalage) {
+  const r = document.createRange();
+  r.selectNodeContents($("apercu"));
+  r.setEnd(noeud, decalage);
+  return r.toString().length;
+}
+document.addEventListener("mouseup", ev => {
+  if ($("ajout").contains(ev.target)) return;
+  const s = window.getSelection();
+  if (s.isCollapsed || !s.rangeCount || !$("apercu").contains(s.anchorNode) || !$("apercu").contains(s.focusNode)) {
+    $("ajout").hidden = true; selection = null; return;
+  }
+  const r = s.getRangeAt(0);
+  let debut = position(r.startContainer, r.startOffset), fin = position(r.endContainer, r.endOffset);
+  while (debut < fin && /\s/.test(texte[debut])) debut++;
+  while (fin > debut && /\s/.test(texte[fin - 1])) fin--;
+  if (fin <= debut) { $("ajout").hidden = true; return; }
+  selection = {debut, fin};
+  const boite = $("ajout");
+  boite.hidden = false;
+  boite.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - boite.offsetWidth - 8)) + "px";
+  boite.style.top = Math.min(ev.clientY + 14, window.innerHeight - boite.offsetHeight - 8) + "px";
+});
+$("ajout-ok").addEventListener("click", () => {
+  if (!selection) return;
+  const valeur = texte.slice(selection.debut, selection.fin), type = $("ajout-type").value;
+  const nouveaux = [];
+  for (let i = texte.indexOf(valeur); i !== -1; i = texte.indexOf(valeur, i + valeur.length))
+    nouveaux.push({debut: i, fin: i + valeur.length, type, actif: true, suggestion: false});
+  passages = passages
+    .filter(p => nouveaux.every(n => p.fin <= n.debut || p.debut >= n.fin))
+    .concat(nouveaux).sort((a, b) => a.debut - b.debut);
+  selection = null; $("ajout").hidden = true; window.getSelection().removeAllRanges();
+  dessiner();
+});
+
+$("btn-filtrer").addEventListener("click", async () => {
+  $("filtre-erreur").textContent = "";
+  const actifs = passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
+  const retirees = [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(p => texte.slice(p.debut, p.fin)))];
+  const r = await api().filtrer(texte, actifs, retirees);
+  if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
+  $("filtre").textContent = r.texte; $("bloc-filtre").hidden = false;
+  $("info-filtre").textContent = copier(r.texte) ? "Texte filtré copié dans le presse-papiers." : "Copie impossible : sélectionnez le texte filtré ci-dessous.";
+  $("bloc-filtre").scrollIntoView({behavior: "smooth", block: "nearest"});
+});
+
+// Dépôt d'un fichier texte.
+const source = $("source");
+source.addEventListener("dragover", ev => { ev.preventDefault(); source.classList.add("survol"); });
+source.addEventListener("dragleave", () => source.classList.remove("survol"));
+source.addEventListener("drop", async ev => {
+  ev.preventDefault(); source.classList.remove("survol");
+  const f = ev.dataTransfer.files[0];
+  if (!f) return;
+  if (!/\.(txt|log|csv|md|json)$/i.test(f.name)) {
+    $("info-analyse").textContent = "Seuls les fichiers texte sont acceptés pour l'instant (txt, log, csv, md, json)."; return;
+  }
+  source.value = await f.text(); $("info-analyse").textContent = "";
+});
+
+// ---------- restauration ----------
+$("btn-restaurer").addEventListener("click", async () => {
+  const reponse = $("reponse").value;
+  if (!reponse.trim()) return;
+  const r = await api().restaurer(reponse);
+  $("restaure").textContent = r.texte; $("bloc-restaure").hidden = false; $("info-copie").textContent = "";
+  const alertes = $("alertes-restaure");
+  alertes.textContent = "";
+  const bloc = (titre, liste) => {
+    if (!liste.length) return;
+    const p = document.createElement("div"); p.textContent = titre;
+    const ul = document.createElement("ul"); ul.className = "liste";
+    liste.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.append(li); });
+    alertes.append(p, ul);
+  };
+  bloc("Jetons absents de la table, laissés tels quels :", r.inconnus);
+  bloc("Jetons reconnus sous une forme approchée, à vérifier :", r.approximatifs);
+});
+$("btn-copier-restaure").addEventListener("click", () => {
+  $("info-copie").textContent = copier($("restaure").textContent) ? "Copié." : "Copie impossible.";
+});
+
+if (window.pywebview && window.pywebview.api) demarrer();
+else window.addEventListener("pywebviewready", demarrer);
+</script>
+</body>
+</html>
