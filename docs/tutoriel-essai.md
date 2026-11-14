@@ -6,11 +6,7 @@ Compter 20 minutes pour l'appli et 10 minutes pour la passerelle.
 
 ## 0. Préparer
 
-Toutes les commandes se lancent depuis le dossier du projet. Tant que la branche de travail n'est pas fusionnée, c'est :
-
-```
-D:\Git\celodata\.claude\worktrees\celodata-cnil-cadre-donnees-72c6e8
-```
+Toutes les commandes se lancent depuis le dossier du projet, celui qui contient `pyproject.toml`.
 
 Installer ce qu'il faut (une seule fois) :
 
