@@ -218,9 +218,38 @@ Limites connues :
 - une formule qui cite une feuille renommée par un jeton ne fonctionne plus dans le fichier filtré ;
 - dans un tableau, le détecteur n'a pas le titre de la colonne pour s'aider : une colonne « Nom » remplie de prénoms seuls peut être moins bien détectée qu'une phrase ;
 - un grand classeur est long à analyser (une à deux secondes par page de texte) ;
-- le PDF reste rendu en texte brut, et les anciens `.doc` et `.xls` ne sont pas lus ;
+- les anciens `.doc` et `.xls` ne sont pas lus ;
 - les fichiers produits n'ont pas été ouverts dans Word ni dans Excel : ils ont été relus par `python-docx` et `openpyxl` ;
 - les boîtes de Windows (ouvrir, enregistrer) n'ont pas été essayées dans la vraie fenêtre.
+
+### Résultat de l'étape 7 (14 novembre 2026)
+
+Les PDF sont le format des contrats. L'usage visé est l'analyse et le résumé : c'est le contenu qui compte, pas l'aspect.
+
+- **PDF de texte** : le texte est filtré puis rendu dans un Word neuf (`texte_en_word`). Rien de ce que le PDF pouvait cacher (propriétés, signets, calques, pièces jointes) ne s'y retrouve, puisque le fichier est reconstruit.
+- **PDF scanné** (`ocr.py`) : une page sans texte est rendue en image (`pypdfium2`) puis lue par la reconnaissance de caractères de Windows, en français. Tout se passe sur le poste, sans modèle à télécharger. Un PDF qui mélange pages de texte et pages scannées est lu page par page.
+- **Garde-fou** : un scan n'est lu que dans l'appli, où un avertissement demande de relire tout l'aperçu. Le traitement d'un dossier le refuse, parce qu'il n'a pas d'aperçu.
+
+Choix écartés : réécrire le texte dans le PDF lui-même (la seule bibliothèque qui le fait bien, PyMuPDF, est sous licence AGPL ou payante), et masquer sur l'image des pages (l'IA lirait moins bien, pour un usage qui n'a pas besoin de l'aspect).
+
+Mesure sur les dix faux documents transformés en faux scans (page dessinée, légèrement tournée, floutée, bruitée, compressée) :
+
+| Entrée | Valeurs lues exactement | Valeurs restées en clair après filtrage |
+|---|---|---|
+| Texte direct | 217/217 | 1/214 |
+| Faux scan propre | non mesuré | 7/214 |
+| Faux scan moyen | 189/217 | 2/214 |
+
+Une valeur compte comme restée en clair si un morceau d'au moins 60 % de sa longueur se retrouve dans le texte filtré. Le modèle reconnaît donc la plupart des valeurs mal lues (« 04 72 OO 11 22 », un IBAN qui a perdu son « F »). La lecture prend environ 0,1 seconde par page.
+
+Limites connues :
+
+- ces chiffres viennent de faux scans fabriqués par programme, avec une seule police : de vrais scans (tampons, signatures, écriture à la main, pages de travers, mauvaise photocopie) seront moins bien lus ;
+- l'écriture manuscrite n'est pas lue ;
+- les colonnes et les tableaux d'un scan sont rendus ligne par ligne, sans garantie d'ordre ;
+- la lecture des scans ne fonctionne que sous Windows, avec le français installé ;
+- la mise en page du PDF est perdue, et ses images ne sont pas reprises ;
+- la passerelle ne lit pas de fichiers : cette étape ne concerne que l'appli.
 
 ## 7. Étapes
 
@@ -233,6 +262,7 @@ Limites connues :
 | 4 | Journal, fichiers Word et PDF, règles personnalisées | Un dossier de documents passe en une fois |
 | 5 | Passerelle serveur au format OpenAI | Une demande filtrée et sa réponse restaurée passent par le serveur, face à une fausse IA |
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | Un Word et un Excel filtrés puis restaurés redonnent leur contenu, mise en forme gardée |
+| 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | Un PDF de texte et un PDF scanné donnent chacun un Word filtré |
 
 L'extension de navigateur, un temps envisagée, est écartée (décision du 14 novembre 2026, voir la section 8).
 

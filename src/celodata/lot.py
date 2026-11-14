@@ -1,7 +1,7 @@
 """Traitement d'un dossier entier, sans aperçu.
 
 Chaque document lisible donne un fichier filtré dans le dossier de sortie : un Word reste un Word,
-un Excel reste un Excel, les autres deviennent du texte. Les documents d'origine ne sont pas modifiés.
+un Excel reste un Excel, un PDF devient un Word, les autres restent du texte. Les documents d'origine ne sont pas modifiés.
 """
 
 from dataclasses import dataclass
@@ -11,7 +11,7 @@ from celodata import journal
 from celodata.detection.base import Detecteur
 from celodata.detection.listes import fonctions_a_verifier
 from celodata.documents import EXTENSIONS, EXTENSIONS_TEXTE, DocumentIllisible, lire
-from celodata.fichiers import FORMATS, filtrer_fichier, ouvrir
+from celodata.fichiers import FORMATS, filtrer_fichier, ouvrir, texte_en_word
 from celodata.moteur import analyser, pseudonymiser
 from celodata.table import Table
 
@@ -50,12 +50,16 @@ def traiter_dossier(dossier: Path, sortie: Path, detecteur: Detecteur, table: Ta
                 filtre = filtrer_fichier(f.name, contenu, detecteur, table)
                 detections, produit, remarque = filtre.detections, filtre.contenu, ", ".join(filtre.avertissements)
             else:
-                texte = lire(f.name, contenu)
+                # Un PDF scanné est refusé ici : sa lecture doit être vérifiée dans l'aperçu.
+                texte = lire(f.name, contenu, scans=False)
                 detections = analyser(texte, detecteur, table)
-                produit = pseudonymiser(texte, detections, table).texte.encode("utf-8")
-                # « contrat.pdf » donne « contrat.pdf.txt » : pas de collision avec « contrat.txt ».
-                if extension not in EXTENSIONS_TEXTE:
-                    cible = cible.with_name(cible.name + ".txt")
+                filtre_texte = pseudonymiser(texte, detections, table).texte
+                if extension in EXTENSIONS_TEXTE:
+                    produit = filtre_texte.encode("utf-8")
+                else:
+                    # « contrat.pdf » donne « contrat.pdf.docx » : pas de collision avec « contrat.docx ».
+                    produit = texte_en_word(filtre_texte)
+                    cible = cible.with_name(cible.name + ".docx")
         except (DocumentIllisible, OSError) as e:
             resultats.append(ResultatFichier(str(relatif), False, erreur=str(e)))
             continue

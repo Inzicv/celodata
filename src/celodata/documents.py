@@ -1,10 +1,11 @@
-"""Extraction du texte d'un fichier : texte brut, Word (.docx), PDF.
+"""Extraction du texte d'un fichier : texte brut, Word (.docx), Excel (.xlsx), PDF, PDF scanné.
 
 Tout se passe en mémoire : aucune copie du document n'est écrite sur disque.
 La mise en forme n'est pas conservée, seul le texte est rendu.
 """
 
 import io
+from dataclasses import dataclass
 from pathlib import Path
 
 EXTENSIONS_TEXTE = {".txt", ".md", ".csv", ".log", ".json"}
@@ -15,15 +16,31 @@ class DocumentIllisible(Exception):
     pass
 
 
-def lire(nom: str, contenu: bytes) -> str:
+@dataclass
+class Lecture:
+    texte: str
+    # Pages lues par reconnaissance de caractères : leur texte peut contenir des erreurs de lecture.
+    pages_scannees: int = 0
+
+
+def lire(nom: str, contenu: bytes, scans: bool = True) -> str:
     """Rend le texte d'un fichier d'après son extension."""
+    return lire_detail(nom, contenu, scans).texte
+
+
+def lire_detail(nom: str, contenu: bytes, scans: bool = True) -> Lecture:
+    """Comme `lire`, en disant aussi combien de pages ont été lues comme des scans.
+
+    Avec `scans=False`, un PDF scanné est refusé : c'est le cas du traitement sans aperçu.
+    """
     extension = Path(nom).suffix.lower()
+    pages_scannees = 0
     if extension in EXTENSIONS_TEXTE:
         texte = _texte_brut(contenu)
     elif extension == ".docx":
         texte = _docx(contenu)
     elif extension == ".pdf":
-        texte = _pdf(contenu)
+        texte, pages_scannees = _pdf(contenu, scans)
     elif extension == ".xlsx":
         from celodata.fichiers import ouvrir
 
@@ -34,7 +51,7 @@ def lire(nom: str, contenu: bytes) -> str:
         raise DocumentIllisible("L'ancien format Excel (.xls) n'est pas lu : enregistrez le fichier en .xlsx.")
     else:
         raise DocumentIllisible(f"Type de fichier non pris en charge : {extension or nom}.")
-    return texte.replace("\r\n", "\n").replace("\r", "\n")
+    return Lecture(texte.replace("\r\n", "\n").replace("\r", "\n"), pages_scannees)
 
 
 def lire_fichier(chemin: Path) -> str:
@@ -86,7 +103,11 @@ def _docx(contenu: bytes) -> str:
     return "\n".join([*entetes, *lignes(document), *pieds])
 
 
-def _pdf(contenu: bytes) -> str:
+def _pdf(contenu: bytes, scans: bool) -> tuple[str, int]:
+    """Rend le texte du PDF et le nombre de pages lues comme des scans.
+
+    Une page sans texte est une image : elle est lue par la reconnaissance de caractères si `scans` le permet.
+    """
     from pypdf import PdfReader
 
     try:
@@ -98,7 +119,23 @@ def _pdf(contenu: bytes) -> str:
         raise
     except Exception as e:
         raise DocumentIllisible(f"PDF illisible ({type(e).__name__}).") from None
+
+    vides = [i for i, page in enumerate(pages) if not page]
+    if vides:
+        from celodata import ocr
+
+        if not scans:
+            raise DocumentIllisible(
+                "PDF scanné : ouvrez-le dans l'appli, où le texte lu peut être vérifié avant d'être filtré."
+            )
+        try:
+            for i in vides:
+                pages[i] = ocr.lire_page_pdf(contenu, i).strip()
+        except ocr.LectureImpossible as e:
+            raise DocumentIllisible(f"PDF scanné, impossible à lire : {e}") from None
+        except Exception as e:
+            raise DocumentIllisible(f"PDF scanné, impossible à lire ({type(e).__name__}).") from None
     texte = "\n\n".join(p for p in pages if p)
     if not texte.strip():
-        raise DocumentIllisible("Aucun texte dans ce PDF : il est probablement scanné (image).")
-    return texte
+        raise DocumentIllisible("Aucun texte dans ce PDF, même en le lisant comme un document scanné.")
+    return texte, sum(1 for i in vides if pages[i])

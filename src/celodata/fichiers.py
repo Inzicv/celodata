@@ -287,6 +287,23 @@ class Excel(Formate):
         return sortie.getvalue()
 
 
+def texte_en_word(texte: str) -> bytes:
+    """Fabrique un Word simple à partir d'un texte : un paragraphe par ligne.
+
+    Sert à rendre un PDF filtré. Le fichier est neuf : rien de ce que le PDF pouvait cacher
+    (propriétés, signets, calques, pièces jointes) ne s'y retrouve.
+    """
+    from docx import Document
+
+    document = Document()
+    document.core_properties.author = "Celodata"
+    for ligne in texte.split("\n"):
+        document.add_paragraph(ligne)
+    sortie = io.BytesIO()
+    document.save(sortie)
+    return sortie.getvalue()
+
+
 # ---------- filtrer et restaurer ----------
 
 

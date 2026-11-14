@@ -21,6 +21,7 @@ Celodata réduit le risque de fuite. Il ne garantit pas l'anonymat : une donnée
 | 4 | Journal, fichiers Word et PDF, règles personnalisées, dossier entier | fait, boîtes « Ouvrir » à essayer dans la vraie fenêtre |
 | 5 | Passerelle serveur au format OpenAI | fait, essayé face à une fausse IA seulement |
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | fait, à essayer sur de vrais fichiers ouverts dans Word et Excel |
+| 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | fait, mesuré sur de faux scans seulement |
 
 La conception est décrite dans [docs/conception.md](docs/conception.md).
 
@@ -39,10 +40,12 @@ uv run --extra modeles celodata
 
 Autres possibilités :
 
-- **Fichiers** : déposer un fichier dans la zone de texte ou cliquer sur « Ouvrir un fichier… ». Sont lus les fichiers texte, Word (`.docx`), Excel (`.xlsx`) et PDF. Un PDF scanné (image) n'est pas lu.
+- **Fichiers** : déposer un fichier dans la zone de texte ou cliquer sur « Ouvrir un fichier… ». Sont lus les fichiers texte, Word (`.docx`), Excel (`.xlsx`) et PDF.
+- **PDF** : après l'aperçu, « Enregistrer le fichier filtré… » produit un Word neuf qui contient le texte filtré. La mise en page du PDF n'est pas gardée, et rien de ce que le PDF pouvait cacher ne s'y retrouve.
+- **PDF scanné** : les pages sans texte sont lues par la reconnaissance de caractères de Windows, sur le poste. Il faut que le français soit installé dans Windows. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué, donc l'aperçu doit être relu en entier. Pour cette raison, un scan n'est pas traité par « Filtrer un dossier… ».
 - **Word et Excel dans leur format** : après l'aperçu, « Enregistrer le fichier filtré… » produit un Word ou un Excel filtré qui garde sa mise en forme, à joindre à l'IA à la place de l'original. Les propriétés du fichier (auteur, société) sont vidées. Les images qu'il contient ne sont pas filtrées : l'appli le signale.
 - **Fichier rendu par l'IA** : dans l'onglet « Restaurer », « Restaurer un fichier… » remet les vraies valeurs dans un Word, un Excel ou un fichier texte.
-- **Dossier entier** : « Filtrer un dossier… » traite tous les documents d'un dossier sans aperçu et range les fichiers filtrés dans un sous-dossier `celodata_filtré`. Un Word reste un Word, un Excel reste un Excel, un PDF devient du texte. Les originaux ne sont pas modifiés. Ces fichiers n'ont pas été vérifiés à l'écran : il faut les relire avant envoi.
+- **Dossier entier** : « Filtrer un dossier… » traite tous les documents d'un dossier sans aperçu et range les fichiers filtrés dans un sous-dossier `celodata_filtré`. Un Word reste un Word, un Excel reste un Excel, un PDF devient un Word. Les originaux ne sont pas modifiés. Ces fichiers n'ont pas été vérifiés à l'écran : il faut les relire avant envoi.
 - **Règles du projet** (onglet « Règles ») : termes toujours masqués, motifs (expressions régulières), termes jamais masqués.
 - **Journal** (onglet « Journal ») : date, document, nombre de passages masqués par type et par origine. Aucune vraie valeur n'y figure.
 

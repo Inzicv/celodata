@@ -184,7 +184,7 @@ def test_un_dossier_passe_en_une_fois(tmp_path, table):
         ("a.txt", True), ("b.docx", True), ("casse.pdf", False), (str(sortie.parent / "sous" / "c.pdf")[len(str(dossier)) + 1 :], True),
     ]
     filtres = sorted(str(f.relative_to(sortie)).replace("\\", "/") for f in sortie.rglob("*") if f.is_file())
-    assert filtres == ["a.txt", "b.docx", "sous/c.pdf.txt"]
+    assert filtres == ["a.txt", "b.docx", "sous/c.pdf.docx"]
     for f in sortie.rglob("*"):
         if not f.is_file():
             continue

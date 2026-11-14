@@ -15,8 +15,8 @@ from celodata import journal
 from celodata.detection.base import Detecteur, Detection
 from celodata.detection.fusion import DetecteurCompose
 from celodata.detection.listes import fonctions_a_verifier
-from celodata.documents import EXTENSIONS_TEXTE, DocumentIllisible, lire
-from celodata.fichiers import FORMATS, appliquer_filtrage, ouvrir, restaurer_fichier
+from celodata.documents import EXTENSIONS_TEXTE, DocumentIllisible, lire, lire_detail
+from celodata.fichiers import FORMATS, appliquer_filtrage, ouvrir, restaurer_fichier, texte_en_word
 from celodata.lot import DOSSIER_SORTIE, traiter_dossier
 from celodata.moteur import analyser, pseudonymiser, restaurer
 from celodata.table import MotDePasseIncorrect, Table
@@ -56,7 +56,7 @@ class Api:
         self._detecteur: Detecteur | None = None
         self._avec_modele = False
         self._derniere: dict[tuple[int, int, str], Detection] = {}
-        # Dernier fichier Word ou Excel chargé (nom, contenu, texte), pour l'enregistrer filtré dans son format.
+        # Dernier fichier Word, Excel ou PDF chargé (nom, contenu, texte), pour l'enregistrer filtré.
         self._charge: tuple[str, bytes, str] | None = None
         self._verrou = threading.Lock()
 
@@ -135,9 +135,9 @@ class Api:
             return {"ok": True, "texte": filtrage.texte, "par_type": dict(filtrage.par_type)}
 
     def enregistrer_filtre(self, texte: str, detections: list[dict], retirees: list[str]) -> dict:
-        """Enregistre le fichier Word ou Excel chargé, filtré, dans son format d'origine."""
+        """Enregistre le fichier chargé, filtré : un Word ou un Excel dans son format, un PDF en Word."""
         if not self._charge:
-            return {"ok": False, "erreur": "Aucun fichier Word ou Excel n'est chargé."}
+            return {"ok": False, "erreur": "Aucun fichier Word, Excel ou PDF n'est chargé."}
         nom, contenu, texte_charge = self._charge
         if texte != texte_charge:
             return {
@@ -145,19 +145,26 @@ class Api:
                 "erreur": "Le texte a été modifié depuis le chargement du fichier : rechargez le fichier, "
                 "ou utilisez « Copier le texte filtré ».",
             }
-        chemin = self._dialogue("enregistrer", f"{Path(nom).stem}_filtré{Path(nom).suffix}") if self._dialogue else None
+        pdf = Path(nom).suffix.lower() == ".pdf"
+        propose = f"{Path(nom).stem}_filtré{'.docx' if pdf else Path(nom).suffix}"
+        chemin = self._dialogue("enregistrer", propose) if self._dialogue else None
         if not chemin:
             return {"ok": False, "annule": True}
         with self._verrou:
             retenues = self._valider(texte, detections, retirees)
             try:
-                document = ouvrir(nom, contenu)
-                produit = appliquer_filtrage(document, retenues, self._table)
+                if pdf:
+                    avertissements = []
+                    produit = texte_en_word(pseudonymiser(texte, retenues, self._table).texte)
+                else:
+                    document = ouvrir(nom, contenu)
+                    avertissements = document.avertissements
+                    produit = appliquer_filtrage(document, retenues, self._table)
                 Path(chemin).write_bytes(produit)
             except (ValueError, DocumentIllisible, OSError) as e:
                 return {"ok": False, "erreur": str(e)}
             journal.filtrage(self._table, retenues, mode="apercu", detecteur=self._nom_detecteur(), fichier=nom)
-        return {"ok": True, "chemin": str(chemin), "avertissements": document.avertissements}
+        return {"ok": True, "chemin": str(chemin), "avertissements": avertissements}
 
     def restaurer(self, texte: str) -> dict:
         with self._verrou:
@@ -169,17 +176,27 @@ class Api:
 
     def _charger(self, nom: str, contenu: bytes) -> dict:
         self._charge = None
+        pages_scannees = 0
+        extension = Path(nom).suffix.lower()
         try:
-            if Path(nom).suffix.lower() in FORMATS:
+            if extension in FORMATS:
                 # Le texte vient des emplacements du fichier, pour y reporter ensuite les remplacements.
                 texte = ouvrir(nom, contenu).texte
-                if "\r" not in texte:
-                    self._charge = (nom, contenu, texte)
             else:
-                texte = lire(nom, contenu)
+                lecture = lire_detail(nom, contenu)
+                texte, pages_scannees = lecture.texte, lecture.pages_scannees
         except DocumentIllisible as e:
             return {"ok": False, "erreur": str(e)}
-        return {"ok": True, "nom": nom, "texte": texte, "format": self._charge is not None}
+        if extension in FORMATS | {".pdf"} and "\r" not in texte:
+            self._charge = (nom, contenu, texte)
+        return {
+            "ok": True,
+            "nom": nom,
+            "texte": texte,
+            "format": self._charge is not None,
+            # Pages lues par reconnaissance de caractères : l'écran demande de relire l'aperçu.
+            "pages_scannees": pages_scannees,
+        }
 
     def lire_fichier(self, nom: str, contenu_base64: str) -> dict:
         """Rend le texte d'un fichier déposé dans la fenêtre. Rien n'est écrit sur disque."""

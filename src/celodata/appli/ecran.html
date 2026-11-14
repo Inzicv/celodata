@@ -101,7 +101,7 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
 
   <section id="filtrer" hidden>
     <h2>Texte à envoyer à l'IA</h2>
-    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, Excel .xlsx, PDF). Rien ne quitte cette machine.</p>
+    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, Excel .xlsx, PDF, PDF scanné). Rien ne quitte cette machine.</p>
     <textarea id="source" placeholder="Collez votre texte…" spellcheck="false"></textarea>
     <div class="barre">
       <button class="action" id="btn-analyser">Analyser</button>
@@ -123,6 +123,7 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
     <div id="bloc-apercu" hidden>
       <h2>Aperçu</h2>
       <p class="aide">Cliquez sur un passage surligné pour ne plus le masquer. Sélectionnez du texte pour le masquer. Les passages « à vérifier » ne sont masqués que si vous cliquez dessus.</p>
+      <div class="message" id="avert-scan" role="alert"></div>
       <div class="zone" id="apercu" tabindex="0"></div>
       <div class="barre">
         <button class="action" id="btn-filtrer">Copier le texte filtré</button>
@@ -215,7 +216,8 @@ let texte = "";          // texte analysé
 let passages = [];       // {debut, fin, type, actif, suggestion}
 let selection = null;    // {debut, fin} en attente d'ajout
 let fichier = "";        // nom du fichier chargé, pour le journal
-let formate = false;     // le fichier chargé est un Word ou un Excel : il peut être enregistré filtré
+let formate = false;     // le fichier chargé est un Word, un Excel ou un PDF : il peut être enregistré filtré
+let scan = 0;            // pages du fichier lues par reconnaissance de caractères
 
 function copier(contenu) {
   const z = document.createElement("textarea");
@@ -292,6 +294,9 @@ $("btn-analyser").addEventListener("click", async () => {
     $("info-analyse").textContent = r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.";
     $("bloc-apercu").hidden = false; $("bloc-filtre").hidden = true; $("info-filtre").textContent = "";
     $("btn-enregistrer").hidden = !formate;
+    $("avert-scan").textContent = scan
+      ? `Document scanné : ${scan} page${scan > 1 ? "s ont été lues" : " a été lue"} par reconnaissance de caractères. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué. Relisez tout l'aperçu avant d'envoyer.`
+      : "";
     dessiner();
   } catch (e) {
     $("info-analyse").textContent = "Erreur : " + e;
@@ -299,7 +304,7 @@ $("btn-analyser").addEventListener("click", async () => {
   $("btn-analyser").disabled = false;
 });
 $("btn-vider").addEventListener("click", () => {
-  $("source").value = ""; texte = ""; passages = []; fichier = ""; formate = false;
+  $("source").value = ""; texte = ""; passages = []; fichier = ""; formate = false; scan = 0;
   $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
   $("source").focus();
 });
@@ -413,13 +418,13 @@ source.addEventListener("drop", async ev => {
   for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
   charger(await api().lire_fichier(f.name, btoa(binaire)));
 });
-source.addEventListener("input", () => { fichier = ""; formate = false; });
+source.addEventListener("input", () => { fichier = ""; formate = false; scan = 0; });
 function charger(r) {
   if (r.annule) return;
   if (!r.ok) { $("info-analyse").textContent = r.erreur; return; }
-  source.value = r.texte; fichier = r.nom; formate = !!r.format;
+  source.value = r.texte; fichier = r.nom; formate = !!r.format; scan = r.pages_scannees || 0;
   $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true;
-  $("info-analyse").textContent = `${r.nom} chargé. Cliquez sur « Analyser ».`;
+  $("info-analyse").textContent = `${r.nom} chargé${scan ? " (document scanné, lu par reconnaissance de caractères)" : ""}. Cliquez sur « Analyser ».`;
 }
 $("btn-ouvrir").addEventListener("click", async () => charger(await api().ouvrir_fichier()));
 
