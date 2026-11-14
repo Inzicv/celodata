@@ -184,9 +184,11 @@ def test_un_dossier_passe_en_une_fois(tmp_path, table):
         ("a.txt", True), ("b.docx", True), ("casse.pdf", False), (str(sortie.parent / "sous" / "c.pdf")[len(str(dossier)) + 1 :], True),
     ]
     filtres = sorted(str(f.relative_to(sortie)).replace("\\", "/") for f in sortie.rglob("*") if f.is_file())
-    assert filtres == ["a.txt", "b.docx.txt", "sous/c.pdf.txt"]
-    for f in sortie.rglob("*.txt"):
-        contenu = f.read_text(encoding="utf-8")
+    assert filtres == ["a.txt", "b.docx", "sous/c.pdf.txt"]
+    for f in sortie.rglob("*"):
+        if not f.is_file():
+            continue
+        contenu = f.read_text(encoding="utf-8") if f.suffix == ".txt" else lire(f.name, f.read_bytes())
         assert "Lefèvre" not in contenu and "04 72" not in contenu
         # La même valeur a le même jeton dans tous les documents du dossier.
         assert "PERSONNE_1" in contenu and "TELEPHONE_1" in contenu
@@ -206,7 +208,8 @@ def test_appli_fichiers_dossier_et_regles(tmp_path):
     a = Api(":memory:", regles_seules, OPTIONS, dialogue=choix.get)
     a.ouvrir("mot de passe de test")
 
-    assert a.ouvrir_fichier() == {"ok": True, "nom": "a.docx", "texte": "\n".join(COURRIER)}
+    charge = a.ouvrir_fichier()
+    assert charge["ok"] and charge["format"] and charge["texte"].startswith("\n".join(COURRIER))
     depose = a.lire_fichier("c.pdf", base64.b64encode(pdf(COURRIER)).decode())
     assert depose["ok"] and depose["texte"] == "\n".join(COURRIER)
     assert a.lire_fichier("c.pdf", base64.b64encode(b"rien").decode())["ok"] is False
@@ -222,7 +225,7 @@ def test_appli_fichiers_dossier_et_regles(tmp_path):
 
     lot = a.filtrer_dossier()
     assert lot["ok"] and [(f["fichier"], f["ok"], f["masques"]) for f in lot["fichiers"]] == [("a.docx", True, 3)]
-    assert "PROJET_1" in (tmp_path / DOSSIER_SORTIE / "a.docx.txt").read_text(encoding="utf-8")
+    assert "PROJET_1" in lire("a.docx", (tmp_path / DOSSIER_SORTIE / "a.docx").read_bytes())
 
     a.supprimer_regle(regles["regles"][0]["id"])
     a.ne_plus_ignorer("Courrier")

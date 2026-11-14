@@ -8,7 +8,7 @@ import io
 from pathlib import Path
 
 EXTENSIONS_TEXTE = {".txt", ".md", ".csv", ".log", ".json"}
-EXTENSIONS = EXTENSIONS_TEXTE | {".docx", ".pdf"}
+EXTENSIONS = EXTENSIONS_TEXTE | {".docx", ".xlsx", ".pdf"}
 
 
 class DocumentIllisible(Exception):
@@ -24,8 +24,14 @@ def lire(nom: str, contenu: bytes) -> str:
         texte = _docx(contenu)
     elif extension == ".pdf":
         texte = _pdf(contenu)
+    elif extension == ".xlsx":
+        from celodata.fichiers import ouvrir
+
+        texte = ouvrir(nom, contenu).texte
     elif extension == ".doc":
         raise DocumentIllisible("L'ancien format Word (.doc) n'est pas lu : enregistrez le fichier en .docx.")
+    elif extension == ".xls":
+        raise DocumentIllisible("L'ancien format Excel (.xls) n'est pas lu : enregistrez le fichier en .xlsx.")
     else:
         raise DocumentIllisible(f"Type de fichier non pris en charge : {extension or nom}.")
     return texte.replace("\r\n", "\n").replace("\r", "\n")

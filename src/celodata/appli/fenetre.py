@@ -29,10 +29,14 @@ def main(argv: list[str] | None = None) -> int:
     from celodata.appli.api import Api
     from celodata.documents import EXTENSIONS
 
-    def dialogue(genre: str) -> str | None:
+    def dialogue(genre: str, nom: str = "") -> str | None:
         fenetre = webview.windows[0]
         if genre == "dossier":
             choix = fenetre.create_file_dialog(webview.FileDialog.FOLDER)
+        elif genre == "enregistrer":
+            choix = fenetre.create_file_dialog(webview.FileDialog.SAVE, save_filename=nom)
+            # Selon la version, la boîte rend un chemin ou une liste de chemins.
+            return choix if isinstance(choix, str) else (choix[0] if choix else None)
         else:
             motifs = ";".join(f"*{e}" for e in sorted(EXTENSIONS))
             choix = fenetre.create_file_dialog(webview.FileDialog.OPEN, file_types=(f"Documents ({motifs})",))

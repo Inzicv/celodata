@@ -83,24 +83,34 @@ def analyser(texte: str, detecteur: Detecteur, table: Table) -> list[Detection]:
     return sorted(detections, key=lambda d: d.debut)
 
 
-def pseudonymiser(texte: str, detections: list[Detection], table: Table) -> Filtrage:
-    """Remplace chaque passage détecté par son jeton. Les détections ne doivent pas se chevaucher."""
-    resultat = Filtrage(texte)
-    morceaux = []
+Remplacement = tuple[int, int, str]  # début, fin, texte à mettre à la place
+
+
+def appliquer(texte: str, remplacements: list[Remplacement]) -> str:
+    morceaux, position = [], 0
+    for debut, fin, nouveau in remplacements:
+        morceaux += [texte[position:debut], nouveau]
+        position = fin
+    return "".join([*morceaux, texte[position:]])
+
+
+def remplacements_jetons(texte: str, detections: list[Detection], table: Table) -> list[Remplacement]:
+    """Le jeton à mettre à la place de chaque passage détecté. Les détections ne doivent pas se chevaucher."""
+    sortie: list[Remplacement] = []
     position = 0
     for d in sorted(detections, key=lambda d: d.debut):
         if d.debut < position:
             raise ValueError("Les détections se chevauchent : passer d'abord par la fusion.")
-        morceaux.append(texte[position : d.debut])
-        if d.type == TYPE_SECRET:
-            morceaux.append(MARQUE_SECRET)
-        else:
-            morceaux.append(table.jeton(d.type, texte[d.debut : d.fin]))
-        resultat.par_type[d.type] += 1
+        jeton = MARQUE_SECRET if d.type == TYPE_SECRET else table.jeton(d.type, texte[d.debut : d.fin])
+        sortie.append((d.debut, d.fin, jeton))
         position = d.fin
-    morceaux.append(texte[position:])
-    resultat.texte = "".join(morceaux)
-    return resultat
+    return sortie
+
+
+def pseudonymiser(texte: str, detections: list[Detection], table: Table) -> Filtrage:
+    """Remplace chaque passage détecté par son jeton. Les détections ne doivent pas se chevaucher."""
+    texte_filtre = appliquer(texte, remplacements_jetons(texte, detections, table))
+    return Filtrage(texte_filtre, Counter(d.type for d in detections))
 
 
 def texte_motif_jetons(types: list[str]) -> str | None:
@@ -119,25 +129,28 @@ def _motif_tolerant(types: list[str]) -> re.Pattern | None:
 
 def restaurer(texte: str, table: Table) -> Restauration:
     """Remet les vraies valeurs à la place des jetons, même déformés."""
+    return restaurer_avec_positions(texte, table)[0]
+
+
+def restaurer_avec_positions(texte: str, table: Table) -> tuple[Restauration, list[Remplacement]]:
+    """Comme `restaurer`, et rend aussi où chaque valeur revient : utile pour un fichier mis en forme."""
     resultat = Restauration(texte)
     types = {re.sub(r"[ _-]", "", t).upper(): t for t in table.types()}
-
-    def remplacer(m: re.Match) -> str:
+    remplacements: list[Remplacement] = []
+    motif = _motif_tolerant(list(types.values()))
+    for m in motif.finditer(texte) if motif else ():
         type_ = types[re.sub(r"[ _-]", "", m.group(2)).upper()]
         jeton = f"{type_}_{int(m.group(3))}"
         valeur = table.valeur(type_, int(m.group(3)))
         if valeur is None:
-            return m.group(0)
+            continue
         if m.group(0) not in (jeton, f"[{jeton}]"):
             resultat.approximatifs.append(m.group(0))
-        return valeur
-
-    motif = _motif_tolerant(list(types.values()))
-    if motif:
-        resultat.texte = motif.sub(remplacer, texte)
+        remplacements.append((m.start(), m.end(), valeur))
+    resultat.texte = appliquer(texte, remplacements)
     # Ce qui ressemble encore à un jeton après restauration n'est pas dans la table.
     connus = set(types.values())
     for m in _FORME_EXACTE.finditer(resultat.texte):
         if m.group(1) in connus and m.group(0) not in resultat.inconnus:
             resultat.inconnus.append(m.group(0))
-    return resultat
+    return resultat, remplacements

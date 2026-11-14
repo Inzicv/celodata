@@ -199,6 +199,29 @@ Limites connues :
 - les définitions d'outils (`tools`) écrites par un développeur sont transmises telles quelles ;
 - aucun essai avec une vraie IA ni avec un vrai outil de discussion (Open WebUI, LibreChat).
 
+### Résultat de l'étape 6 (14 novembre 2026)
+
+Un fichier Word ou Excel peut être filtré puis restauré en gardant son format (`fichiers.py`). Les dix faux documents, mis en Word (un mot sur trois en gras) et en Excel, ont été filtrés avec le modèle puis restaurés : sur les vingt fichiers, aucune valeur annotée n'est restée en clair et le texte restauré est identique à l'original.
+
+Principe : le fichier est vu comme une suite d'emplacements de texte (bouts de phrase, cellules) et de séparateurs. Mis bout à bout, ils donnent le texte que lit le détecteur. Chaque remplacement est reporté dans son emplacement d'origine, sans toucher à la mise en forme.
+
+- **Word** : lu directement dans son archive. Corps, tableaux, en-têtes, pieds, notes, commentaires, zones de texte, texte supprimé en suivi des modifications, liens externes. Les propriétés (auteur, société, titre) sont vidées.
+- **Excel** (`openpyxl`) : noms de feuilles, cellules de texte, nombres et dates (lus comme du texte, parce qu'un nombre peut être un SIRET), formules, commentaires, liens.
+- **Passage à cheval** : un nom dont une partie est en gras reçoit un seul jeton. Un passage qui traverse deux cellules ou deux paragraphes reçoit un jeton par cellule, pour que le tableau garde sa forme.
+- **Dans l'appli** : l'aperçu et les corrections s'appliquent au fichier, puis « Enregistrer le fichier filtré… ». « Restaurer un fichier… » pour le retour. Le dossier entier garde aussi les formats.
+
+Limites connues :
+
+- les images, objets incorporés et propriétés personnalisées d'un Word ne sont pas filtrés : l'appli le signale, sans les retirer ;
+- les graphiques et images d'un Excel ne sont pas repris dans le fichier produit, et les en-têtes, pieds de page et noms définis ne sont pas filtrés ;
+- une cellule de nombre ou de date masquée devient du texte, et le reste après restauration ;
+- une formule qui cite une feuille renommée par un jeton ne fonctionne plus dans le fichier filtré ;
+- dans un tableau, le détecteur n'a pas le titre de la colonne pour s'aider : une colonne « Nom » remplie de prénoms seuls peut être moins bien détectée qu'une phrase ;
+- un grand classeur est long à analyser (une à deux secondes par page de texte) ;
+- le PDF reste rendu en texte brut, et les anciens `.doc` et `.xls` ne sont pas lus ;
+- les fichiers produits n'ont pas été ouverts dans Word ni dans Excel : ils ont été relus par `python-docx` et `openpyxl` ;
+- les boîtes de Windows (ouvrir, enregistrer) n'ont pas été essayées dans la vraie fenêtre.
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |
@@ -209,7 +232,9 @@ Limites connues :
 | 3 | Appli Windows : coller, aperçu, corriger, copier, restaurer | La boucle complète fonctionne sur un vrai échange avec une IA |
 | 4 | Journal, fichiers Word et PDF, règles personnalisées | Un dossier de documents passe en une fois |
 | 5 | Passerelle serveur au format OpenAI | Une demande filtrée et sa réponse restaurée passent par le serveur, face à une fausse IA |
-| 6 | Extension de navigateur, pour les abonnements ChatGPT et Claude | À cadrer à ce moment-là |
+| 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | Un Word et un Excel filtrés puis restaurés redonnent leur contenu, mise en forme gardée |
+
+L'extension de navigateur, un temps envisagée, est écartée (décision du 14 novembre 2026, voir la section 8).
 
 ## 8. À revoir plus tard
 
@@ -218,5 +243,6 @@ Limites connues :
 - Le traitement en flux pour les gros logs, et les fausses valeurs qui gardent le format (IP, chemins), au moment du profil logs.
 - Un adaptateur pour brancher le moteur dans LiteLLM, si une entreprise le demande.
 - La formulation « 100 % hors ligne » : elle vaut pour l'appli. La passerelle envoie par nature le texte filtré vers l'IA, et rien d'autre.
-- L'extension de navigateur (étape 6) : c'est le seul moyen de filtrer automatiquement sur chatgpt.com ou claude.ai. Elle s'appuierait sur l'appli installée sur le poste.
+- L'extension de navigateur est écartée (décision du 14 novembre 2026). Raisons : un employé qui veut contourner le peut toujours (autre navigateur, téléphone, connecteurs cloud, applis de bureau), et le vrai risque est dans les fichiers joints, qu'une extension ne règle pas sans que le moteur sache d'abord produire un fichier filtré. Celodata reste sur deux produits : la passerelle et l'appli déployée sur les postes. Le but est de sensibiliser l'employé et de lui donner le moyen de bien faire, pas de l'empêcher.
+- Ce que cette décision demande à l'appli : un fichier filtré qui garde son format et la restauration d'un fichier rendu par l'IA (faits à l'étape 6), puis un installeur pour la déployer et un guide court pour l'employé (à faire).
 - Les secrets trouvés par le modèle seul. Décision du 14 novembre 2026 : ils sont supprimés pour de bon, comme ceux trouvés par une règle. Sur le faux jeu (trois secrets), le modèle seul trouve un vrai secret que les règles ratent, et un faux. Un faux secret se voit dans la réponse (`[SECRET_SUPPRIMÉ]`) et le document d'origine n'est pas touché ; un vrai secret gardé dans la table ne se verrait pas. À reposer avec un jeu plus grand, après avoir ajouté la règle qui manque.

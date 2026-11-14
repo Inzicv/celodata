@@ -15,7 +15,8 @@ from celodata import journal
 from celodata.detection.base import Detecteur, Detection
 from celodata.detection.fusion import DetecteurCompose
 from celodata.detection.listes import fonctions_a_verifier
-from celodata.documents import DocumentIllisible, lire, lire_fichier
+from celodata.documents import EXTENSIONS_TEXTE, DocumentIllisible, lire
+from celodata.fichiers import FORMATS, appliquer_filtrage, ouvrir, restaurer_fichier
 from celodata.lot import DOSSIER_SORTIE, traiter_dossier
 from celodata.moteur import analyser, pseudonymiser, restaurer
 from celodata.table import MotDePasseIncorrect, Table
@@ -43,17 +44,20 @@ class Api:
         chemin_table: Path | str,
         fabrique: Callable[[], tuple[Detecteur, bool]] = detecteur_par_defaut,
         options_table: dict | None = None,
-        dialogue: Callable[[str], str | None] | None = None,
+        dialogue: Callable[..., str | None] | None = None,
     ) -> None:
         self._chemin = chemin_table
         self._fabrique = fabrique
         self._options_table = options_table or {}
-        # `dialogue("fichier")` ou `dialogue("dossier")` ouvre la boîte de Windows et rend un chemin.
+        # `dialogue("fichier")`, `dialogue("dossier")` ou `dialogue("enregistrer", nom proposé)`
+        # ouvre la boîte de Windows et rend un chemin.
         self._dialogue = dialogue
         self._table: Table | None = None
         self._detecteur: Detecteur | None = None
         self._avec_modele = False
         self._derniere: dict[tuple[int, int, str], Detection] = {}
+        # Dernier fichier Word ou Excel chargé (nom, contenu, texte), pour l'enregistrer filtré dans son format.
+        self._charge: tuple[str, bytes, str] | None = None
         self._verrou = threading.Lock()
 
     def etat(self) -> dict:
@@ -99,27 +103,61 @@ class Api:
             "suggestions": [{"debut": d.debut, "fin": d.fin, "type": d.type} for d in suggestions],
         }
 
+    def _valider(self, texte: str, detections: list[dict], retirees: list[str]) -> list[Detection]:
+        """Les passages validés dans l'aperçu. Les corrections deviennent la mémoire du projet."""
+        # Un passage ajouté à la main n'est pas dans la dernière analyse : sa source est « manuel ».
+        retenues = [
+            self._derniere.get(
+                (d["debut"], d["fin"], d["type"]), Detection(d["debut"], d["fin"], d["type"], 1.0, "manuel")
+            )
+            for d in detections
+        ]
+        for valeur in retirees:
+            self._table.ignorer(valeur)
+        for d in retenues:
+            self._table.ne_plus_ignorer(texte[d.debut : d.fin])
+        return retenues
+
+    def _nom_detecteur(self) -> str:
+        return self._detecteur.nom if self._detecteur else ""
+
     def filtrer(self, texte: str, detections: list[dict], retirees: list[str], fichier: str | None = None) -> dict:
-        """Remplace les passages validés dans l'aperçu. Les corrections deviennent la mémoire du projet."""
+        """Remplace les passages validés dans l'aperçu et rend le texte filtré."""
         with self._verrou:
-            # Un passage ajouté à la main n'est pas dans la dernière analyse : sa source est « manuel ».
-            retenues = [
-                self._derniere.get(
-                    (d["debut"], d["fin"], d["type"]), Detection(d["debut"], d["fin"], d["type"], 1.0, "manuel")
-                )
-                for d in detections
-            ]
-            for valeur in retirees:
-                self._table.ignorer(valeur)
-            for d in retenues:
-                self._table.ne_plus_ignorer(texte[d.debut : d.fin])
+            retenues = self._valider(texte, detections, retirees)
             try:
                 filtrage = pseudonymiser(texte, retenues, self._table)
             except ValueError as e:
                 return {"ok": False, "erreur": str(e)}
-            nom = self._detecteur.nom if self._detecteur else ""
-            journal.filtrage(self._table, retenues, mode="apercu", detecteur=nom, fichier=fichier or None)
+            journal.filtrage(
+                self._table, retenues, mode="apercu", detecteur=self._nom_detecteur(), fichier=fichier or None
+            )
             return {"ok": True, "texte": filtrage.texte, "par_type": dict(filtrage.par_type)}
+
+    def enregistrer_filtre(self, texte: str, detections: list[dict], retirees: list[str]) -> dict:
+        """Enregistre le fichier Word ou Excel chargé, filtré, dans son format d'origine."""
+        if not self._charge:
+            return {"ok": False, "erreur": "Aucun fichier Word ou Excel n'est chargé."}
+        nom, contenu, texte_charge = self._charge
+        if texte != texte_charge:
+            return {
+                "ok": False,
+                "erreur": "Le texte a été modifié depuis le chargement du fichier : rechargez le fichier, "
+                "ou utilisez « Copier le texte filtré ».",
+            }
+        chemin = self._dialogue("enregistrer", f"{Path(nom).stem}_filtré{Path(nom).suffix}") if self._dialogue else None
+        if not chemin:
+            return {"ok": False, "annule": True}
+        with self._verrou:
+            retenues = self._valider(texte, detections, retirees)
+            try:
+                document = ouvrir(nom, contenu)
+                produit = appliquer_filtrage(document, retenues, self._table)
+                Path(chemin).write_bytes(produit)
+            except (ValueError, DocumentIllisible, OSError) as e:
+                return {"ok": False, "erreur": str(e)}
+            journal.filtrage(self._table, retenues, mode="apercu", detecteur=self._nom_detecteur(), fichier=nom)
+        return {"ok": True, "chemin": str(chemin), "avertissements": document.avertissements}
 
     def restaurer(self, texte: str) -> dict:
         with self._verrou:
@@ -129,21 +167,58 @@ class Api:
 
     # ---------- fichiers ----------
 
-    def lire_fichier(self, nom: str, contenu_base64: str) -> dict:
-        """Rend le texte d'un fichier déposé dans la fenêtre. Rien n'est écrit sur disque."""
+    def _charger(self, nom: str, contenu: bytes) -> dict:
+        self._charge = None
         try:
-            return {"ok": True, "nom": nom, "texte": lire(nom, base64.b64decode(contenu_base64))}
+            if Path(nom).suffix.lower() in FORMATS:
+                # Le texte vient des emplacements du fichier, pour y reporter ensuite les remplacements.
+                texte = ouvrir(nom, contenu).texte
+                if "\r" not in texte:
+                    self._charge = (nom, contenu, texte)
+            else:
+                texte = lire(nom, contenu)
         except DocumentIllisible as e:
             return {"ok": False, "erreur": str(e)}
+        return {"ok": True, "nom": nom, "texte": texte, "format": self._charge is not None}
+
+    def lire_fichier(self, nom: str, contenu_base64: str) -> dict:
+        """Rend le texte d'un fichier déposé dans la fenêtre. Rien n'est écrit sur disque."""
+        return self._charger(nom, base64.b64decode(contenu_base64))
 
     def ouvrir_fichier(self) -> dict:
         chemin = self._dialogue("fichier") if self._dialogue else None
         if not chemin:
             return {"ok": False, "annule": True}
         try:
-            return {"ok": True, "nom": Path(chemin).name, "texte": lire_fichier(Path(chemin))}
+            return self._charger(Path(chemin).name, Path(chemin).read_bytes())
+        except OSError as e:
+            return {"ok": False, "erreur": str(e)}
+
+    def restaurer_fichier(self) -> dict:
+        """Restaure un fichier rendu par l'IA (Word, Excel ou texte) et l'enregistre où l'utilisateur le choisit."""
+        source = self._dialogue("fichier") if self._dialogue else None
+        if not source:
+            return {"ok": False, "annule": True}
+        source = Path(source)
+        extension = source.suffix.lower()
+        if extension not in FORMATS | EXTENSIONS_TEXTE:
+            return {"ok": False, "erreur": "Seuls les fichiers Word (.docx), Excel (.xlsx) et texte peuvent être restaurés."}
+        try:
+            contenu = source.read_bytes()
+            with self._verrou:
+                if extension in FORMATS:
+                    produit, bilan = restaurer_fichier(source.name, contenu, self._table)
+                else:
+                    bilan = restaurer(lire(source.name, contenu), self._table)
+                    produit = bilan.texte.encode("utf-8")
+                journal.restauration(self._table, bilan)
+            cible = self._dialogue("enregistrer", f"{source.stem}_restauré{source.suffix}")
+            if not cible:
+                return {"ok": False, "annule": True}
+            Path(cible).write_bytes(produit)
         except (DocumentIllisible, OSError) as e:
             return {"ok": False, "erreur": str(e)}
+        return {"ok": True, "chemin": str(cible), "inconnus": bilan.inconnus, "approximatifs": bilan.approximatifs}
 
     def filtrer_dossier(self) -> dict:
         """Filtre tous les documents d'un dossier, sans aperçu, vers un sous-dossier."""

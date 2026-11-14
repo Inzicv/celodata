@@ -101,7 +101,7 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
 
   <section id="filtrer" hidden>
     <h2>Texte à envoyer à l'IA</h2>
-    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, PDF). Rien ne quitte cette machine.</p>
+    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, Excel .xlsx, PDF). Rien ne quitte cette machine.</p>
     <textarea id="source" placeholder="Collez votre texte…" spellcheck="false"></textarea>
     <div class="barre">
       <button class="action" id="btn-analyser">Analyser</button>
@@ -126,6 +126,7 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
       <div class="zone" id="apercu" tabindex="0"></div>
       <div class="barre">
         <button class="action" id="btn-filtrer">Copier le texte filtré</button>
+        <button class="action" id="btn-enregistrer" hidden>Enregistrer le fichier filtré…</button>
         <span class="info" id="info-filtre"></span>
       </div>
       <div class="message" id="filtre-erreur" role="alert"></div>
@@ -139,10 +140,11 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
 
   <section id="restaurer" hidden>
     <h2>Réponse de l'IA</h2>
-    <p class="aide">Collez la réponse. Les jetons sont remplacés par les vraies valeurs.</p>
+    <p class="aide">Collez la réponse, ou restaurez un fichier rendu par l'IA (Word, Excel, texte). Les jetons sont remplacés par les vraies valeurs.</p>
     <textarea id="reponse" placeholder="Collez la réponse de l'IA…" spellcheck="false"></textarea>
     <div class="barre">
       <button class="action" id="btn-restaurer">Restaurer</button>
+      <button class="second" id="btn-restaurer-fichier">Restaurer un fichier…</button>
       <span class="info" id="info-restaure"></span>
     </div>
     <div id="bloc-restaure" hidden>
@@ -213,6 +215,7 @@ let texte = "";          // texte analysé
 let passages = [];       // {debut, fin, type, actif, suggestion}
 let selection = null;    // {debut, fin} en attente d'ajout
 let fichier = "";        // nom du fichier chargé, pour le journal
+let formate = false;     // le fichier chargé est un Word ou un Excel : il peut être enregistré filtré
 
 function copier(contenu) {
   const z = document.createElement("textarea");
@@ -288,6 +291,7 @@ $("btn-analyser").addEventListener("click", async () => {
     ].sort((a, b) => a.debut - b.debut);
     $("info-analyse").textContent = r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.";
     $("bloc-apercu").hidden = false; $("bloc-filtre").hidden = true; $("info-filtre").textContent = "";
+    $("btn-enregistrer").hidden = !formate;
     dessiner();
   } catch (e) {
     $("info-analyse").textContent = "Erreur : " + e;
@@ -295,7 +299,7 @@ $("btn-analyser").addEventListener("click", async () => {
   $("btn-analyser").disabled = false;
 });
 $("btn-vider").addEventListener("click", () => {
-  $("source").value = ""; texte = ""; passages = []; fichier = "";
+  $("source").value = ""; texte = ""; passages = []; fichier = ""; formate = false;
   $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
   $("source").focus();
 });
@@ -383,7 +387,19 @@ $("btn-filtrer").addEventListener("click", async () => {
   $("bloc-filtre").scrollIntoView({behavior: "smooth", block: "nearest"});
 });
 
-// Dépôt d'un fichier texte.
+// Fichier Word ou Excel : le fichier filtré est enregistré dans son format, mise en forme gardée.
+$("btn-enregistrer").addEventListener("click", async () => {
+  $("filtre-erreur").textContent = "";
+  const actifs = passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
+  const retirees = [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(p => texte.slice(p.debut, p.fin)))];
+  const r = await api().enregistrer_filtre(texte, actifs, retirees);
+  if (r.annule) return;
+  if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
+  $("info-filtre").textContent = `Fichier filtré enregistré : ${r.chemin}`
+    + (r.avertissements.length ? ` Attention : ${r.avertissements.join(", ")}.` : "");
+});
+
+// Dépôt d'un fichier.
 const source = $("source");
 source.addEventListener("dragover", ev => { ev.preventDefault(); source.classList.add("survol"); });
 source.addEventListener("dragleave", () => source.classList.remove("survol"));
@@ -397,11 +413,11 @@ source.addEventListener("drop", async ev => {
   for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
   charger(await api().lire_fichier(f.name, btoa(binaire)));
 });
-source.addEventListener("input", () => { fichier = ""; });
+source.addEventListener("input", () => { fichier = ""; formate = false; });
 function charger(r) {
   if (r.annule) return;
   if (!r.ok) { $("info-analyse").textContent = r.erreur; return; }
-  source.value = r.texte; fichier = r.nom;
+  source.value = r.texte; fichier = r.nom; formate = !!r.format;
   $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true;
   $("info-analyse").textContent = `${r.nom} chargé. Cliquez sur « Analyser ».`;
 }
@@ -423,7 +439,7 @@ $("btn-dossier").addEventListener("click", async () => {
         cellule(tr, f.fichier);
         cellule(tr, f.ok ? String(f.masques) : "", "nombre");
         cellule(tr, f.ok && f.a_verifier ? String(f.a_verifier) : "", "nombre");
-        cellule(tr, f.ok ? "filtré" : f.erreur, f.ok ? "" : "erreur");
+        cellule(tr, f.ok ? "filtré" + (f.remarque ? ` (${f.remarque})` : "") : f.erreur, f.ok ? "" : "erreur");
         corps.append(tr);
       });
       if (!r.fichiers.length) ligneVide(corps, 4, "Aucun document lisible dans ce dossier.");
@@ -522,6 +538,16 @@ $("btn-restaurer").addEventListener("click", async () => {
   };
   bloc("Jetons absents de la table, laissés tels quels :", r.inconnus);
   bloc("Jetons reconnus sous une forme approchée, à vérifier :", r.approximatifs);
+});
+$("btn-restaurer-fichier").addEventListener("click", async () => {
+  const r = await api().restaurer_fichier();
+  if (r.annule) return;
+  $("bloc-restaure").hidden = true;
+  if (!r.ok) { $("info-restaure").textContent = r.erreur; return; }
+  const n = r.inconnus.length, a = r.approximatifs.length;
+  $("info-restaure").textContent = `Fichier restauré enregistré : ${r.chemin}`
+    + (n ? ` ${n} jeton${n > 1 ? "s" : ""} absent${n > 1 ? "s" : ""} de la table, laissé${n > 1 ? "s" : ""} tel${n > 1 ? "s" : ""} quel${n > 1 ? "s" : ""}.` : "")
+    + (a ? ` ${a} jeton${a > 1 ? "s" : ""} reconnu${a > 1 ? "s" : ""} sous une forme approchée, à vérifier.` : "");
 });
 $("btn-copier-restaure").addEventListener("click", () => {
   $("info-copie").textContent = copier($("restaure").textContent) ? "Copié." : "Copie impossible.";
