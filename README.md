@@ -18,7 +18,7 @@ Celodata réduit le risque de fuite. Il ne garantit pas l'anonymat : une donnée
 | 1 | Détection : règles françaises + modèle d'entités + fusion | fait |
 | 2 | Jetons, table de correspondance chiffrée, réidentification | fait |
 | 3 | Appli Windows | fait, à essayer sur un vrai échange avec une IA |
-| 4 | Journal, fichiers Word et PDF, règles personnalisées | à faire |
+| 4 | Journal, fichiers Word et PDF, règles personnalisées, dossier entier | fait, boîtes « Ouvrir » à essayer dans la vraie fenêtre |
 | 5 | Passerelle serveur | à faire |
 
 La conception est décrite dans [docs/conception.md](docs/conception.md).
@@ -35,6 +35,13 @@ uv run --extra modeles celodata
 2. Coller un texte, cliquer sur « Analyser », corriger l'aperçu.
 3. « Copier le texte filtré », le coller dans l'IA.
 4. Coller la réponse dans l'onglet « Restaurer ».
+
+Autres possibilités :
+
+- **Fichiers** : déposer un fichier dans la zone de texte ou cliquer sur « Ouvrir un fichier… ». Sont lus les fichiers texte, Word (`.docx`) et PDF. Seul le texte est repris, pas la mise en forme. Un PDF scanné (image) n'est pas lu.
+- **Dossier entier** : « Filtrer un dossier… » traite tous les documents d'un dossier sans aperçu et range les textes filtrés dans un sous-dossier `celodata_filtré`. Les originaux ne sont pas modifiés. Ces textes n'ont pas été vérifiés à l'écran : il faut les relire avant envoi.
+- **Règles du projet** (onglet « Règles ») : termes toujours masqués, motifs (expressions régulières), termes jamais masqués.
+- **Journal** (onglet « Journal ») : date, document, nombre de passages masqués par type et par origine. Aucune vraie valeur n'y figure.
 
 Sans le modèle d'entités, l'appli fonctionne avec les règles seules et l'indique : les noms ne sont alors pas détectés.
 

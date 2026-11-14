@@ -35,21 +35,50 @@ class Restauration:
     approximatifs: list[str] = field(default_factory=list)
 
 
+def _libre(debut: int, fin: int, detections: list[Detection]) -> bool:
+    return all(fin <= d.debut or debut >= d.fin for d in detections)
+
+
+def _regles_projet(texte: str, table: Table) -> list[Detection]:
+    """Applique les règles ajoutées par l'utilisateur : termes toujours masqués et motifs."""
+    trouvees = []
+    for regle in table.regles():
+        try:
+            if regle["genre"] == "terme":
+                motif = re.compile(rf"(?<![\w-]){re.escape(regle['texte'])}(?![\w-])", re.IGNORECASE)
+            else:
+                motif = re.compile(regle["texte"])
+        except re.error:
+            continue
+        trouvees += [
+            Detection(m.start(), m.end(), regle["type"], 1.0, "projet")
+            for m in motif.finditer(texte)
+            if m.end() > m.start()
+        ]
+    retenues: list[Detection] = []
+    # La règle la plus longue l'emporte.
+    for d in sorted(trouvees, key=lambda d: (d.debut - d.fin, d.debut)):
+        if _libre(d.debut, d.fin, retenues):
+            retenues.append(d)
+    return retenues
+
+
 def analyser(texte: str, detecteur: Detecteur, table: Table) -> list[Detection]:
     """Détecte, puis applique la mémoire du projet.
 
+    - Les règles du projet passent avant le détecteur.
     - Les valeurs que l'utilisateur a démasquées ne sont plus proposées.
     - Les valeurs déjà dans la table sont recherchées littéralement dans tout le texte.
     """
-    detections = [
-        d for d in detecteur.detecter(texte) if not table.est_ignoree(texte[d.debut : d.fin])
-    ]
+    detections = _regles_projet(texte, table)
+    detections += [d for d in detecteur.detecter(texte) if _libre(d.debut, d.fin, detections)]
+    detections = [d for d in detections if not table.est_ignoree(texte[d.debut : d.fin])]
     connues = sorted(table.valeurs(), key=lambda tv: -len(tv[1]))
     for type_, valeur in connues:
         if len(valeur) < 3 or table.est_ignoree(valeur):
             continue
         for m in re.finditer(rf"(?<![\w-]){re.escape(valeur)}(?![\w-])", texte):
-            if all(m.end() <= d.debut or m.start() >= d.fin for d in detections):
+            if _libre(m.start(), m.end(), detections):
                 detections.append(Detection(m.start(), m.end(), type_, 1.0, "table"))
     return sorted(detections, key=lambda d: d.debut)
 

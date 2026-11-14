@@ -27,11 +27,21 @@ def main(argv: list[str] | None = None) -> int:
     import webview
 
     from celodata.appli.api import Api
+    from celodata.documents import EXTENSIONS
+
+    def dialogue(genre: str) -> str | None:
+        fenetre = webview.windows[0]
+        if genre == "dossier":
+            choix = fenetre.create_file_dialog(webview.FileDialog.FOLDER)
+        else:
+            motifs = ";".join(f"*{e}" for e in sorted(EXTENSIONS))
+            choix = fenetre.create_file_dialog(webview.FileDialog.OPEN, file_types=(f"Documents ({motifs})",))
+        return choix[0] if choix else None
 
     webview.create_window(
         "Celodata",
         html=ECRAN.read_text(encoding="utf-8"),
-        js_api=Api(args.table),
+        js_api=Api(args.table, dialogue=dialogue),
         width=1180,
         height=860,
         min_size=(820, 600),

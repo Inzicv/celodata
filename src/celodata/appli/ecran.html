@@ -59,6 +59,16 @@ select, input[type=password] { font: inherit; padding: 7px 9px; border: 1px soli
 #porte input { width: 100%; }
 #porte .action { margin-top: 18px; width: 100%; }
 ul.liste { margin: 6px 0 0; padding-left: 20px; }
+input[type=text] { font: inherit; padding: 7px 9px; border: 1px solid var(--trait); border-radius: 6px; background: var(--carte); color: var(--texte); flex: 1 1 220px; min-width: 0; }
+.defile { overflow-x: auto; margin-bottom: 24px; }
+table { width: 100%; border-collapse: collapse; background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--trait); vertical-align: top; }
+th { color: var(--discret); font-weight: 600; font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+td.nombre, th.nombre { text-align: right; font-variant-numeric: tabular-nums; }
+td.erreur { color: var(--alerte); }
+td.vide { color: var(--discret); }
+code { font: 13px Consolas, "Cascadia Mono", monospace; }
 </style>
 </head>
 <body>
@@ -67,6 +77,8 @@ ul.liste { margin: 6px 0 0; padding-left: 20px; }
   <nav role="tablist" hidden id="onglets">
     <button role="tab" aria-selected="true" data-onglet="filtrer">1. Filtrer</button>
     <button role="tab" aria-selected="false" data-onglet="restaurer">2. Restaurer</button>
+    <button role="tab" aria-selected="false" data-onglet="regles">Règles</button>
+    <button role="tab" aria-selected="false" data-onglet="journal">Journal</button>
   </nav>
   <span id="etat"></span>
 </header>
@@ -89,12 +101,23 @@ ul.liste { margin: 6px 0 0; padding-left: 20px; }
 
   <section id="filtrer" hidden>
     <h2>Texte à envoyer à l'IA</h2>
-    <p class="aide">Collez le texte ici, ou déposez un fichier texte. Rien ne quitte cette machine.</p>
+    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, PDF). Rien ne quitte cette machine.</p>
     <textarea id="source" placeholder="Collez votre texte…" spellcheck="false"></textarea>
     <div class="barre">
       <button class="action" id="btn-analyser">Analyser</button>
+      <button class="second" id="btn-ouvrir">Ouvrir un fichier…</button>
+      <button class="second" id="btn-dossier">Filtrer un dossier…</button>
       <button class="second" id="btn-vider">Vider</button>
       <span class="info" id="info-analyse"></span>
+    </div>
+
+    <div id="bloc-dossier" hidden>
+      <h2>Dossier filtré</h2>
+      <p class="aide" id="dossier-aide"></p>
+      <div class="defile"><table>
+        <thead><tr><th>Document</th><th class="nombre">Passages masqués</th><th class="nombre">À vérifier</th><th>Résultat</th></tr></thead>
+        <tbody id="dossier-lignes"></tbody>
+      </table></div>
     </div>
 
     <div id="bloc-apercu" hidden>
@@ -129,6 +152,36 @@ ul.liste { margin: 6px 0 0; padding-left: 20px; }
       <div class="barre"><button class="action" id="btn-copier-restaure">Copier</button><span class="info" id="info-copie"></span></div>
     </div>
   </section>
+
+  <section id="regles" hidden>
+    <h2>Règles du projet</h2>
+    <p class="aide">Elles s'appliquent à tous les textes de ce projet, y compris aux dossiers. Elles sont rangées chiffrées dans la table.</p>
+    <div class="message" id="regle-erreur" role="alert"></div>
+    <form class="barre" id="regle-form">
+      <select id="regle-genre" aria-label="Genre de règle">
+        <option value="terme">Toujours masquer ce terme</option>
+        <option value="motif">Masquer ce qui suit ce motif</option>
+        <option value="jamais">Ne jamais masquer ce terme</option>
+      </select>
+      <input type="text" id="regle-texte" aria-label="Terme ou motif" placeholder="Nom de code, client, référence interne…" autocomplete="off" spellcheck="false">
+      <select id="regle-type" aria-label="Type"></select>
+      <button class="action" type="submit">Ajouter</button>
+    </form>
+    <p class="aide" id="regle-aide"></p>
+    <div class="defile"><table>
+      <thead><tr><th>Règle</th><th>Texte</th><th>Type</th><th></th></tr></thead>
+      <tbody id="regle-lignes"></tbody>
+    </table></div>
+  </section>
+
+  <section id="journal" hidden>
+    <h2>Journal</h2>
+    <p class="aide">Les 200 derniers traitements. Le journal ne contient que des décomptes, jamais de vraie valeur. Le nom du fichier y est chiffré.</p>
+    <div class="defile"><table>
+      <thead><tr><th>Date</th><th>Action</th><th>Document</th><th>Détail</th><th>Origine des passages</th></tr></thead>
+      <tbody id="journal-lignes"></tbody>
+    </table></div>
+  </section>
 </main>
 
 <div id="ajout" hidden>
@@ -159,6 +212,7 @@ const famille = t => FAMILLES[t] || (NUMEROS.includes(t) ? "numero" : "autre");
 let texte = "";          // texte analysé
 let passages = [];       // {debut, fin, type, actif, suggestion}
 let selection = null;    // {debut, fin} en attente d'ajout
+let fichier = "";        // nom du fichier chargé, pour le journal
 
 function copier(contenu) {
   const z = document.createElement("textarea");
@@ -203,10 +257,22 @@ function entrer() {
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
-  $("filtrer").hidden = b.dataset.onglet !== "filtrer";
-  $("restaurer").hidden = b.dataset.onglet !== "restaurer";
+  ["filtrer", "restaurer", "regles", "journal"].forEach(o => { $(o).hidden = b.dataset.onglet !== o; });
   $("ajout").hidden = true;
+  if (b.dataset.onglet === "regles") chargerRegles();
+  if (b.dataset.onglet === "journal") chargerJournal();
 }));
+function cellule(tr, contenu, classe) {
+  const td = document.createElement("td");
+  if (classe) td.className = classe;
+  td.append(contenu); tr.append(td);
+  return td;
+}
+function ligneVide(corps, colonnes, message) {
+  const tr = document.createElement("tr");
+  cellule(tr, message, "vide").colSpan = colonnes;
+  corps.append(tr);
+}
 
 // ---------- analyse et aperçu ----------
 $("btn-analyser").addEventListener("click", async () => {
@@ -229,8 +295,8 @@ $("btn-analyser").addEventListener("click", async () => {
   $("btn-analyser").disabled = false;
 });
 $("btn-vider").addEventListener("click", () => {
-  $("source").value = ""; texte = ""; passages = [];
-  $("bloc-apercu").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
+  $("source").value = ""; texte = ""; passages = []; fichier = "";
+  $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
   $("source").focus();
 });
 
@@ -310,7 +376,7 @@ $("btn-filtrer").addEventListener("click", async () => {
   $("filtre-erreur").textContent = "";
   const actifs = passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
   const retirees = [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(p => texte.slice(p.debut, p.fin)))];
-  const r = await api().filtrer(texte, actifs, retirees);
+  const r = await api().filtrer(texte, actifs, retirees, fichier);
   if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
   $("filtre").textContent = r.texte; $("bloc-filtre").hidden = false;
   $("info-filtre").textContent = copier(r.texte) ? "Texte filtré copié dans le presse-papiers." : "Copie impossible : sélectionnez le texte filtré ci-dessous.";
@@ -325,11 +391,119 @@ source.addEventListener("drop", async ev => {
   ev.preventDefault(); source.classList.remove("survol");
   const f = ev.dataTransfer.files[0];
   if (!f) return;
-  if (!/\.(txt|log|csv|md|json)$/i.test(f.name)) {
-    $("info-analyse").textContent = "Seuls les fichiers texte sont acceptés pour l'instant (txt, log, csv, md, json)."; return;
-  }
-  source.value = await f.text(); $("info-analyse").textContent = "";
+  // Le fichier est lu en mémoire puis confié au moteur, qui sait ouvrir Word et PDF.
+  const octets = new Uint8Array(await f.arrayBuffer());
+  let binaire = "";
+  for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+  charger(await api().lire_fichier(f.name, btoa(binaire)));
 });
+source.addEventListener("input", () => { fichier = ""; });
+function charger(r) {
+  if (r.annule) return;
+  if (!r.ok) { $("info-analyse").textContent = r.erreur; return; }
+  source.value = r.texte; fichier = r.nom;
+  $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true;
+  $("info-analyse").textContent = `${r.nom} chargé. Cliquez sur « Analyser ».`;
+}
+$("btn-ouvrir").addEventListener("click", async () => charger(await api().ouvrir_fichier()));
+
+// Dossier entier, sans aperçu.
+$("btn-dossier").addEventListener("click", async () => {
+  const boutons = ["btn-dossier", "btn-analyser", "btn-ouvrir"];
+  boutons.forEach(b => { $(b).disabled = true; });
+  $("info-analyse").textContent = "Choisissez un dossier. Le traitement peut prendre quelques secondes par document…";
+  try {
+    const r = await api().filtrer_dossier();
+    if (r.annule) { $("info-analyse").textContent = ""; }
+    else {
+      const corps = $("dossier-lignes");
+      corps.textContent = "";
+      r.fichiers.forEach(f => {
+        const tr = document.createElement("tr");
+        cellule(tr, f.fichier);
+        cellule(tr, f.ok ? String(f.masques) : "", "nombre");
+        cellule(tr, f.ok && f.a_verifier ? String(f.a_verifier) : "", "nombre");
+        cellule(tr, f.ok ? "filtré" : f.erreur, f.ok ? "" : "erreur");
+        corps.append(tr);
+      });
+      if (!r.fichiers.length) ligneVide(corps, 4, "Aucun document lisible dans ce dossier.");
+      const faits = r.fichiers.filter(f => f.ok).length, rates = r.fichiers.length - faits;
+      $("dossier-aide").textContent = `${faits} document${faits > 1 ? "s" : ""} filtré${faits > 1 ? "s" : ""}`
+        + (rates ? `, ${rates} non lu${rates > 1 ? "s" : ""}` : "")
+        + `. Les textes filtrés sont dans ${r.sortie}. Ils n'ont pas été vérifiés à l'écran : relisez-les avant envoi, surtout ceux qui ont des fonctions « à vérifier ».`
+        + (r.modele ? "" : " Modèle d'entités absent : les noms n'ont pas été détectés.");
+      $("bloc-dossier").hidden = false; $("bloc-apercu").hidden = true; $("info-analyse").textContent = "";
+    }
+  } catch (e) {
+    $("info-analyse").textContent = "Erreur : " + e;
+  }
+  boutons.forEach(b => { $(b).disabled = false; });
+});
+
+// ---------- règles du projet ----------
+const GENRES = {terme: "Toujours masquer", motif: "Motif", jamais: "Ne jamais masquer"};
+const AIDES = {
+  terme: "Le terme est masqué partout où il apparaît en entier, sans tenir compte des majuscules.",
+  motif: "Expression régulière. Exemple : TCK-\\d{6} masque les références du type TCK-204815.",
+  jamais: "Le terme n'est plus proposé, même si un détecteur le trouve. Les majuscules comptent.",
+};
+$("regle-type").innerHTML = $("ajout-type").innerHTML;
+function majGenre() {
+  const g = $("regle-genre").value;
+  $("regle-type").hidden = g === "jamais";
+  $("regle-aide").textContent = AIDES[g];
+}
+$("regle-genre").addEventListener("change", majGenre);
+majGenre();
+async function chargerRegles() {
+  const r = await api().regles();
+  const corps = $("regle-lignes");
+  corps.textContent = "";
+  const ligne = (genre, texte, type, retirer) => {
+    const tr = document.createElement("tr");
+    cellule(tr, GENRES[genre]);
+    const code = document.createElement("code"); code.textContent = texte;
+    cellule(tr, code); cellule(tr, type);
+    const b = document.createElement("button");
+    b.className = "second"; b.textContent = "Retirer"; b.setAttribute("aria-label", "Retirer la règle " + texte);
+    b.addEventListener("click", async () => { await retirer(); chargerRegles(); });
+    cellule(tr, b, "nombre");
+    corps.append(tr);
+  };
+  r.regles.forEach(x => ligne(x.genre, x.texte, x.type, () => api().supprimer_regle(x.id)));
+  r.jamais.forEach(t => ligne("jamais", t, "", () => api().ne_plus_ignorer(t)));
+  if (!r.regles.length && !r.jamais.length) ligneVide(corps, 4, "Aucune règle pour l'instant. Les passages démasqués dans l'aperçu apparaîtront ici.");
+}
+$("regle-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  $("regle-erreur").textContent = "";
+  const r = await api().ajouter_regle($("regle-genre").value, $("regle-texte").value, $("regle-type").value);
+  if (!r.ok) { $("regle-erreur").textContent = r.erreur; return; }
+  $("regle-texte").value = "";
+  chargerRegles();
+});
+
+// ---------- journal ----------
+const SOURCES = {regles: "règles", projet: "règles du projet", table: "table", manuel: "ajout à la main"};
+const decompte = (o, noms) => Object.entries(o || {}).map(([k, n]) => `${(noms && noms[k]) || k} ${n}`).join(", ");
+async function chargerJournal() {
+  const lignes = await api().journal();
+  const corps = $("journal-lignes");
+  corps.textContent = "";
+  lignes.forEach(l => {
+    const tr = document.createElement("tr");
+    cellule(tr, new Date(l.date).toLocaleString("fr-FR"));
+    const filtrage = l.action === "filtrage";
+    cellule(tr, filtrage ? (l.mode === "lot" ? "Filtrage (dossier, sans aperçu)" : "Filtrage (aperçu)") : "Restauration");
+    cellule(tr, l.fichier || "texte collé");
+    cellule(tr, filtrage
+      ? (decompte(l.par_type) || "rien à masquer")
+      : `${l.inconnus} jeton${l.inconnus > 1 ? "s" : ""} inconnu${l.inconnus > 1 ? "s" : ""}, ${l.approximatifs} approché${l.approximatifs > 1 ? "s" : ""}`);
+    cellule(tr, filtrage ? decompte(l.par_source, SOURCES) + (l.score_min == null ? "" : ` · score mini ${l.score_min}`) : "");
+    corps.append(tr);
+  });
+  if (!lignes.length) ligneVide(corps, 5, "Aucun traitement pour l'instant.");
+}
 
 // ---------- restauration ----------
 $("btn-restaurer").addEventListener("click", async () => {

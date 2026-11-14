@@ -83,8 +83,9 @@ Tous les détecteurs respectent le même contrat (`Detecteur` dans `src/celodata
 
 ### Journal
 
-- Contient : date, fichier, mode, nombre d'éléments masqués par type, règles appliquées, scores, réidentifications, version de l'outil.
-- Ne contient jamais de vraie valeur.
+- Contient : date, fichier, mode (aperçu ou dossier), nombre d'éléments masqués par type et par origine, scores, réidentifications, version de l'outil.
+- Ne contient jamais de vraie valeur. Le nom du fichier est chiffré, parce qu'il peut contenir un nom.
+- Il est rangé dans le fichier de la table du projet.
 
 ### Interface
 
@@ -153,6 +154,25 @@ L'appli (`src/celodata/appli`) ouvre une fenêtre Windows sans serveur ni port o
 - Le texte collé n'est jamais écrit sur disque.
 
 Reste à faire : l'essai sur un vrai échange avec une IA, un installeur, le choix entre plusieurs projets, le changement de mot de passe.
+
+### Résultat de l'étape 4 (14 novembre 2026)
+
+Le jeu de dix faux documents, réparti en fichiers texte, Word et PDF, passe en une fois : 10 documents filtrés en 12 secondes, aucune valeur annotée restée en clair, un PDF sans texte signalé comme non lu.
+
+- **Fichiers** (`documents.py`) : texte, Word `.docx` (`python-docx`) et PDF (`pypdf`), lus en mémoire. Seul le texte est repris.
+- **Dossier** (`lot.py`) : chaque document donne un fichier texte filtré dans `celodata_filtré`. Une même valeur garde le même jeton dans tout le dossier.
+- **Règles du projet** : termes toujours masqués, motifs, termes jamais masqués. Elles sont chiffrées dans la table et passent avant le détecteur.
+- **Journal** : une ligne par filtrage et par restauration, dans le fichier de la table. Les décomptes sont en clair, le nom du fichier est chiffré.
+
+Limites connues :
+
+- le traitement d'un dossier se fait sans aperçu : les fonctions « à vérifier » restent en clair et sont seulement comptées ;
+- le fichier filtré garde le nom du document d'origine, qui peut contenir un nom de personne ;
+- la mise en forme Word et PDF est perdue, les PDF scannés et les anciens `.doc` ne sont pas lus ;
+- l'ordre du texte d'un PDF en colonnes ou en tableaux dépend de `pypdf` et n'a été essayé que sur des PDF simples ;
+- un motif mal écrit peut ralentir fortement l'analyse ;
+- le journal ne s'exporte pas encore, et ses dates et décomptes sont lisibles dans le fichier de la table ;
+- les boîtes de Windows « Ouvrir un fichier » et « Filtrer un dossier » n'ont pas été essayées dans la vraie fenêtre.
 
 ## 7. Étapes
 

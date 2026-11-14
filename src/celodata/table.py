@@ -7,11 +7,13 @@ Un fichier SQLite par projet, qui ne quitte pas la machine.
 - Une empreinte à clé (HMAC) de chaque valeur permet de retrouver son jeton sans tout déchiffrer.
 - Mot de passe perdu ou table détruite : la réidentification devient impossible. C'est voulu.
 
-Restent lisibles dans le fichier : le type de chaque valeur, leur nombre et leur date d'ajout.
+Restent lisibles dans le fichier : le type de chaque valeur, leur nombre et leur date d'ajout,
+ainsi que le journal (dates et décomptes, sans valeur ni nom de fichier).
 """
 
 import hashlib
 import hmac
+import json
 import os
 import sqlite3
 from datetime import UTC, datetime, timedelta
@@ -34,6 +36,14 @@ CREATE TABLE IF NOT EXISTS valeurs (
     PRIMARY KEY (type, numero)
 );
 CREATE TABLE IF NOT EXISTS ignorees (empreinte BLOB PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS regles (id INTEGER PRIMARY KEY, nonce BLOB NOT NULL, chiffre BLOB NOT NULL);
+CREATE TABLE IF NOT EXISTS journal (
+    id INTEGER PRIMARY KEY,
+    date TEXT NOT NULL,
+    contenu TEXT NOT NULL,
+    nonce BLOB,
+    chiffre BLOB
+);
 """
 
 
@@ -60,6 +70,10 @@ class Table:
         # L'appli appelle la table depuis plusieurs fils, un à la fois (verrou côté appli).
         db = sqlite3.connect(str(chemin), check_same_thread=False)
         db.executescript(_SCHEMA)
+        # Tables créées avant l'étape 4 : les valeurs ignorées n'avaient qu'une empreinte.
+        if "chiffre" not in {c[1] for c in db.execute("PRAGMA table_info(ignorees)")}:
+            db.execute("ALTER TABLE ignorees ADD COLUMN nonce BLOB")
+            db.execute("ALTER TABLE ignorees ADD COLUMN chiffre BLOB")
         meta = dict(db.execute("SELECT cle, valeur FROM meta"))
         if not meta:
             meta = {
@@ -91,6 +105,13 @@ class Table:
 
     def _empreinte(self, valeur: str) -> bytes:
         return hmac.new(self._cle_empreinte, valeur.encode("utf-8"), hashlib.sha256).digest()
+
+    def _chiffrer(self, texte: str, lie_a: bytes) -> tuple[bytes, bytes]:
+        nonce = os.urandom(12)
+        return nonce, self._aes.encrypt(nonce, texte.encode("utf-8"), lie_a)
+
+    def _dechiffrer(self, nonce: bytes, chiffre: bytes, lie_a: bytes) -> str:
+        return self._aes.decrypt(nonce, chiffre, lie_a).decode("utf-8")
 
     def jeton(self, type_: str, valeur: str) -> str:
         """Rend le jeton de la valeur, en le créant au besoin.
@@ -134,9 +155,16 @@ class Table:
         ]
 
     def ignorer(self, valeur: str) -> None:
-        """Retient qu'une valeur ne doit plus être masquée. Seule son empreinte est stockée."""
+        """Retient qu'une valeur ne doit plus être masquée. Elle est gardée chiffrée, pour être listée."""
+        nonce, chiffre = self._chiffrer(valeur, b"ignoree")
         with self._db:
-            self._db.execute("INSERT OR IGNORE INTO ignorees VALUES (?)", (self._empreinte(valeur),))
+            self._db.execute(
+                "INSERT OR REPLACE INTO ignorees VALUES (?, ?, ?)", (self._empreinte(valeur), nonce, chiffre)
+            )
+
+    def ignorees(self) -> list[str]:
+        lignes = self._db.execute("SELECT nonce, chiffre FROM ignorees WHERE chiffre IS NOT NULL")
+        return sorted(self._dechiffrer(n, c, b"ignoree") for n, c in lignes)
 
     def ne_plus_ignorer(self, valeur: str) -> None:
         with self._db:
@@ -149,6 +177,46 @@ class Table:
             ).fetchone()
             is not None
         )
+
+    # Règles du projet : termes toujours masqués et motifs. Chiffrées en entier.
+
+    def ajouter_regle(self, genre: str, texte: str, type_: str) -> int:
+        """`genre` : "terme" (texte exact, casse ignorée) ou "motif" (expression régulière)."""
+        nonce, chiffre = self._chiffrer(
+            json.dumps({"genre": genre, "texte": texte, "type": type_}), b"regle"
+        )
+        with self._db:
+            return self._db.execute(
+                "INSERT INTO regles (nonce, chiffre) VALUES (?, ?)", (nonce, chiffre)
+            ).lastrowid
+
+    def regles(self) -> list[dict]:
+        lignes = self._db.execute("SELECT id, nonce, chiffre FROM regles ORDER BY id").fetchall()
+        return [{"id": i, **json.loads(self._dechiffrer(n, c, b"regle"))} for i, n, c in lignes]
+
+    def supprimer_regle(self, identifiant: int) -> None:
+        with self._db:
+            self._db.execute("DELETE FROM regles WHERE id = ?", (identifiant,))
+
+    # Journal : décomptes en clair, nom de fichier chiffré. Jamais de vraie valeur.
+
+    def journaliser(self, contenu: dict, fichier: str | None = None) -> None:
+        nonce, chiffre = self._chiffrer(fichier, b"journal") if fichier else (None, None)
+        with self._db:
+            self._db.execute(
+                "INSERT INTO journal (date, contenu, nonce, chiffre) VALUES (?, ?, ?, ?)",
+                (datetime.now(UTC).isoformat(timespec="seconds"), json.dumps(contenu), nonce, chiffre),
+            )
+
+    def journal(self, limite: int = 200) -> list[dict]:
+        """Les dernières lignes du journal, la plus récente d'abord."""
+        lignes = self._db.execute(
+            "SELECT date, contenu, nonce, chiffre FROM journal ORDER BY id DESC LIMIT ?", (limite,)
+        ).fetchall()
+        return [
+            {"date": d, "fichier": self._dechiffrer(n, c, b"journal") if c else "", **json.loads(contenu)}
+            for d, contenu, n, c in lignes
+        ]
 
     def types(self) -> list[str]:
         return [t for (t,) in self._db.execute("SELECT DISTINCT type FROM valeurs")]
