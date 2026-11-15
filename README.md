@@ -26,7 +26,6 @@ Le projet est libre (Apache 2.0) et en cours de construction. Il se lance depuis
 - [Sécurité](#sécurité)
 - [Le code](#le-code)
 - [Mesure et tests](#mesure-et-tests)
-- [État du projet](#état-du-projet)
 - [Limites connues](#limites-connues)
 
 ## Pourquoi
@@ -169,10 +168,10 @@ uv run --extra modeles --extra passerelle celodata-passerelle servir
 |---|---|
 | Table de correspondance | Fichier SQLite. Chaque valeur est chiffrée en AES-GCM. La clé est dérivée du mot de passe avec Argon2id. |
 | Recherche d'une valeur déjà connue | Par empreinte HMAC : la table ne contient aucune valeur en clair. |
-| Mot de passe perdu | Aucune récupération possible. C'est voulu. |
+| Mot de passe perdu | Aucune récupération possible. |
 | Secrets (mots de passe, jetons, clés d'API) | Supprimés, jamais rangés dans la table, jamais restaurés. |
-| Journal | Décomptes seulement. Le nom du fichier traité y est chiffré. |
-| Réseau | L'appli n'ouvre aucune connexion sortante. La passerelle ne parle qu'à l'IA configurée. |
+| Journal | Décomptes seulement, le nom du fichier traité y est chiffré. |
+| Réseau | L'appli n'ouvre aucune connexion sortante. La passerelle ne parle qu'à l'API configurée. |
 | Fichiers Word et Excel | Auteur, société et autres propriétés vidés dans le fichier filtré. |
 
 ## Le code
@@ -239,30 +238,14 @@ Lancer les tests :
 uv run pytest
 ```
 
-Les tests et les mesures n'utilisent que de faux documents. Aucune donnée réelle de client ne doit entrer dans ce dépôt.
+Les tests et les mesures n'utilisent que de faux documents. Aucune donnée réelle n'est dans ce dépôt.
 
-## État du projet
-
-| Étape | Contenu | État |
-|---|---|---|
-| 0 | Structure du dépôt, jeu de faux documents, mesure des modèles | fait |
-| 1 | Détection : règles françaises + modèle d'entités + fusion | fait |
-| 2 | Jetons, table de correspondance chiffrée, réidentification | fait |
-| 3 | Appli Windows | fait, à essayer sur un vrai échange avec une IA |
-| 4 | Journal, fichiers Word et PDF, règles personnalisées, dossier entier | fait, boîtes « Ouvrir » à essayer dans la vraie fenêtre |
-| 5 | Passerelle serveur au format OpenAI | fait, essayé face à une fausse IA seulement |
-| 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | fait, à essayer sur de vrais fichiers ouverts dans Word et Excel |
-| 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | fait, mesuré sur de faux scans seulement |
-| 8 | Caviardage, PDF caviardés en image, tampons et signatures recouverts, dossier surveillé, nouvel écran | fait, essayé sur de faux documents et hors de la vraie fenêtre |
-
-Les résultats chiffrés de chaque étape sont dans [docs/conception.md](docs/conception.md).
 
 ## Limites connues
 
 - Aucun détecteur ne trouve tout. L'aperçu de l'appli sert à rattraper ce qui est raté. La passerelle n'a pas d'aperçu.
 - Une personne peut rester reconnaissable par recoupement (une fonction unique, un lieu, une date), même sans son nom. L'appli signale les fonctions uniques sans les masquer d'office.
 - Le jeu de test est petit : dix documents. Les chiffres mesurés ne valent que pour lui.
-- Les scans n'ont été mesurés que sur de faux scans, fabriqués par programme.
 - Les images d'un Word ou d'un Excel ne sont pas filtrées. L'appli le signale.
 - Le repérage des tampons et signatures est approché. Il peut prendre un logo, et il peut manquer un tampon très pâle ou une signature qui touche du texte. La vue « Pages » sert à corriger. Dans un dossier traité sans aperçu, il n'y a pas de correction.
 - Les tampons et signatures ne sont repérés que dans les PDF, pas dans les images d'un Word ou d'un Excel.
