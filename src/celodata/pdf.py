@@ -20,6 +20,11 @@ Cadre = tuple[float, float, float, float]  # gauche, haut, droite, bas, en fract
 
 # Résolution des pages du PDF caviardé.
 POINTS_PAR_POUCE = 200
+# Résolution de travail pour repérer ce qui n'est pas du texte : 2 points par millimètre environ.
+_POINTS_REPERAGE = 50
+# Plus petite zone gardée, en points de l'image de travail : environ 8 mm sur 5 mm.
+_LARGEUR_MIN, _HAUTEUR_MIN = 16, 10
+ZoneGraphique = tuple[int, Cadre]  # numéro de page, place sur la page
 _REPERE = 10000  # taille de la page fictive qui sert à convertir les coordonnées
 
 
@@ -39,6 +44,7 @@ class PdfLu:
     zones: list[Zone] = field(default_factory=list)
     # Pages lues par reconnaissance de caractères : leur texte peut contenir des erreurs de lecture.
     pages_scannees: int = 0
+    pages: int = 0
 
 
 def _ouvrir(contenu: bytes):
@@ -114,6 +120,7 @@ def lire(contenu: bytes, scans: bool = True) -> PdfLu:
     morceaux: list[str] = []
     longueur = 0
     try:
+        lu.pages = len(document)
         for numero in range(len(document)):
             page = document[numero]
             texte, zones = _page_texte(page, numero, longueur)
@@ -159,10 +166,110 @@ def _rectangles(zones: list[Zone]) -> list[Cadre]:
     return [tuple(r) for r in sortie]
 
 
-def caviarder(contenu: bytes, lu: PdfLu, detections: list[Detection]) -> tuple[bytes, int]:
+def _composantes(encre, largeur: int, hauteur: int) -> list[tuple[int, int, int, int, int]]:
+    """Les taches d'encre d'une image noir et blanc : (gauche, haut, droite, bas, nombre de points)."""
+    points = bytearray(encre.tobytes())
+    sortie = []
+    depart = points.find(255)
+    while depart != -1:
+        points[depart] = 0
+        pile = [depart]
+        x0 = x1 = depart % largeur
+        y0 = y1 = depart // largeur
+        nombre = 0
+        while pile:
+            p = pile.pop()
+            nombre += 1
+            x, y = p % largeur, p // largeur
+            x0, x1, y0, y1 = min(x0, x), max(x1, x), min(y0, y), max(y1, y)
+            for vy in (y - 1, y, y + 1):
+                if 0 <= vy < hauteur:
+                    for vx in (x - 1, x, x + 1):
+                        if 0 <= vx < largeur and points[vy * largeur + vx]:
+                            points[vy * largeur + vx] = 0
+                            pile.append(vy * largeur + vx)
+        sortie.append((x0, y0, x1, y1, nombre))
+        depart = points.find(255, depart)
+    return sortie
+
+
+def _reunir(cadres: list[Cadre]) -> list[Cadre]:
+    """Réunit les cadres qui se touchent : les deux cercles d'un tampon ne font qu'une zone."""
+    restants = list(cadres)
+    change = True
+    while change:
+        change = False
+        sortie: list[Cadre] = []
+        for g, h, d, b in restants:
+            for i, (g2, h2, d2, b2) in enumerate(sortie):
+                if g < d2 and g2 < d and h < b2 and h2 < b:
+                    sortie[i] = (min(g, g2), min(h, h2), max(d, d2), max(b, b2))
+                    change = True
+                    break
+            else:
+                sortie.append((g, h, d, b))
+        restants = sortie
+    return restants
+
+
+def zones_graphiques(contenu: bytes, lu: PdfLu) -> list[ZoneGraphique]:
+    """Ce qui est de l'encre sans être du texte lu : tampon, signature, mot manuscrit, logo, photo.
+
+    Chaque page est rendue en petit, le texte lu est effacé, et les taches qui restent sont gardées
+    si elles sont assez grandes. Les traits fins (soulignés, cadres de tableau) sont écartés.
+    C'est un repérage approché : il peut prendre un logo, ou un passage imprimé que la lecture a raté.
+    """
+    from PIL import ImageDraw, ImageFilter
+
+    par_page: dict[int, list[Cadre]] = {}
+    for zone in lu.zones:
+        par_page.setdefault(zone.page, []).append(zone.cadre)
+    document = _ouvrir(contenu)
+    sortie: list[ZoneGraphique] = []
+    try:
+        for numero in range(len(document)):
+            image = document[numero].render(scale=_POINTS_REPERAGE / 72).to_pil().convert("L")
+            largeur, hauteur = image.size
+            encre = image.point(lambda v: 255 if v < 200 else 0)
+            dessin = ImageDraw.Draw(encre)
+            for g, h, d, b in par_page.get(numero, []):
+                dessin.rectangle((g * largeur - 2, h * hauteur - 2, d * largeur + 2, b * hauteur + 2), fill=0)
+            # Les traits d'une signature ou d'un tampon sont réunis en une seule tache.
+            encre = encre.filter(ImageFilter.MaxFilter(5))
+            trouvees = []
+            for x0, y0, x1, y1, nombre in _composantes(encre, largeur, hauteur):
+                large, haut = x1 - x0 + 1, y1 - y0 + 1
+                if large < _LARGEUR_MIN or haut < _HAUTEUR_MIN:
+                    continue
+                # Un cadre de tableau est grand et presque vide ; une page entière n'est pas une zone.
+                if nombre < 0.15 * large * haut or large * haut > 0.6 * largeur * hauteur:
+                    continue
+                trouvees.append((x0 / largeur, y0 / hauteur, (x1 + 1) / largeur, (y1 + 1) / hauteur))
+            sortie += [(numero, cadre) for cadre in sorted(_reunir(trouvees), key=lambda c: (c[1], c[0]))]
+    finally:
+        document.close()
+    return sortie
+
+
+def image_page(contenu: bytes, numero: int, points_par_pouce: int = 110) -> bytes:
+    """La page `numero` en image JPEG, pour l'afficher à l'écran."""
+    document = _ouvrir(contenu)
+    try:
+        image = document[numero].render(scale=points_par_pouce / 72).to_pil().convert("RGB")
+    finally:
+        document.close()
+    sortie = io.BytesIO()
+    image.save(sortie, "JPEG", quality=80)
+    return sortie.getvalue()
+
+
+def caviarder(
+    contenu: bytes, lu: PdfLu, detections: list[Detection], zones: list[ZoneGraphique] | None = None
+) -> tuple[bytes, int]:
     """Rend le PDF caviardé et le nombre de passages qui n'ont pas pu être placés sur une page.
 
     Un passage non placé n'est pas recouvert : l'appelant doit le signaler.
+    `zones` : les zones sans texte à recouvrir aussi (tampons, signatures, zones tracées à la main).
     """
     from PIL import ImageDraw
     from pypdf import PdfReader, PdfWriter
@@ -170,11 +277,11 @@ def caviarder(contenu: bytes, lu: PdfLu, detections: list[Detection]) -> tuple[b
     par_page: dict[int, list[Cadre]] = {}
     perdus = 0
     for d in detections:
-        zones = [z for z in lu.zones if z.debut < d.fin and z.fin > d.debut]
-        if not zones:
+        touchees = [z for z in lu.zones if z.debut < d.fin and z.fin > d.debut]
+        if not touchees:
             perdus += 1
-        for page in {z.page for z in zones}:
-            par_page.setdefault(page, []).extend(_rectangles([z for z in zones if z.page == page]))
+        for page in {z.page for z in touchees}:
+            par_page.setdefault(page, []).extend(_rectangles([z for z in touchees if z.page == page]))
 
     document = _ouvrir(contenu)
     sortie = PdfWriter()
@@ -183,6 +290,9 @@ def caviarder(contenu: bytes, lu: PdfLu, detections: list[Detection]) -> tuple[b
             image = document[numero].render(scale=POINTS_PAR_POUCE / 72).to_pil().convert("RGB")
             dessin = ImageDraw.Draw(image)
             largeur, hauteur = image.size
+            for page_zone, (g, h, d, b) in zones or []:
+                if page_zone == numero:
+                    dessin.rectangle((g * largeur - 3, h * hauteur - 3, d * largeur + 3, b * hauteur + 3), fill="black")
             for g, h, d, b in par_page.get(numero, []):
                 # Une marge autour du texte : les jambages et les accents dépassent du cadre des lettres.
                 marge = max(2.0, 0.18 * (b - h) * hauteur)

@@ -10,7 +10,7 @@ from pathlib import Path
 from celodata import journal, pdf
 from celodata.detection.base import Detecteur
 from celodata.detection.listes import fonctions_a_verifier
-from celodata.documents import EXTENSIONS, EXTENSIONS_TEXTE, DocumentIllisible, lire
+from celodata.documents import EXTENSIONS, DocumentIllisible, lire
 from celodata.fichiers import FORMATS, appliquer_caviardage, filtrer_fichier, ouvrir, texte_en_word
 from celodata.moteur import analyser, caviarder, pseudonymiser
 from celodata.table import Table
@@ -41,7 +41,8 @@ def traiter_dossier(
 ) -> list[ResultatFichier]:
     """`traitement` vaut "pseudonymisation" (jetons, réversible) ou "caviardage" (définitif).
 
-    En caviardage, un PDF reste un PDF, fait d'images.
+    En caviardage, un PDF reste un PDF, fait d'images, où les tampons et signatures sont aussi recouverts.
+    Un PDF scanné est traité comme les autres, et signalé : sa lecture peut contenir des erreurs.
     """
     dossier, sortie = Path(dossier), Path(sortie)
     caviardage = traitement == CAVIARDAGE
@@ -64,32 +65,37 @@ def traiter_dossier(
                 texte, remarque = document.texte, ", ".join(document.avertissements)
                 detections = document.decouper(analyser(texte, detecteur, table))
                 produit = appliquer_caviardage(document, detections)
-            elif extension == ".pdf" and caviardage:
-                # Un PDF scanné est refusé ici : sa lecture doit être vérifiée dans l'aperçu.
-                lu = pdf.lire(contenu, scans=False)
+            elif extension == ".pdf":
+                lu = pdf.lire(contenu)
                 texte = lu.texte
                 detections = analyser(texte, detecteur, table)
-                produit, perdus = pdf.caviarder(contenu, lu, detections)
-                if perdus:
-                    raise DocumentIllisible(f"{perdus} passage(s) n'ont pas pu être placés sur la page.")
+                notes = []
+                if lu.pages_scannees:
+                    # Une lecture de scan fait des erreurs : ce fichier est à relire en priorité.
+                    notes.append("scan lu par reconnaissance de caractères, à relire")
+                if caviardage:
+                    zones = pdf.zones_graphiques(contenu, lu)
+                    produit, perdus = pdf.caviarder(contenu, lu, detections, zones)
+                    if perdus:
+                        raise DocumentIllisible(f"{perdus} passage(s) n'ont pas pu être placés sur la page.")
+                    if zones:
+                        notes.append(f"{len(zones)} zone(s) sans texte recouverte(s) : tampon, signature, image")
+                else:
+                    # « contrat.pdf » donne « contrat.pdf.docx » : pas de collision avec « contrat.docx ».
+                    produit = texte_en_word(pseudonymiser(texte, detections, table).texte)
+                    cible = cible.with_name(cible.name + ".docx")
+                remarque = ", ".join(notes)
             elif extension in FORMATS:
                 texte = ouvrir(f.name, contenu).texte
                 filtre = filtrer_fichier(f.name, contenu, detecteur, table)
                 detections, produit, remarque = filtre.detections, filtre.contenu, ", ".join(filtre.avertissements)
             else:
-                # Un PDF scanné est refusé ici : sa lecture doit être vérifiée dans l'aperçu.
-                texte = lire(f.name, contenu, scans=False)
+                texte = lire(f.name, contenu)
                 detections = analyser(texte, detecteur, table)
                 if caviardage:
-                    filtre_texte = caviarder(texte, detections).texte
+                    produit = caviarder(texte, detections).texte.encode("utf-8")
                 else:
-                    filtre_texte = pseudonymiser(texte, detections, table).texte
-                if extension in EXTENSIONS_TEXTE:
-                    produit = filtre_texte.encode("utf-8")
-                else:
-                    # « contrat.pdf » donne « contrat.pdf.docx » : pas de collision avec « contrat.docx ».
-                    produit = texte_en_word(filtre_texte)
-                    cible = cible.with_name(cible.name + ".docx")
+                    produit = pseudonymiser(texte, detections, table).texte.encode("utf-8")
         except (DocumentIllisible, OSError) as e:
             resultats.append(ResultatFichier(str(relatif), False, erreur=str(e)))
             continue

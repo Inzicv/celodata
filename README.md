@@ -76,6 +76,7 @@ Le choix se fait après la vérification, au moment d'exporter.
 | Excel (`.xlsx`) | Excel, un jeton par cellule, propriétés vidées | Excel, même chose |
 | PDF de texte | Word neuf contenant le texte, sans la mise en page | PDF fait d'images, rectangles noirs sur les données |
 | PDF scanné | Word neuf, à relire en entier | PDF fait d'images, rectangles noirs sur les données |
+| Tampon, signature, mot manuscrit d'un PDF | non repris dans le Word | recouvert d'un rectangle noir |
 | Anciens formats (`.doc`, `.xls`) | non lus, signalés | non lus, signalés |
 
 Un PDF scanné est lu par la reconnaissance de caractères de Windows, sur le poste. Un PDF caviardé ne contient plus aucun texte : chaque page est une image, mise en page gardée.
@@ -128,8 +129,9 @@ L'appli a cinq onglets.
 
 À savoir :
 
-- **Dossier entier.** Les fichiers produits sont rangés dans un sous-dossier `celodata_filtré` ou `celodata_caviardé`. Les originaux ne sont pas modifiés. Il n'y a pas d'aperçu : ces fichiers sont à relire avant de les transmettre. Les PDF scannés sont refusés dans ce mode.
+- **Dossier entier.** Les fichiers produits sont rangés dans un sous-dossier `celodata_filtré` ou `celodata_caviardé`. Les originaux ne sont pas modifiés. Il n'y a pas d'aperçu : ces fichiers sont à relire avant de les transmettre. Un PDF scanné est traité comme les autres et signalé dans le tableau : c'est lui qu'il faut relire en priorité.
 - **Dossier surveillé.** Rien n'est enregistré sans validation : l'appli prépare l'analyse, vous vérifiez puis vous exportez. Le dossier est retenu d'une ouverture à l'autre. Les documents en attente sont gardés en mémoire, pas sur disque.
+- **Tampons et signatures.** Sur un PDF, l'appli repère les endroits où il y a de l'encre sans texte lu : tampon, signature, mot manuscrit, logo, passage que la lecture a raté. En caviardage, ces zones sont recouvertes par défaut. À l'étape « Vérifier », la vue « Pages » montre chaque page en image : un clic sur une zone la laisse visible, un rectangle tracé à la souris en ajoute une.
 - **PDF scanné.** Il faut que le français soit installé dans Windows. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est ni masqué ni caviardé. Le document est à relire en entier à l'étape « Vérifier ».
 - **Sans le modèle d'entités**, l'appli fonctionne avec les règles seules et l'indique. Les noms ne sont alors pas détectés.
 
@@ -204,7 +206,7 @@ Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habil
 | `journal.py` | Écrit une ligne de journal par filtrage et par restauration. |
 | `documents.py` | Lit le texte d'un fichier texte, Word ou Excel. Confie les PDF à `pdf.py`. |
 | `fichiers.py` | Filtre, caviarde et restaure un Word ou un Excel en gardant sa mise en forme. Rend un PDF en Word neuf. |
-| `pdf.py` | Lit un PDF avec la place de chaque caractère sur la page. Rend un PDF caviardé, fait d'images. |
+| `pdf.py` | Lit un PDF avec la place de chaque caractère sur la page. Repère les zones sans texte lu (tampons, signatures). Rend un PDF caviardé, fait d'images. |
 | `ocr.py` | Lit une page scannée avec la reconnaissance de caractères de Windows, et donne la place de chaque mot. |
 | `lot.py` | Traite un dossier entier. |
 | `appli/fenetre.py`, `api.py`, `ecran.html` | La fenêtre (pywebview), les actions appelées par l'écran, l'écran lui-même. |
@@ -251,7 +253,7 @@ Les tests et les mesures n'utilisent que de faux documents. Aucune donnée réel
 | 5 | Passerelle serveur au format OpenAI | fait, essayé face à une fausse IA seulement |
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | fait, à essayer sur de vrais fichiers ouverts dans Word et Excel |
 | 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | fait, mesuré sur de faux scans seulement |
-| 8 | Caviardage, PDF caviardés en image, dossier surveillé, nouvel écran | fait, essayé sur de faux documents et hors de la vraie fenêtre |
+| 8 | Caviardage, PDF caviardés en image, tampons et signatures recouverts, dossier surveillé, nouvel écran | fait, essayé sur de faux documents et hors de la vraie fenêtre |
 
 Les résultats chiffrés de chaque étape sont dans [docs/conception.md](docs/conception.md).
 
@@ -262,7 +264,8 @@ Les résultats chiffrés de chaque étape sont dans [docs/conception.md](docs/co
 - Le jeu de test est petit : dix documents. Les chiffres mesurés ne valent que pour lui.
 - Les scans n'ont été mesurés que sur de faux scans, fabriqués par programme.
 - Les images d'un Word ou d'un Excel ne sont pas filtrées. L'appli le signale.
-- Sur un PDF, seul ce qui a été lu comme du texte peut être caviardé. Une signature, un tampon, une photo ou un mot manuscrit ne sont pas recouverts.
+- Le repérage des tampons et signatures est approché. Il peut prendre un logo, et il peut manquer un tampon très pâle ou une signature qui touche du texte. La vue « Pages » sert à corriger. Dans un dossier traité sans aperçu, il n'y a pas de correction.
+- Les tampons et signatures ne sont repérés que dans les PDF, pas dans les images d'un Word ou d'un Excel.
 - Le dossier surveillé n'est suivi que lorsque l'appli est ouverte, et ses sous-dossiers ne sont pas suivis.
 - L'appli ne fonctionne que sous Windows.
 

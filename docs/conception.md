@@ -266,6 +266,10 @@ Pour un PDF, la place de chaque caractère vient de pdfium, et celle de chaque m
 
 Pour que les positions correspondent, tous les PDF sont maintenant lus par pdfium (`src/celodata/pdf.py`), et plus par pypdf.
 
+**Tampons et signatures.** Sur chaque page d'un PDF, rendue à 50 points par pouce, le texte lu est effacé et les taches d'encre qui restent sont gardées si elles font au moins 8 mm sur 5 mm environ. Les traits fins et les cadres presque vides sont écartés. Les zones trouvées sont recouvertes par défaut en caviardage. La vue « Pages » de l'appli permet d'en décocher une ou d'en tracer une à la main. Effet voulu : un passage imprimé que la lecture d'un scan a raté ressort comme une zone, donc il est recouvert au lieu de partir sans contrôle. Limite : le repérage est approché (un logo est pris, un tampon très pâle peut être manqué), et il n'y a pas de correction dans un dossier traité sans aperçu.
+
+**Scans dans un dossier.** Ils étaient refusés par prudence. Ils sont maintenant traités comme les autres et signalés « à relire » dans les résultats (décision du 15 novembre 2026) : aucun fichier d'un dossier n'est relu à l'écran de toute façon, et le but est de gagner du temps.
+
 **Dossier surveillé.** L'appli relit le dossier toutes les deux secondes et analyse chaque nouveau document en tâche de fond. Elle n'écrit rien : le document attend dans l'onglet, prêt à vérifier. Ce choix garde la règle de l'aperçu, surtout pour les scans. Le chemin du dossier est rangé chiffré dans la table.
 
 **Écran.** Trois étapes : déposer, vérifier, exporter. Le texte d'un fichier n'est plus affiché avant l'analyse. La vérification montre le document à gauche et la liste des données à droite, classée par type.
@@ -274,9 +278,10 @@ Vérifié par programme et dans un navigateur, sur les faux documents d'essai :
 
 - un PDF caviardé relu par pypdf ne rend aucun texte ;
 - un PDF caviardé relu par la reconnaissance de caractères ne rend plus les valeurs recouvertes ;
-- 98 tests passent.
+- un faux tampon et une fausse signature sont repérés puis recouverts, un trait de soulignement ne l'est pas ;
+- 100 tests passent.
 
-Non vérifié : la vraie fenêtre Windows, de vrais scans, des PDF tournés ou à plusieurs colonnes, la tenue en mémoire sur de gros PDF.
+Non vérifié : la vraie fenêtre Windows, de vrais scans, de vrais tampons et signatures, des PDF tournés ou à plusieurs colonnes, la tenue en mémoire sur de gros PDF.
 
 ## 7. Étapes
 

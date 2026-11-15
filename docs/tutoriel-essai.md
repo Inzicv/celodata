@@ -91,13 +91,15 @@ Même parcours avec `essais/fichier_clients.xlsx`. À vérifier dans Excel : cha
 
 Pour comparer : sur le même PDF, « Pseudonymiser » produit un Word qui contient le texte avec des jetons.
 
+Tampons et signatures : les faux PDF d'essai n'en ont pas. Pour essayer, ouvrir un PDF qui en contient (un faux, ou un document sans enjeu), puis cliquer sur « Pages » à l'étape « Vérifier ». Les zones noires sont celles qui seront recouvertes. Cliquer sur une zone la laisse visible. Tracer un rectangle à la souris en ajoute une. Le PDF caviardé doit correspondre à ce que montre cette vue.
+
 ### Essai 6 : un dossier entier
 
 1. Sur le premier écran, dans « Traiter un dossier entier », laisser « Pseudonymiser » et cliquer sur « Choisir le dossier… ». Choisir le dossier `essais`.
 2. Attendre le tableau de résultats.
 3. Recommencer avec « Caviarder ».
 
-À vérifier : `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). `essais/celodata_caviardé` contient le Word, l'Excel, le texte et le PDF (resté PDF, en images). Le PDF scanné est refusé dans les deux cas, avec un message qui renvoie à l'appli. La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
+À vérifier : `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). `essais/celodata_caviardé` contient le Word, l'Excel, le texte et le PDF (resté PDF, en images). Le PDF scanné est traité lui aussi, avec la mention « scan lu par reconnaissance de caractères, à relire ». La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
 
 ### Essai 7 : le dossier surveillé
 
@@ -209,6 +211,8 @@ Copier `docs/passerelle.exemple.toml` sous le nom `passerelle.toml`, y mettre l'
 | Une valeur en clair dans le terminal de la fausse IA | Fuite par la passerelle, qui n'a pas d'aperçu. À noter avec le texte concerné. |
 | Un Word ou un Excel filtré qui ne s'ouvre pas | Défaut du fichier produit : ils n'ont été relus que par programme. |
 | Un rectangle noir décalé, ou une donnée qui dépasse du rectangle | Défaut du caviardage. À noter avec le PDF concerné. |
+| Un tampon ou une signature sans zone noire dans la vue « Pages » | Le repérage l'a raté. Tracer la zone à la main et le noter. |
+| Beaucoup de zones noires sur du texte imprimé | La lecture du scan a raté ces lignes : elles sont recouvertes par prudence. |
 | Un document déposé qui n'apparaît pas dans « Dossier surveillé » | La surveillance n'a été essayée que par programme. |
 | Un bouton « Ouvrir » ou « Enregistrer » qui ne fait rien | Les boîtes de Windows n'ont pas été essayées dans la vraie fenêtre. |
 

@@ -144,6 +144,15 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
 #autre input { flex: 1; min-width: 0; } #autre select { width: 108px; }
 #panneau .bas .action { width: 100%; margin-top: 10px; padding: 11px; }
 @media (max-width: 900px) { #verifier { grid-template-columns: minmax(0, 1fr) 280px; } .feuille { padding: 28px 26px; } }
+.bascule { display: inline-flex; border: 1px solid var(--trait); border-radius: 8px; overflow: hidden; flex: none; }
+.bascule button { border: 0; background: var(--carte); padding: 6px 13px; }
+.bascule button[aria-pressed="true"] { background: var(--accent); color: var(--accent-texte); font-weight: 600; }
+#pages .info { display: block; max-width: 800px; margin: 0 auto 12px; }
+.pagevue { position: relative; max-width: 800px; min-height: 120px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--trait); box-shadow: var(--ombre); cursor: crosshair; user-select: none; }
+.pagevue img { display: block; width: 100%; pointer-events: none; }
+.zg { position: absolute; background: rgba(0,0,0,.86); outline: 2px solid #000; cursor: pointer; }
+.zg.non { background: none; outline: 2px dashed #a13d2d; }
+.zg.trace { background: rgba(31,95,139,.3); outline: 2px solid #1f5f8b; pointer-events: none; }
 #ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; box-shadow: var(--ombre); }
 
 /* ---------- exporter ---------- */
@@ -245,11 +254,19 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
         <div class="entete-doc">
           <button class="second" id="btn-retour-depot" aria-label="Revenir au dépôt">←</button>
           <strong id="doc-nom"></strong>
+          <div class="bascule" id="bascule" hidden role="group" aria-label="Affichage du document">
+            <button type="button" data-v="texte" aria-pressed="true">Texte</button>
+            <button type="button" data-v="pages" aria-pressed="false">Pages<span class="pastille" id="nb-zones" hidden></span></button>
+          </div>
           <span class="info" id="doc-bilan"></span>
         </div>
         <div class="bureau">
           <div class="message" id="avert-scan" role="alert" style="max-width:800px;margin:0 auto 12px"></div>
           <div class="feuille" id="apercu" tabindex="0"></div>
+          <div id="pages" hidden>
+            <span class="info">Les zones noires seront recouvertes dans le PDF caviardé : ce sont les endroits où il y a de l'encre sans texte lu (tampon, signature, mot manuscrit, passage illisible). Cliquez sur une zone pour la laisser visible. Tracez un rectangle à la souris pour en ajouter une.</span>
+            <div id="pages-liste"></div>
+          </div>
         </div>
       </div>
       <aside id="panneau" aria-label="Données à masquer">
@@ -421,6 +438,9 @@ let fichier = "";        // nom du fichier chargé
 let formate = false;     // Word, Excel ou PDF : enregistré dans un format de document
 let estPdf = false;
 let scan = 0;            // pages lues par reconnaissance de caractères
+let zones = [];          // PDF : zones sans texte lu {page, cadre, actif, manuel}
+let nbPages = 0;         // PDF : nombre de pages
+let pagesFaites = false; // les images des pages ont été demandées
 
 function copier(contenu) {
   const z = document.createElement("textarea");
@@ -497,7 +517,7 @@ function vue(nom) {
 }
 function attendre(titre) { $("attente-titre").textContent = titre; vue("attente"); }
 function vider() {
-  texte = ""; passages = []; fichier = ""; formate = false; estPdf = false; scan = 0;
+  texte = ""; passages = []; fichier = ""; formate = false; estPdf = false; scan = 0; zones = []; nbPages = 0;
   $("source").value = ""; $("bloc-coller").hidden = true; $("depot-erreur").textContent = "";
   $("apercu").textContent = ""; $("liste").textContent = ""; $("filtre").textContent = "";
   api().oublier();
@@ -512,7 +532,7 @@ $("btn-analyser").addEventListener("click", async () => {
   const colle = $("source").value.replace(/\r\n?/g, "\n");
   if (!colle.trim()) return;
   await api().oublier();
-  fichier = ""; formate = false; estPdf = false; scan = 0;
+  fichier = ""; formate = false; estPdf = false; scan = 0; zones = []; nbPages = 0;
   analyser(colle, "Analyse du texte…");
 });
 async function analyser(contenu, titre, dejaFaite) {
@@ -530,6 +550,7 @@ async function analyser(contenu, titre, dejaFaite) {
       ? `Document scanné : ${pluriel(scan, "page")} ${scan > 1 ? "ont été lues" : "a été lue"} par reconnaissance de caractères. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué. Relisez tout le document avant de continuer.`
       : (r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.");
     $("filtre-liste").value = ""; $("autre-info").textContent = "";
+    pagesFaites = false; $("pages-liste").textContent = ""; $("bascule").hidden = !estPdf; affichage("texte");
     dessiner();
     vue("verifier");
     $("apercu").parentElement.scrollTop = 0;
@@ -541,6 +562,7 @@ function charger(r) {
   if (r.annule) { vue("deposer"); return; }
   if (!r.ok) { refuser(r.erreur); return; }
   fichier = r.nom; formate = !!r.format; estPdf = !!r.pdf; scan = r.pages_scannees || 0;
+  zones = (r.zones || []).map(z => ({...z, actif: true, manuel: false})); nbPages = r.pages || 0;
   analyser(r.texte, `Analyse de ${r.nom}…`, r.analyse);
 }
 $("btn-ouvrir").addEventListener("click", async () => {
@@ -669,7 +691,9 @@ function lister() {
   }
   const n = new Set(passages.filter(p => p.actif).map(valeur)).size;
   const v = passages.filter(p => p.suggestion && !p.actif).length;
-  $("doc-bilan").textContent = `${pluriel(n, "donnée")} à masquer` + (v ? ` · ${v} à vérifier` : "");
+  const z = zones.filter(x => x.actif).length;
+  $("doc-bilan").textContent = `${pluriel(n, "donnée")} à masquer` + (v ? ` · ${v} à vérifier` : "") + (z ? ` · ${pluriel(z, "zone")} sans texte` : "");
+  $("nb-zones").hidden = !z; $("nb-zones").textContent = z;
 }
 $("filtre-liste").addEventListener("input", lister);
 function viser(i) {
@@ -746,14 +770,87 @@ $("autre").addEventListener("submit", ev => {
 });
 $("btn-retour-depot").addEventListener("click", vider);
 
+// ---------- vue « Pages » d'un PDF : zones sans texte lu ----------
+function affichage(v) {
+  document.querySelectorAll("#bascule button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
+  $("apercu").hidden = v !== "texte"; $("pages").hidden = v !== "pages"; $("ajout").hidden = true;
+  if (v === "pages" && !pagesFaites) chargerPages();
+}
+document.querySelectorAll("#bascule button").forEach(b => b.addEventListener("click", () => affichage(b.dataset.v)));
+async function chargerPages() {
+  pagesFaites = true;
+  const liste = $("pages-liste"), nom = fichier;
+  liste.textContent = "";
+  for (let n = 0; n < nbPages; n++) {
+    const vuePage = document.createElement("div");
+    vuePage.className = "pagevue"; vuePage.dataset.page = n;
+    const img = document.createElement("img"); img.alt = `Page ${n + 1}`;
+    vuePage.append(img); liste.append(vuePage);
+  }
+  dessinerZones();
+  for (let n = 0; n < nbPages; n++) {
+    const r = await api().image_page(n);
+    if (fichier !== nom || !pagesFaites) return;   // un autre document a été ouvert entre-temps
+    if (r.ok) liste.children[n].querySelector("img").src = r.image;
+  }
+}
+function dessinerZones() {
+  document.querySelectorAll("#pages-liste .zg").forEach(x => x.remove());
+  zones.forEach((z, i) => {
+    const vuePage = $("pages-liste").children[z.page];
+    if (!vuePage) return;
+    const [g, h, d, b] = z.cadre, bloc = document.createElement("div");
+    bloc.className = "zg" + (z.actif ? "" : " non"); bloc.dataset.i = i;
+    bloc.style.cssText = `left:${g * 100}%;top:${h * 100}%;width:${(d - g) * 100}%;height:${(b - h) * 100}%`;
+    bloc.title = z.manuel ? "Cliquer pour retirer cette zone" : (z.actif ? "Cliquer pour laisser visible" : "Cliquer pour recouvrir");
+    vuePage.append(bloc);
+  });
+  lister();
+}
+let trace = null;   // rectangle en cours de tracé
+$("pages-liste").addEventListener("mousedown", ev => {
+  const vuePage = ev.target.closest(".pagevue");
+  if (!vuePage || ev.button !== 0) return;
+  ev.preventDefault();
+  const zone = ev.target.closest(".zg");
+  if (zone) {
+    const z = zones[+zone.dataset.i];
+    if (z.manuel) zones.splice(+zone.dataset.i, 1); else z.actif = !z.actif;
+    dessinerZones();
+    return;
+  }
+  const r = vuePage.getBoundingClientRect();
+  const bloc = document.createElement("div"); bloc.className = "zg trace"; vuePage.append(bloc);
+  trace = {vuePage, r, bloc, x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height, cadre: null};
+});
+document.addEventListener("mousemove", ev => {
+  if (!trace) return;
+  const borne = v => Math.max(0, Math.min(1, v));
+  const x = borne((ev.clientX - trace.r.left) / trace.r.width), y = borne((ev.clientY - trace.r.top) / trace.r.height);
+  const g = Math.min(x, trace.x), h = Math.min(y, trace.y), d = Math.max(x, trace.x), b = Math.max(y, trace.y);
+  trace.cadre = [g, h, d, b];
+  trace.bloc.style.cssText = `left:${g * 100}%;top:${h * 100}%;width:${(d - g) * 100}%;height:${(b - h) * 100}%`;
+});
+document.addEventListener("mouseup", () => {
+  if (!trace) return;
+  const {cadre, vuePage, bloc} = trace;
+  trace = null; bloc.remove();
+  // Un simple clic n'ajoute rien : il faut un rectangle d'une taille visible.
+  if (cadre && cadre[2] - cadre[0] > 0.01 && cadre[3] - cadre[1] > 0.004)
+    zones.push({page: +vuePage.dataset.page, cadre, actif: true, manuel: true});
+  dessinerZones();
+});
+
 // ---------- exporter ----------
 const mode = () => document.querySelector("input[name=mode]:checked").value;
 function decrireExport() {
   const caviar = mode() === "caviardage", ext = (fichier.match(/\.[^.]+$/) || [""])[0].toLowerCase();
   let produit;
+  const z = zones.filter(x => x.actif).length;
   if (estPdf) produit = caviar
     ? "Vous obtiendrez un PDF fait d'images : des rectangles noirs couvrent les données, et il ne reste aucun texte dessous."
-    : "Vous obtiendrez un Word neuf qui contient le texte pseudonymisé. La mise en page du PDF n'est pas gardée.";
+      + (z ? ` ${pluriel(z, "zone")} sans texte lu (tampon, signature, passage illisible) ${z > 1 ? "seront aussi recouvertes" : "sera aussi recouverte"} : voir « Pages » à l'étape Vérifier.` : "")
+    : "Vous obtiendrez un Word neuf qui contient le texte pseudonymisé. La mise en page, les images, les tampons et les signatures du PDF n'y sont pas repris.";
   else if (formate) produit = `Vous obtiendrez un ${ext === ".xlsx" ? "Excel" : "Word"} ${caviar ? "caviardé" : "pseudonymisé"}, mise en forme gardée, propriétés (auteur, société) vidées.`;
   else produit = `Vous obtiendrez un fichier texte ${caviar ? "caviardé" : "pseudonymisé"}.`;
   $("export-aide").textContent = produit;
@@ -783,7 +880,8 @@ $("btn-enregistrer").addEventListener("click", async () => {
   $("filtre-erreur").textContent = ""; $("export-ok").textContent = "";
   $("btn-enregistrer").disabled = true;
   try {
-    const r = await api().enregistrer_filtre(texte, retenus(), retires(), mode(), fichier);
+    const aCouvrir = estPdf ? zones.filter(z => z.actif).map(({page, cadre}) => ({page, cadre})) : null;
+    const r = await api().enregistrer_filtre(texte, retenus(), retires(), mode(), fichier, aCouvrir);
     if (r.annule) return;
     if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
     $("export-ok").textContent = `Fichier enregistré : ${r.chemin}`

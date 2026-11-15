@@ -110,6 +110,72 @@ def test_un_dossier_caviarde(tmp_path):
     assert (sortie / "note.txt").read_text(encoding="utf-8") == f"Rappeler le {MARQUE_CAVIARD}."
 
 
+def page_tamponnee() -> bytes:
+    """Un PDF d'une page : trois lignes de texte, un tampon rond, une signature, un trait de soulignement."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    from test_pdf import POLICE
+
+    page = Image.new("L", (2480, 3508), 255)
+    dessin = ImageDraw.Draw(page)
+    police = ImageFont.truetype(str(POLICE), 60)
+    for i, ligne in enumerate(LIGNES):
+        dessin.text((250, 300 + i * 110), ligne, font=police, fill=0)
+    dessin.line((250, 700, 2200, 700), fill=0, width=4)
+    dessin.ellipse((1500, 1500, 2000, 2000), outline=60, width=14)
+    dessin.ellipse((1560, 1560, 1940, 1940), outline=60, width=8)
+    dessin.line([(400, 2400), (520, 2250), (600, 2420), (720, 2260), (830, 2400), (1000, 2330)], fill=0, width=9)
+    sortie = io.BytesIO()
+    page.save(sortie, "PDF", resolution=300)
+    return sortie.getvalue()
+
+
+@lecture_des_scans
+def test_tampon_et_signature_sont_reperes_et_recouverts(tmp_path):
+    import pypdfium2
+
+    contenu = page_tamponnee()
+    lu = pdf.lire(contenu)
+    zones = pdf.zones_graphiques(contenu, lu)
+    # Le tampon et la signature, mais ni le texte lu ni le trait de soulignement.
+    assert len(zones) == 2 and {page for page, _ in zones} == {0}
+    tampon, signature = (cadre for _, cadre in zones)
+    assert tampon[0] < 1750 / 2480 < tampon[2] and tampon[1] < 1750 / 3508 < tampon[3]
+    assert signature[0] < 700 / 2480 < signature[2] and signature[1] < 2350 / 3508 < signature[3]
+
+    def encre(produit, cadre):
+        """Part de points sombres dans le cadre, sur la page rendue."""
+        image = pypdfium2.PdfDocument(produit)[0].render(scale=1).to_pil().convert("L")
+        g, h, d, b = cadre
+        decoupe = image.crop((int(g * image.width), int(h * image.height), int(d * image.width), int(b * image.height)))
+        points = decoupe.tobytes()
+        return sum(1 for p in points if p < 60) / len(points)
+
+    sans, _ = pdf.caviarder(contenu, lu, [])
+    avec, _ = pdf.caviarder(contenu, lu, [], zones)
+    assert encre(sans, tampon) < 0.5 and encre(avec, tampon) > 0.95 and encre(avec, signature) > 0.95
+
+    # Dans l'appli : zones rendues au chargement, toutes recouvertes par défaut, ou seulement celles choisies.
+    (tmp_path / "t.pdf").write_bytes(contenu)
+    choix = {"fichier": str(tmp_path / "t.pdf"), "enregistrer": str(tmp_path / "t_caviardé.pdf")}
+    a = Api(":memory:", regles_seules, OPTIONS, dialogue=choix.get)
+    a.ouvrir("un-mot-de-passe")
+    charge = a.ouvrir_fichier()
+    assert charge["pages"] == 1 and len(charge["zones"]) == 2
+    assert a.image_page(0)["image"].startswith("data:image/jpeg;base64,")
+    assert a.enregistrer_filtre(charge["texte"], [], [], "caviardage")["ok"]
+    assert encre((tmp_path / "t_caviardé.pdf").read_bytes(), tampon) > 0.95
+    main = {"page": 0, "cadre": [0.1, 0.9, 0.3, 0.95]}
+    assert a.enregistrer_filtre(charge["texte"], [], [], "caviardage", None, [main])["ok"]
+    produit = (tmp_path / "t_caviardé.pdf").read_bytes()
+    assert encre(produit, tampon) < 0.5 and encre(produit, tuple(main["cadre"])) > 0.95
+
+
+def test_un_pdf_de_texte_sans_image_n_a_pas_de_zone():
+    contenu = faux_pdf(LIGNES)
+    assert pdf.zones_graphiques(contenu, pdf.lire(contenu)) == []
+
+
 def attendre(condition, delai=20.0):
     fin = time.time() + delai
     while time.time() < fin:

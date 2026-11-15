@@ -46,6 +46,8 @@ class _Charge:
     texte: str
     # Pour un PDF : la place de chaque caractère sur les pages.
     lu: pdf.PdfLu | None = None
+    # Pour un PDF : les zones sans texte repérées (tampons, signatures), en (page, cadre).
+    zones: tuple = ()
 
 
 def detecteur_par_defaut() -> tuple[Detecteur, bool]:
@@ -198,8 +200,12 @@ class Api:
         retirees: list[str],
         traitement: str = "pseudonymisation",
         fichier: str | None = None,
+        zones: list[dict] | None = None,
     ) -> dict:
         """Enregistre le document traité.
+
+        `zones` : pour un PDF caviardé, les zones sans texte à recouvrir, en {page, cadre}.
+        Sans cette liste, toutes les zones repérées au chargement sont recouvertes.
 
         Pseudonymisé : un Word ou un Excel reste dans son format, un PDF devient un Word.
         Caviardé : un Word ou un Excel reste dans son format, un PDF devient un PDF fait d'images.
@@ -224,7 +230,11 @@ class Api:
             retenues = self._valider(texte, detections, retirees)
             try:
                 if est_pdf and caviardage:
-                    produit, perdus = pdf.caviarder(charge.contenu, charge.lu, retenues)
+                    if zones is None:
+                        a_couvrir = list(charge.zones)
+                    else:
+                        a_couvrir = [(int(z["page"]), tuple(float(v) for v in z["cadre"])) for z in zones]
+                    produit, perdus = pdf.caviarder(charge.contenu, charge.lu, retenues, a_couvrir)
                     if perdus:
                         return {
                             "ok": False,
@@ -266,7 +276,8 @@ class Api:
         extension = Path(nom).suffix.lower()
         if extension == ".pdf":
             lu = pdf.lire(contenu)
-            return lu.texte, _Charge(nom, contenu, lu.texte, lu), lu.pages_scannees
+            zones = tuple(pdf.zones_graphiques(contenu, lu))
+            return lu.texte, _Charge(nom, contenu, lu.texte, lu, zones), lu.pages_scannees
         if extension in FORMATS:
             # Le texte vient des emplacements du fichier, pour y reporter ensuite les remplacements.
             texte = ouvrir(nom, contenu).texte
@@ -284,10 +295,32 @@ class Api:
             "nom": nom,
             "texte": texte,
             "format": self._charge is not None,
-            "pdf": self._charge is not None and self._charge.lu is not None,
+            **self._pages(self._charge),
             # Pages lues par reconnaissance de caractères : l'écran demande de relire l'aperçu.
             "pages_scannees": pages_scannees,
         }
+
+    @staticmethod
+    def _pages(charge: _Charge | None) -> dict:
+        """Pour un PDF : le nombre de pages et les zones sans texte repérées (tampons, signatures)."""
+        if charge is None or charge.lu is None:
+            return {"pdf": False, "pages": 0, "zones": []}
+        return {
+            "pdf": True,
+            "pages": charge.lu.pages,
+            "zones": [{"page": page, "cadre": list(cadre)} for page, cadre in charge.zones],
+        }
+
+    def image_page(self, numero: int) -> dict:
+        """Une page du PDF chargé, en image, pour la vue « Pages ». Rien n'est écrit sur disque."""
+        charge = self._charge
+        if charge is None or charge.lu is None:
+            return {"ok": False, "erreur": "Aucun PDF n'est chargé."}
+        try:
+            image = pdf.image_page(charge.contenu, int(numero))
+        except Exception as e:
+            return {"ok": False, "erreur": f"Page impossible à afficher ({type(e).__name__})."}
+        return {"ok": True, "image": "data:image/jpeg;base64," + base64.b64encode(image).decode()}
 
     def oublier(self) -> dict:
         """L'écran repart d'une page vide : le fichier gardé en mémoire est oublié."""
@@ -399,7 +432,7 @@ class Api:
                 "nom": d["nom"],
                 "texte": d["texte"],
                 "format": d["charge"] is not None,
-                "pdf": d["charge"] is not None and d["charge"].lu is not None,
+                **self._pages(d["charge"]),
                 "pages_scannees": d["pages_scannees"],
                 "analyse": self._analyse(d["detections"], d["suggestions"]),
             }

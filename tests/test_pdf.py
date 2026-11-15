@@ -82,7 +82,7 @@ def test_un_pdf_scanne_est_lu():
     lecture = lire_detail("scan.pdf", scan(LIGNES))
     assert lecture.pages_scannees == 1
     assert TELEPHONE in lecture.texte and "Girard" in lecture.texte and "Contrat de prestation" in lecture.texte
-    # Sans aperçu, un scan est refusé : sa lecture doit pouvoir être vérifiée.
+    # Un appelant peut refuser les scans.
     with pytest.raises(DocumentIllisible, match="scanné"):
         lire("scan.pdf", scan(LIGNES), scans=False)
     with pytest.raises(DocumentIllisible, match="scanné"):
@@ -90,7 +90,7 @@ def test_un_pdf_scanne_est_lu():
 
 
 @lecture_des_scans
-def test_appli_filtre_un_scan_et_un_dossier_le_refuse(tmp_path):
+def test_appli_filtre_un_scan_et_un_dossier_le_signale(tmp_path):
     (tmp_path / "scan.pdf").write_bytes(scan(LIGNES))
     choix = {"fichier": str(tmp_path / "scan.pdf"), "enregistrer": str(tmp_path / "scan_filtré.docx")}
     a = Api(":memory:", regles_seules, OPTIONS, dialogue=choix.get)
@@ -105,5 +105,8 @@ def test_appli_filtre_un_scan_et_un_dossier_le_refuse(tmp_path):
 
     with Table.ouvrir(":memory:", "mot de passe de test", **OPTIONS) as table:
         resultats = traiter_dossier(tmp_path, tmp_path / DOSSIER_SORTIE, regles_seules()[0], table)
-    refus = [r for r in resultats if r.fichier == "scan.pdf"][0]
-    assert refus.ok is False and "scanné" in refus.erreur
+    # Un scan est traité comme les autres dans un dossier, et signalé comme à relire.
+    resultat = [r for r in resultats if r.fichier == "scan.pdf"][0]
+    assert resultat.ok and "scan" in resultat.remarque and "relire" in resultat.remarque
+    filtre = "\n".join(paragraphes(tmp_path / DOSSIER_SORTIE / "scan.pdf.docx"))
+    assert "TELEPHONE_1" in filtre and TELEPHONE not in filtre
