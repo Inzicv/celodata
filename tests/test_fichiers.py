@@ -204,9 +204,10 @@ def test_appli_enregistre_le_fichier_filtre_et_le_restaure(tmp_path):
     assert retour["ok"] and retour["inconnus"] == []
     assert [c.text for c in Document(str(tmp_path / "c_restauré.docx")).tables[0].rows[0].cells] == ["Lefèvre", MAIL]
 
-    # Un fichier texte chargé ne peut pas être enregistré « dans son format ».
+    # Un fichier texte chargé n'a pas de mise en forme : il est enregistré en texte.
     (tmp_path / "n.txt").write_text("PERSONNE_1 rappelle.", encoding="utf-8")
     choix.update(fichier=str(tmp_path / "n.txt"), enregistrer=str(tmp_path / "n_restauré.txt"))
     assert a.ouvrir_fichier()["format"] is False
-    assert a.enregistrer_filtre("PERSONNE_1 rappelle.", [], [])["ok"] is False
+    assert a.enregistrer_filtre("PERSONNE_1 rappelle.", [], [], fichier="n.txt")["ok"]
+    assert (tmp_path / "n_restauré.txt").read_text(encoding="utf-8") == "PERSONNE_1 rappelle."
     assert a.restaurer_fichier()["ok"] and (tmp_path / "n_restauré.txt").read_text(encoding="utf-8") == "Lefèvre rappelle."

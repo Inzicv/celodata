@@ -2,6 +2,8 @@
 
 Celodata remplace les données personnelles d'un document français par des jetons, sur votre machine, avant l'envoi à une IA. Il remet ensuite les vraies valeurs dans la réponse.
 
+Il sait aussi caviarder un document : les données sont alors retirées pour de bon, sans retour possible.
+
 ```
 Document d'origine        Ce que l'IA reçoit              Réponse restaurée
 ------------------        ------------------              -----------------
@@ -38,6 +40,7 @@ Beaucoup d'entreprises interdisent les assistants IA par peur de la fuite de don
 | Détecter les données personnelles d'un texte français et les remplacer par des jetons | Garantir l'anonymat : une donnée pseudonymisée reste une donnée personnelle au sens du RGPD |
 | Montrer ce qui a été détecté et laisser corriger avant l'envoi | Empêcher un employé de coller un document non filtré dans une IA |
 | Remettre les vraies valeurs dans la réponse de l'IA | Filtrer les images contenues dans un Word ou un Excel |
+| Caviarder un document : rectangles noirs sur un PDF, marque `█████` ailleurs | Restaurer un document caviardé |
 | Supprimer pour de bon les mots de passe, jetons et clés d'API | Rendre un secret supprimé : il n'est pas restauré au retour |
 | Tout traiter sur le poste, sans connexion sortante ni télémétrie | Récupérer une table dont le mot de passe est perdu |
 
@@ -53,16 +56,29 @@ Un texte suit cinq étapes.
 
 La correspondance entre valeurs et jetons est rangée dans une **table** : un fichier chiffré, protégé par un mot de passe, qui ne quitte pas la machine.
 
+### Pseudonymiser ou caviarder
+
+Le choix se fait après la vérification, au moment d'exporter.
+
+| | Pseudonymiser | Caviarder |
+|---|---|---|
+| Ce que devient une donnée | Un jeton, par exemple `PERSONNE_1` | Une marque noire |
+| Retour possible | Oui, avec la table | Non |
+| Rangé dans la table | La valeur, chiffrée | Rien |
+| Usage | Travailler avec une IA puis restaurer sa réponse | Transmettre un document à un tiers |
+
 ### Types de fichiers
 
-| Fichier | Lecture | Fichier filtré produit |
+| Fichier | Pseudonymisé | Caviardé |
 |---|---|---|
-| Texte (`.txt`, `.md`, `.csv`, `.log`, `.json`) | oui | texte |
-| Word (`.docx`) | oui | Word, mise en forme gardée, propriétés (auteur, société) vidées |
-| Excel (`.xlsx`) | oui | Excel, un jeton par cellule, propriétés vidées |
-| PDF de texte | oui | Word neuf contenant le texte filtré, sans la mise en page |
-| PDF scanné | oui, par la reconnaissance de caractères de Windows, sur le poste | Word neuf, à relire en entier |
-| Anciens formats (`.doc`, `.xls`) | non, signalés | aucun |
+| Texte (`.txt`, `.md`, `.csv`, `.log`, `.json`) | texte | texte |
+| Word (`.docx`) | Word, mise en forme gardée, propriétés (auteur, société) vidées | Word, même chose |
+| Excel (`.xlsx`) | Excel, un jeton par cellule, propriétés vidées | Excel, même chose |
+| PDF de texte | Word neuf contenant le texte, sans la mise en page | PDF fait d'images, rectangles noirs sur les données |
+| PDF scanné | Word neuf, à relire en entier | PDF fait d'images, rectangles noirs sur les données |
+| Anciens formats (`.doc`, `.xls`) | non lus, signalés | non lus, signalés |
+
+Un PDF scanné est lu par la reconnaissance de caractères de Windows, sur le poste. Un PDF caviardé ne contient plus aucun texte : chaque page est une image, mise en page gardée.
 
 ## Les deux façons de l'utiliser
 
@@ -95,23 +111,26 @@ uv run --extra modeles celodata
 ```
 
 1. Choisir un mot de passe. Il protège la table, rangée dans `%LOCALAPPDATA%\Celodata`. Il n'existe aucun moyen de le récupérer.
-2. Coller un texte ou ouvrir un fichier, cliquer sur « Analyser », corriger l'aperçu.
-3. « Copier le texte filtré » et le coller dans l'IA, ou « Enregistrer le fichier filtré… » et joindre ce fichier à la place de l'original.
-4. Coller la réponse dans l'onglet « Restaurer », ou y ouvrir le fichier rendu par l'IA avec « Restaurer un fichier… ».
+2. **Déposer** : glisser un fichier dans la fenêtre, le choisir, ou coller un texte. Le document ne s'affiche qu'une fois analysé.
+3. **Vérifier** : le document apparaît avec ses données surlignées, et leur liste à droite, classée par type. Décocher ce qui peut rester, sélectionner du texte pour en masquer davantage.
+4. **Exporter** : choisir « Pseudonymiser » ou « Caviarder », puis enregistrer le fichier ou copier le texte.
+5. Pour un document pseudonymisé : coller la réponse de l'IA dans l'onglet « Restaurer », ou y ouvrir le fichier qu'elle a rendu.
 
-L'appli a quatre onglets.
+L'appli a cinq onglets.
 
 | Onglet | Contenu |
 |---|---|
-| Filtrer | Texte collé, fichier ouvert ou déposé, aperçu, texte ou fichier filtré. « Filtrer un dossier… » traite tous les documents d'un dossier. |
+| Protéger un document | Les trois étapes ci-dessus. Aussi : traiter un dossier entier, en pseudonymisation ou en caviardage. |
 | Restaurer | Remet les vraies valeurs dans une réponse collée ou dans un fichier Word, Excel ou texte. |
+| Dossier surveillé | Les documents déposés dans un dossier choisi sont analysés en tâche de fond et attendent ici, prêts à vérifier. |
 | Règles | Termes toujours masqués, motifs (expressions régulières), termes jamais masqués. |
-| Journal | Une ligne par traitement : date, document, nombre de passages masqués par type et par origine. Aucune vraie valeur. |
+| Journal | Une ligne par traitement : date, document, traitement, nombre de passages masqués par type et par origine. Aucune vraie valeur. |
 
 À savoir :
 
-- **Dossier entier.** Les fichiers filtrés sont rangés dans un sous-dossier `celodata_filtré`. Les originaux ne sont pas modifiés. Il n'y a pas d'aperçu : ces fichiers sont à relire avant envoi. Les PDF scannés sont refusés dans ce mode.
-- **PDF scanné.** Il faut que le français soit installé dans Windows. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué.
+- **Dossier entier.** Les fichiers produits sont rangés dans un sous-dossier `celodata_filtré` ou `celodata_caviardé`. Les originaux ne sont pas modifiés. Il n'y a pas d'aperçu : ces fichiers sont à relire avant de les transmettre. Les PDF scannés sont refusés dans ce mode.
+- **Dossier surveillé.** Rien n'est enregistré sans validation : l'appli prépare l'analyse, vous vérifiez puis vous exportez. Le dossier est retenu d'une ouverture à l'autre. Les documents en attente sont gardés en mémoire, pas sur disque.
+- **PDF scanné.** Il faut que le français soit installé dans Windows. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est ni masqué ni caviardé. Le document est à relire en entier à l'étape « Vérifier ».
 - **Sans le modèle d'entités**, l'appli fonctionne avec les règles seules et l'indique. Les noms ne sont alors pas détectés.
 
 ## La passerelle serveur
@@ -180,12 +199,13 @@ Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habil
 | `detection/listes.py` | Termes de santé et de syndicat, fonctions uniques (DRH, PDG) à signaler. |
 | `detection/modeles.py` | Les modèles d'entités. GLiNER2-PII par défaut, interchangeable. |
 | `detection/fusion.py` | Règle les chevauchements et propage chaque valeur trouvée à tout le texte. |
-| `moteur.py` | Analyse, remplacement par les jetons, restauration tolérante. |
-| `table.py` | La table chiffrée : valeurs, termes ignorés, règles du projet, journal. |
+| `moteur.py` | Analyse, remplacement par les jetons, caviardage, restauration tolérante. |
+| `table.py` | La table chiffrée : valeurs, termes ignorés, règles du projet, réglages, journal. |
 | `journal.py` | Écrit une ligne de journal par filtrage et par restauration. |
-| `documents.py` | Lit le texte d'un fichier texte, Word, Excel ou PDF. |
-| `fichiers.py` | Filtre et restaure un Word ou un Excel en gardant sa mise en forme. Rend un PDF en Word neuf. |
-| `ocr.py` | Lit une page scannée avec la reconnaissance de caractères de Windows. |
+| `documents.py` | Lit le texte d'un fichier texte, Word ou Excel. Confie les PDF à `pdf.py`. |
+| `fichiers.py` | Filtre, caviarde et restaure un Word ou un Excel en gardant sa mise en forme. Rend un PDF en Word neuf. |
+| `pdf.py` | Lit un PDF avec la place de chaque caractère sur la page. Rend un PDF caviardé, fait d'images. |
+| `ocr.py` | Lit une page scannée avec la reconnaissance de caractères de Windows, et donne la place de chaque mot. |
 | `lot.py` | Traite un dossier entier. |
 | `appli/fenetre.py`, `api.py`, `ecran.html` | La fenêtre (pywebview), les actions appelées par l'écran, l'écran lui-même. |
 | `passerelle/relais.py` | Filtre une demande au format OpenAI et restaure la réponse, y compris en flux. |
@@ -231,6 +251,7 @@ Les tests et les mesures n'utilisent que de faux documents. Aucune donnée réel
 | 5 | Passerelle serveur au format OpenAI | fait, essayé face à une fausse IA seulement |
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | fait, à essayer sur de vrais fichiers ouverts dans Word et Excel |
 | 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | fait, mesuré sur de faux scans seulement |
+| 8 | Caviardage, PDF caviardés en image, dossier surveillé, nouvel écran | fait, essayé sur de faux documents et hors de la vraie fenêtre |
 
 Les résultats chiffrés de chaque étape sont dans [docs/conception.md](docs/conception.md).
 
@@ -241,6 +262,8 @@ Les résultats chiffrés de chaque étape sont dans [docs/conception.md](docs/co
 - Le jeu de test est petit : dix documents. Les chiffres mesurés ne valent que pour lui.
 - Les scans n'ont été mesurés que sur de faux scans, fabriqués par programme.
 - Les images d'un Word ou d'un Excel ne sont pas filtrées. L'appli le signale.
+- Sur un PDF, seul ce qui a été lu comme du texte peut être caviardé. Une signature, un tampon, une photo ou un mot manuscrit ne sont pas recouverts.
+- Le dossier surveillé n'est suivi que lorsque l'appli est ouverte, et ses sous-dossiers ne sont pas suivis.
 - L'appli ne fonctionne que sous Windows.
 
 ## Licence

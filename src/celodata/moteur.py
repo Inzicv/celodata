@@ -15,6 +15,8 @@ from celodata.table import Table
 
 TYPE_SECRET = "SECRET"
 MARQUE_SECRET = "[SECRET_SUPPRIMÉ]"
+# Caviardage : toujours la même marque, pour ne pas laisser deviner la longueur de ce qui est caché.
+MARQUE_CAVIARD = "█████"
 
 _FORME_EXACTE = re.compile(r"(?<![A-Za-z0-9_])([A-Z][A-Z_]*)_(\d+)(?!\d)")
 
@@ -111,6 +113,23 @@ def pseudonymiser(texte: str, detections: list[Detection], table: Table) -> Filt
     """Remplace chaque passage détecté par son jeton. Les détections ne doivent pas se chevaucher."""
     texte_filtre = appliquer(texte, remplacements_jetons(texte, detections, table))
     return Filtrage(texte_filtre, Counter(d.type for d in detections))
+
+
+def remplacements_caviard(detections: list[Detection]) -> list[Remplacement]:
+    """La marque noire à mettre à la place de chaque passage. Rien n'est rangé dans la table."""
+    sortie: list[Remplacement] = []
+    position = 0
+    for d in sorted(detections, key=lambda d: d.debut):
+        if d.debut < position:
+            raise ValueError("Les détections se chevauchent : passer d'abord par la fusion.")
+        sortie.append((d.debut, d.fin, MARQUE_CAVIARD))
+        position = d.fin
+    return sortie
+
+
+def caviarder(texte: str, detections: list[Detection]) -> Filtrage:
+    """Retire chaque passage détecté pour de bon : aucun retour possible."""
+    return Filtrage(appliquer(texte, remplacements_caviard(detections)), Counter(d.type for d in detections))
 
 
 def texte_motif_jetons(types: list[str]) -> str | None:

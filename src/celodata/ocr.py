@@ -43,8 +43,19 @@ def disponible() -> bool:
         return False
 
 
+Cadre = tuple[float, float, float, float]  # gauche, haut, droite, bas, en fractions de la page
+
+
 def lire_image(image) -> str:
     """Rend le texte d'une image (objet `PIL.Image`), ligne par ligne."""
+    return "\n".join(" ".join(mot for mot, _ in ligne) for ligne in lire_mots(image))
+
+
+def lire_mots(image) -> list[list[tuple[str, Cadre]]]:
+    """Rend les mots d'une image, ligne par ligne, chacun avec sa place dans l'image.
+
+    La place sert au caviardage : c'est là que le rectangle noir est posé.
+    """
     from winrt.windows.graphics.imaging import BitmapPixelFormat, SoftwareBitmap
     from winrt.windows.storage.streams import DataWriter
 
@@ -64,7 +75,13 @@ def lire_image(image) -> str:
         return await moteur.recognize_async(bitmap)
 
     resultat = asyncio.run(reconnaitre())
-    return "\n".join(ligne.text for ligne in resultat.lines)
+    largeur, hauteur = image.size
+
+    def cadre(mot) -> Cadre:
+        r = mot.bounding_rect
+        return (r.x / largeur, r.y / hauteur, (r.x + r.width) / largeur, (r.y + r.height) / hauteur)
+
+    return [[(mot.text, cadre(mot)) for mot in ligne.words] for ligne in resultat.lines]
 
 
 def lire_page_pdf(contenu: bytes, numero: int) -> str:

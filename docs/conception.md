@@ -251,6 +251,33 @@ Limites connues :
 - la mise en page du PDF est perdue, et ses images ne sont pas reprises ;
 - la passerelle ne lit pas de fichiers : cette étape ne concerne que l'appli.
 
+### Résultat de l'étape 8 (15 novembre 2026)
+
+Trois demandes après le premier essai de l'appli sur de vrais documents : un écran plus simple, le caviardage, un dossier surveillé.
+
+**Caviardage.** Le choix entre pseudonymiser et caviarder se fait à l'export, après la vérification. Le caviardage ne range rien dans la table.
+
+| Fichier | Résultat du caviardage |
+|---|---|
+| Texte, Word, Excel | Chaque passage devient `█████`, toujours de la même longueur. Le format est gardé. |
+| PDF de texte ou scanné | PDF neuf fait d'images à 200 points par pouce, un rectangle noir sur chaque passage. |
+
+Pour un PDF, la place de chaque caractère vient de pdfium, et celle de chaque mot d'un scan vient de la reconnaissance de caractères de Windows. Le PDF produit ne contient aucun texte : rien n'est récupérable sous les rectangles, et rien de ce que le PDF d'origine cachait n'est repris. Contrepartie : le texte du PDF caviardé ne peut plus être sélectionné ni cherché.
+
+Pour que les positions correspondent, tous les PDF sont maintenant lus par pdfium (`src/celodata/pdf.py`), et plus par pypdf.
+
+**Dossier surveillé.** L'appli relit le dossier toutes les deux secondes et analyse chaque nouveau document en tâche de fond. Elle n'écrit rien : le document attend dans l'onglet, prêt à vérifier. Ce choix garde la règle de l'aperçu, surtout pour les scans. Le chemin du dossier est rangé chiffré dans la table.
+
+**Écran.** Trois étapes : déposer, vérifier, exporter. Le texte d'un fichier n'est plus affiché avant l'analyse. La vérification montre le document à gauche et la liste des données à droite, classée par type.
+
+Vérifié par programme et dans un navigateur, sur les faux documents d'essai :
+
+- un PDF caviardé relu par pypdf ne rend aucun texte ;
+- un PDF caviardé relu par la reconnaissance de caractères ne rend plus les valeurs recouvertes ;
+- 98 tests passent.
+
+Non vérifié : la vraie fenêtre Windows, de vrais scans, des PDF tournés ou à plusieurs colonnes, la tenue en mémoire sur de gros PDF.
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |
@@ -263,6 +290,7 @@ Limites connues :
 | 5 | Passerelle serveur au format OpenAI | Une demande filtrée et sa réponse restaurée passent par le serveur, face à une fausse IA |
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | Un Word et un Excel filtrés puis restaurés redonnent leur contenu, mise en forme gardée |
 | 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | Un PDF de texte et un PDF scanné donnent chacun un Word filtré |
+| 8 | Caviardage, PDF caviardés en image, dossier surveillé, nouvel écran | Un PDF de texte et un PDF scanné sortent caviardés, sans texte sous les rectangles |
 
 L'extension de navigateur, un temps envisagée, est écartée (décision du 14 novembre 2026, voir la section 8).
 

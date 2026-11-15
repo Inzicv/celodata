@@ -2,7 +2,7 @@
 
 Ce tutoriel fait essayer l'appli Windows puis la passerelle, avec de faux documents uniquement. Rien ne sort de la machine, sauf à l'étape facultative « vraie IA », où seul du texte filtré de faux documents est envoyé.
 
-Compter 20 minutes pour l'appli et 10 minutes pour la passerelle.
+Compter 30 minutes pour l'appli et 10 minutes pour la passerelle.
 
 ## 0. Préparer
 
@@ -43,23 +43,24 @@ uv run --extra modeles celodata --table essais/essai.celodata
 L'option `--table` range la table d'essai dans le dossier `essais`, à part de la vraie table.
 
 1. Choisir un mot de passe d'au moins 8 caractères et le confirmer.
-2. Attendre que « Chargement du modèle… », en haut à droite, devienne « Règles + modèle d'entités ».
+2. Attendre que « Chargement du modèle… », en haut à droite, devienne « Prêt · règles et modèle d'entités ».
 
-Si l'appli affiche « Règles seules : modèle d'entités absent », le modèle n'est pas sur la machine : les noms ne seront pas détectés.
+Si l'appli affiche « Règles seules · les noms ne sont pas détectés », le modèle n'est pas sur la machine.
 
 ### Essai 1 : un texte collé
 
-1. Ouvrir `essais/mail_paie.txt` dans le Bloc-notes, tout copier, coller dans l'appli.
-2. Cliquer sur « Analyser ».
-3. Dans l'aperçu, vérifier que les noms, le téléphone, le matricule et l'IBAN sont surlignés.
-4. Cliquer sur un passage surligné : il est barré, et toutes ses autres occurrences aussi.
-5. Sélectionner un mot à la souris : la boîte « Masquer comme » apparaît. Choisir un type, cliquer sur « Masquer ».
-6. Cliquer sur « Copier le texte filtré ». Le texte filtré s'affiche dessous et se trouve dans le presse-papiers.
+1. Ouvrir `essais/mail_paie.txt` dans le Bloc-notes et tout copier.
+2. Dans l'appli, cliquer sur « Coller un texte », coller, puis « Analyser ».
+3. Le document apparaît. Vérifier que les noms, le téléphone, le matricule et l'IBAN sont surlignés, et listés à droite par type.
+4. Décocher une ligne de la liste : le passage est barré dans le document, et toutes ses autres occurrences aussi. Cliquer sur un passage surligné fait la même chose.
+5. Cliquer sur une valeur de la liste : le document défile jusqu'à elle.
+6. Sélectionner un mot à la souris dans le document : la boîte « Masquer comme » apparaît. Choisir un type, cliquer sur « Masquer ».
+7. « Continuer », laisser « Pseudonymiser », puis « Copier le texte ». Le texte s'affiche dessous et se trouve dans le presse-papiers.
 
 ### Essai 2 : le retour
 
-1. Aller dans l'onglet « 2. Restaurer ».
-2. Coller le texte filtré (il est encore dans le presse-papiers).
+1. Aller dans l'onglet « Restaurer ».
+2. Coller le texte (il est encore dans le presse-papiers).
 3. Avant de cliquer, abîmer un jeton à la main, par exemple `PERSONNE_1` en `Personne 1`, et ajouter un jeton inventé comme `PERSONNE_99`.
 4. Cliquer sur « Restaurer ».
 
@@ -67,48 +68,61 @@ Si l'appli affiche « Règles seules : modèle d'entités absent », le modèle 
 
 ### Essai 3 : un Word
 
-1. Onglet « 1. Filtrer », « Ouvrir un fichier… », choisir `essais/contrat_travail.docx`.
-2. « Analyser », corriger l'aperçu si besoin.
-3. « Enregistrer le fichier filtré… », garder le nom proposé.
+1. Onglet « Protéger un document », « Protéger un autre document » si besoin, puis « Choisir un fichier… » et `essais/contrat_travail.docx`. On peut aussi glisser le fichier dans la fenêtre.
+2. Le texte ne s'affiche pas tout de suite : l'appli montre « Analyse de… », puis le document déjà surligné.
+3. « Continuer », « Pseudonymiser », « Enregistrer le fichier… », garder le nom proposé.
 4. Ouvrir le fichier produit dans Word.
 
 À vérifier dans Word : les jetons à la place des valeurs, le gras toujours là, et dans Fichier > Informations, plus d'auteur « Camille Faux-Nom ».
 
-Puis le retour : onglet « 2. Restaurer », « Restaurer un fichier… », choisir le fichier filtré, enregistrer. Le Word restauré doit être identique à l'original.
+Puis le retour : onglet « Restaurer », « Restaurer un fichier… », choisir le fichier filtré, enregistrer. Le Word restauré doit être identique à l'original.
 
 ### Essai 4 : un Excel
 
 Même parcours avec `essais/fichier_clients.xlsx`. À vérifier dans Excel : chaque cellule a son propre jeton, le tableau a gardé sa forme.
 
-### Essai 5 : un PDF, puis un PDF scanné
+### Essai 5 : caviarder un PDF, puis un PDF scanné
 
-1. Ouvrir `essais/reclamation.pdf`, « Analyser », « Enregistrer le fichier filtré… ». Le résultat est un Word qui contient le texte filtré.
-2. Ouvrir `essais/note_rh_scannee.pdf`. L'appli indique que le document est scanné.
-3. « Analyser ». Un avertissement demande de relire tout l'aperçu.
+1. Ouvrir `essais/reclamation.pdf`. « Continuer », choisir « Caviarder », « Enregistrer le fichier… ».
+2. Ouvrir le PDF produit. Il doit avoir la même mise en page, avec des rectangles noirs sur les données. Essayer d'y sélectionner du texte : il n'y en a plus, chaque page est une image.
+3. Ouvrir `essais/note_rh_scannee.pdf`. Un avertissement demande de relire tout le document.
+4. Regarder de près les erreurs de lecture (un `10` lu `IO`, par exemple) et ce qui reste en clair à cause d'elles. C'est la limite à connaître.
+5. « Continuer », « Caviarder », « Enregistrer le fichier… ». Vérifier les rectangles noirs sur le scan.
 
-À regarder de près dans l'aperçu du scan : les erreurs de lecture (un `10` lu `IO`, par exemple) et ce qui reste en clair à cause d'elles. C'est la limite à connaître.
+Pour comparer : sur le même PDF, « Pseudonymiser » produit un Word qui contient le texte avec des jetons.
 
 ### Essai 6 : un dossier entier
 
-1. « Filtrer un dossier… », choisir le dossier `essais`.
+1. Sur le premier écran, dans « Traiter un dossier entier », laisser « Pseudonymiser » et cliquer sur « Choisir le dossier… ». Choisir le dossier `essais`.
 2. Attendre le tableau de résultats.
+3. Recommencer avec « Caviarder ».
 
-À vérifier : un sous-dossier `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). Le PDF scanné est refusé, avec un message qui renvoie à l'aperçu. La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
+À vérifier : `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). `essais/celodata_caviardé` contient le Word, l'Excel, le texte et le PDF (resté PDF, en images). Le PDF scanné est refusé dans les deux cas, avec un message qui renvoie à l'appli. La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
 
-### Essai 7 : les règles et le journal
+### Essai 7 : le dossier surveillé
+
+1. Créer un dossier vide, par exemple `essais/depots`.
+2. Onglet « Dossier surveillé », « Choisir un dossier… », choisir ce dossier.
+3. Dans l'Explorateur, copier `essais/reclamation.pdf` dans ce dossier.
+4. Revenir à l'appli sans rien cliquer : en quelques secondes, le document apparaît dans la liste, « Prêt », et un compteur s'affiche sur l'onglet.
+5. Cliquer sur « Vérifier » : le document s'ouvre déjà analysé. « Continuer », « Caviarder », « Enregistrer le fichier… ».
+
+À vérifier : rien n'a été écrit dans le dossier avant l'enregistrement, et la ligne passe à « Traité ». Fermer puis rouvrir l'appli : le dossier est toujours surveillé.
+
+### Essai 8 : les règles et le journal
 
 1. Onglet « Règles ». Ajouter « Toujours masquer ce terme » avec un mot du mail, par exemple `régularisation`.
-2. Revenir à « 1. Filtrer », recoller le mail, « Analyser » : le mot est maintenant surligné.
-3. Dans « Règles », la liste montre aussi les passages démasqués à l'essai 1. « Retirer » les supprime.
-4. Onglet « Journal » : une ligne par traitement, avec des décomptes et aucune vraie valeur.
+2. Revenir à « Protéger un document », recoller le mail, « Analyser » : le mot est maintenant surligné.
+3. Dans « Règles », la liste montre aussi les passages décochés à l'essai 1. « Retirer » les supprime.
+4. Onglet « Journal » : une ligne par traitement, qui dit s'il s'agit d'une pseudonymisation ou d'un caviardage, avec des décomptes et aucune vraie valeur.
 
-### Essai 8 (facultatif) : une vraie IA
+### Essai 9 (facultatif) : une vraie IA
 
 Uniquement avec le faux mail, jamais avec un vrai document.
 
-1. Filtrer `mail_paie.txt` et copier le texte filtré.
+1. Pseudonymiser `mail_paie.txt` et copier le texte.
 2. Le coller dans Claude ou ChatGPT avec une demande, par exemple « Résume ce mail en trois points et propose une réponse ».
-3. Copier la réponse, la coller dans « 2. Restaurer ».
+3. Copier la réponse, la coller dans « Restaurer ».
 
 À vérifier : la réponse restaurée se lit normalement, avec les vrais noms. Noter ce que l'IA a fait des jetons (recopiés, déformés, inventés).
 
@@ -190,10 +204,12 @@ Copier `docs/passerelle.exemple.toml` sous le nom `passerelle.toml`, y mettre l'
 
 | Constat | Ce que ça veut dire |
 |---|---|
-| Un nom ou un numéro en clair dans l'aperçu, non surligné | Le détecteur l'a raté. Le masquer à la main et le noter : c'est un cas à ajouter au jeu de test. |
+| Un nom ou un numéro en clair dans le document, non surligné | Le détecteur l'a raté. Le masquer à la main et le noter : c'est un cas à ajouter au jeu de test. |
 | Beaucoup de mots ordinaires surlignés | Le modèle masque trop. Les démasquer : l'appli s'en souvient. |
 | Une valeur en clair dans le terminal de la fausse IA | Fuite par la passerelle, qui n'a pas d'aperçu. À noter avec le texte concerné. |
 | Un Word ou un Excel filtré qui ne s'ouvre pas | Défaut du fichier produit : ils n'ont été relus que par programme. |
+| Un rectangle noir décalé, ou une donnée qui dépasse du rectangle | Défaut du caviardage. À noter avec le PDF concerné. |
+| Un document déposé qui n'apparaît pas dans « Dossier surveillé » | La surveillance n'a été essayée que par programme. |
 | Un bouton « Ouvrir » ou « Enregistrer » qui ne fait rien | Les boîtes de Windows n'ont pas été essayées dans la vraie fenêtre. |
 
 ## 4. Nettoyer

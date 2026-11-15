@@ -198,6 +198,22 @@ class Table:
         with self._db:
             self._db.execute("DELETE FROM regles WHERE id = ?", (identifiant,))
 
+    # Réglages de l'appli, chiffrés (par exemple le dossier surveillé).
+
+    def regler(self, nom: str, valeur: str | None) -> None:
+        """Range un réglage. `None` l'efface."""
+        cle = f"reglage:{nom}"
+        with self._db:
+            self._db.execute("DELETE FROM meta WHERE cle = ?", (cle,))
+            if valeur is not None:
+                nonce, chiffre = self._chiffrer(valeur, cle.encode())
+                self._db.execute("INSERT INTO meta VALUES (?, ?)", (cle, nonce + chiffre))
+
+    def reglage(self, nom: str) -> str | None:
+        cle = f"reglage:{nom}"
+        ligne = self._db.execute("SELECT valeur FROM meta WHERE cle = ?", (cle,)).fetchone()
+        return self._dechiffrer(ligne[0][:12], ligne[0][12:], cle.encode()) if ligne else None
+
     # Journal : décomptes en clair, nom de fichier chiffré. Jamais de vraie valeur.
 
     def journaliser(self, contenu: dict, fichier: str | None = None) -> None:

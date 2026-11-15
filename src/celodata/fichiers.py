@@ -18,7 +18,14 @@ from pathlib import Path
 
 from celodata.detection.base import Detecteur, Detection
 from celodata.documents import DocumentIllisible
-from celodata.moteur import Remplacement, Restauration, analyser, remplacements_jetons, restaurer_avec_positions
+from celodata.moteur import (
+    Remplacement,
+    Restauration,
+    analyser,
+    remplacements_caviard,
+    remplacements_jetons,
+    restaurer_avec_positions,
+)
 from celodata.table import Table
 
 FORMATS = {".docx", ".xlsx"}
@@ -326,6 +333,13 @@ class FichierFiltre:
 def appliquer_filtrage(document: Formate, detections: list[Detection], table: Table) -> bytes:
     """Remplace dans le fichier les passages retenus et rend le fichier filtré."""
     document.remplacer(remplacements_jetons(document.texte, document.decouper(detections), table))
+    document.nettoyer_proprietes()
+    return document.enregistrer()
+
+
+def appliquer_caviardage(document: Formate, detections: list[Detection]) -> bytes:
+    """Retire du fichier les passages retenus, sans retour possible, et rend le fichier caviardé."""
+    document.remplacer(remplacements_caviard(document.decouper(detections)))
     document.nettoyer_proprietes()
     return document.enregistrer()
 

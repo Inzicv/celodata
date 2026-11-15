@@ -6,81 +6,172 @@
 <title>Celodata</title>
 <style>
 :root {
-  --fond: #f6f5f1; --carte: #ffffff; --texte: #1d1d1b; --discret: #6b6a64; --trait: #dcdad2;
-  --accent: #1f5f8b; --accent-texte: #ffffff; --alerte: #a13d2d; --alerte-fond: #fbeae6;
+  --fond: #f4f3ef; --carte: #ffffff; --creux: #ecebe5; --texte: #1c1d1f; --discret: #66665f; --trait: #dddbd3;
+  --accent: #1f5f8b; --accent-fonce: #174a6d; --accent-texte: #ffffff; --accent-pale: #e4eff7;
+  --alerte: #a13d2d; --alerte-fond: #fbeae6; --bon: #2f7a4d; --bon-fond: #e3f2e8;
   --personne: #cfe3f5; --lieu: #d3ecd6; --numero: #fbe3c0; --sensible: #e6d7f3; --secret: #f6cfcf; --autre: #e3e2dc;
+  --p-personne: #3b7fb8; --p-lieu: #3e9a55; --p-numero: #c98a25; --p-sensible: #8a5cb8; --p-secret: #c0504d; --p-autre: #8a8980;
+  --ombre: 0 1px 2px rgba(20,20,20,.06), 0 6px 20px rgba(20,20,20,.06);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --fond: #1b1c1e; --carte: #25272a; --texte: #ecebe6; --discret: #a3a29b; --trait: #3b3d41;
-    --accent: #6bb1e0; --accent-texte: #10202b; --alerte: #f0a493; --alerte-fond: #40231d;
+    --fond: #17181a; --carte: #222427; --creux: #2b2d31; --texte: #ecebe6; --discret: #a3a29b; --trait: #3a3c40;
+    --accent: #6bb1e0; --accent-fonce: #8cc4ea; --accent-texte: #0f1d27; --accent-pale: #1f3443;
+    --alerte: #f0a493; --alerte-fond: #40231d; --bon: #86cfa0; --bon-fond: #1d3a28;
     --personne: #244a66; --lieu: #26503a; --numero: #5e4520; --sensible: #4a3564; --secret: #6a2c2c; --autre: #45464a;
+    --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
   }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
-header { display: flex; align-items: center; gap: 24px; padding: 12px 24px; border-bottom: 1px solid var(--trait); background: var(--carte); }
-header h1 { font-size: 18px; margin: 0; letter-spacing: .02em; }
-nav { display: flex; gap: 4px; }
-nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; color: var(--discret); font: inherit; cursor: pointer; }
-nav button[aria-selected="true"] { color: var(--texte); border-color: var(--accent); font-weight: 600; }
-#etat { margin-left: auto; color: var(--discret); font-size: 13px; }
-main { max-width: 1060px; margin: 0 auto; padding: 24px; }
-section[hidden] { display: none; }
-h2 { font-size: 16px; margin: 0 0 4px; }
-p.aide { margin: 0 0 12px; color: var(--discret); }
-textarea, .zone { width: 100%; min-height: 220px; padding: 14px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); color: var(--texte); font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
-textarea { resize: vertical; }
-textarea.survol { border-color: var(--accent); border-style: dashed; }
-.zone { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 52vh; overflow: auto; }
-.barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 24px; }
-button.action { background: var(--accent); color: var(--accent-texte); border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
-button.second { background: none; color: var(--texte); border: 1px solid var(--trait); border-radius: 6px; padding: 8px 14px; font: inherit; cursor: pointer; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- barre du haut ---------- */
+header { display: flex; align-items: center; gap: 20px; padding: 0 22px; height: 56px; flex: none; background: var(--carte); border-bottom: 1px solid var(--trait); }
+.logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; letter-spacing: .01em; }
+.logo i { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); position: relative; }
+.logo i::before, .logo i::after { content: ""; position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: var(--accent-texte); }
+.logo i::before { top: 6px; } .logo i::after { top: 13px; right: 9px; }
+nav { display: flex; gap: 2px; height: 100%; }
+nav button { background: none; border: 0; border-bottom: 3px solid transparent; border-top: 3px solid transparent; padding: 0 13px; color: var(--discret); }
+nav button:hover { color: var(--texte); }
+nav button[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--accent); font-weight: 600; }
+.pastille { display: inline-block; min-width: 19px; padding: 0 6px; margin-left: 6px; border-radius: 10px; background: var(--accent); color: var(--accent-texte); font-size: 12px; font-weight: 600; text-align: center; }
+#etat { margin-left: auto; display: flex; align-items: center; gap: 7px; color: var(--discret); font-size: 13px; }
+#etat::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--p-autre); }
+#etat.pret::before { background: var(--bon); } #etat.limite::before { background: var(--p-numero); }
+
+main { flex: 1; min-height: 0; overflow: auto; }
+.page { max-width: 880px; margin: 0 auto; padding: 28px 24px 40px; }
+h2 { font-size: 22px; font-weight: 650; margin: 0 0 6px; letter-spacing: -.01em; }
+h3 { font-size: 15px; font-weight: 650; margin: 0 0 4px; }
+p.aide { margin: 0 0 16px; color: var(--discret); }
+.carte { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; }
+.barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.action { background: var(--accent); color: var(--accent-texte); border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 600; }
+.action:hover:not(:disabled) { background: var(--accent-fonce); }
+.second { background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; padding: 8px 15px; }
+.second:hover:not(:disabled) { border-color: var(--discret); }
+.lien { background: none; border: 0; padding: 4px 2px; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .info { color: var(--discret); font-size: 13px; }
-.message { padding: 10px 14px; border-radius: 6px; margin: 0 0 14px; background: var(--alerte-fond); color: var(--alerte); }
+.message { padding: 10px 14px; border-radius: 8px; margin: 0 0 14px; background: var(--alerte-fond); color: var(--alerte); }
+.message.bon { background: var(--bon-fond); color: var(--bon); }
 .message:empty { display: none; }
-mark { border-radius: 4px; padding: 1px 3px; color: inherit; cursor: pointer; background: var(--autre); }
-mark::after { content: attr(data-type); font: 600 10px "Segoe UI", sans-serif; margin-left: 5px; opacity: .7; vertical-align: 1px; }
-mark.personne { background: var(--personne); } mark.lieu { background: var(--lieu); }
-mark.numero { background: var(--numero); } mark.sensible { background: var(--sensible); }
-mark.secret { background: var(--secret); }
-mark.inactif { background: none; text-decoration: line-through; text-decoration-color: var(--discret); }
-mark.inactif::after { content: "non masqué"; }
-mark.suggestion { background: none; border: 1px dashed var(--alerte); }
-mark.suggestion::after { content: "à vérifier"; color: var(--alerte); opacity: 1; }
-#ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
-#ajout[hidden] { display: none; }
-select, input[type=password] { font: inherit; padding: 7px 9px; border: 1px solid var(--trait); border-radius: 6px; background: var(--carte); color: var(--texte); }
-#porte { max-width: 440px; margin: 9vh auto; padding: 28px; background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; }
-#porte label { display: block; margin: 14px 0 4px; font-weight: 600; }
-#porte input { width: 100%; }
-#porte .action { margin-top: 18px; width: 100%; }
+input[type=text], input[type=password], input[type=search], select, textarea { padding: 8px 10px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); }
+textarea { width: 100%; min-height: 200px; padding: 14px; resize: vertical; font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
+.zone { width: 100%; padding: 14px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 44vh; overflow: auto; font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
 ul.liste { margin: 6px 0 0; padding-left: 20px; }
-input[type=text] { font: inherit; padding: 7px 9px; border: 1px solid var(--trait); border-radius: 6px; background: var(--carte); color: var(--texte); flex: 1 1 220px; min-width: 0; }
-.defile { overflow-x: auto; margin-bottom: 24px; }
-table { width: 100%; border-collapse: collapse; background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; font-size: 14px; }
-th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--trait); vertical-align: top; }
-th { color: var(--discret); font-weight: 600; font-size: 13px; }
+.defile { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--trait); vertical-align: middle; }
+th { color: var(--discret); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 tr:last-child td { border-bottom: 0; }
 td.nombre, th.nombre { text-align: right; font-variant-numeric: tabular-nums; }
-td.erreur { color: var(--alerte); }
-td.vide { color: var(--discret); }
+td.erreur { color: var(--alerte); } td.vide { color: var(--discret); }
 code { font: 13px Consolas, "Cascadia Mono", monospace; }
+
+/* ---------- mot de passe ---------- */
+#porte { max-width: 430px; margin: 9vh auto; padding: 30px; background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; box-shadow: var(--ombre); }
+#porte label { display: block; margin: 14px 0 4px; font-weight: 600; }
+#porte input { width: 100%; }
+#porte .action { margin-top: 20px; width: 100%; }
+
+/* ---------- étapes ---------- */
+.etapes { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 22px; }
+.etapes li { display: flex; align-items: center; gap: 8px; padding: 5px 13px 5px 6px; border-radius: 20px; color: var(--discret); font-size: 14px; }
+.etapes li b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--trait); font-size: 12px; font-weight: 600; }
+.etapes li.ici { background: var(--carte); color: var(--texte); font-weight: 600; border: 1px solid var(--trait); }
+.etapes li.ici b { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
+.etapes li.fait b { background: var(--bon-fond); border-color: transparent; color: var(--bon); }
+
+/* ---------- déposer ---------- */
+#depot { border: 2px dashed var(--trait); border-radius: 16px; background: var(--carte); padding: 46px 24px; text-align: center; transition: border-color .15s, background .15s; }
+#depot.survol { border-color: var(--accent); background: var(--accent-pale); }
+#depot .dessin { width: 54px; height: 66px; margin: 0 auto 16px; border: 2px solid var(--discret); border-radius: 7px; position: relative; opacity: .7; }
+#depot .dessin::before { content: ""; position: absolute; left: 10px; right: 10px; top: 16px; height: 2px; background: var(--discret); box-shadow: 0 10px 0 var(--discret), 0 20px 0 var(--accent), 0 30px 0 var(--discret); }
+#depot h2 { margin-bottom: 4px; }
+#depot .barre { justify-content: center; margin-top: 18px; }
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .deux { grid-template-columns: 1fr; } }
+
+/* ---------- attente ---------- */
+#attente { text-align: center; padding: 15vh 24px; }
+.tourne { width: 38px; height: 38px; margin: 0 auto 18px; border-radius: 50%; border: 3px solid var(--trait); border-top-color: var(--accent); animation: tourne .9s linear infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tourne { animation-duration: 3s; } }
+
+/* ---------- vérifier ---------- */
+#verifier { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100%; }
+#verifier .gauche { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.entete-doc { display: flex; align-items: center; gap: 12px; padding: 12px 22px; flex: none; }
+.entete-doc strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entete-doc .info { margin-left: auto; white-space: nowrap; }
+.bureau { flex: 1; min-height: 0; overflow: auto; padding: 6px 22px 28px; }
+.feuille { max-width: 800px; margin: 0 auto; background: var(--carte); border: 1px solid var(--trait); border-radius: 6px; box-shadow: var(--ombre); padding: 44px 52px; min-height: 60vh; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.75; tab-size: 4; }
+mark { border-radius: 4px; padding: 1px 2px; color: inherit; cursor: pointer; background: var(--autre); box-shadow: inset 0 -2px 0 var(--p-autre); }
+mark.personne { background: var(--personne); box-shadow: inset 0 -2px 0 var(--p-personne); }
+mark.lieu { background: var(--lieu); box-shadow: inset 0 -2px 0 var(--p-lieu); }
+mark.numero { background: var(--numero); box-shadow: inset 0 -2px 0 var(--p-numero); }
+mark.sensible { background: var(--sensible); box-shadow: inset 0 -2px 0 var(--p-sensible); }
+mark.secret { background: var(--secret); box-shadow: inset 0 -2px 0 var(--p-secret); }
+mark.inactif { background: none; box-shadow: none; text-decoration: line-through; text-decoration-color: var(--discret); }
+mark.suggestion { background: none; box-shadow: none; outline: 1px dashed var(--alerte); }
+mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
+#panneau { display: flex; flex-direction: column; min-height: 0; background: var(--carte); border-left: 1px solid var(--trait); }
+#panneau .haut { padding: 16px 16px 10px; flex: none; }
+#panneau .haut input { width: 100%; margin-top: 8px; }
+#liste { flex: 1; min-height: 0; overflow: auto; padding: 0 8px; }
+.groupe { margin-bottom: 6px; }
+.groupe h4 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 8px 4px; font-size: 12px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--discret); }
+.groupe h4 i { width: 9px; height: 9px; border-radius: 50%; background: var(--p-autre); }
+.groupe h4 span { margin-left: auto; font-weight: 500; }
+.personne > h4 i { background: var(--p-personne); } .lieu > h4 i { background: var(--p-lieu); }
+.numero > h4 i { background: var(--p-numero); } .sensible > h4 i { background: var(--p-sensible); }
+.secret > h4 i { background: var(--p-secret); } .averifier > h4 i { background: var(--alerte); }
+.ligne { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: 7px; }
+.ligne:hover { background: var(--creux); }
+.ligne input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.ligne button { flex: 1; min-width: 0; background: none; border: 0; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ligne small { color: var(--discret); flex: none; }
+.ligne.non button { color: var(--discret); text-decoration: line-through; }
+#panneau .bas { flex: none; padding: 12px 16px 16px; border-top: 1px solid var(--trait); }
+#autre { display: flex; gap: 6px; margin-bottom: 4px; }
+#autre input { flex: 1; min-width: 0; } #autre select { width: 108px; }
+#panneau .bas .action { width: 100%; margin-top: 10px; padding: 11px; }
+@media (max-width: 900px) { #verifier { grid-template-columns: minmax(0, 1fr) 280px; } .feuille { padding: 28px 26px; } }
+#ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; box-shadow: var(--ombre); }
+
+/* ---------- exporter ---------- */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+@media (max-width: 760px) { .modes { grid-template-columns: 1fr; } }
+.mode { display: block; position: relative; background: var(--carte); border: 2px solid var(--trait); border-radius: 12px; padding: 16px 18px; cursor: pointer; }
+.mode input { position: absolute; opacity: 0; }
+.mode:has(input:checked) { border-color: var(--accent); background: var(--accent-pale); }
+.mode:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mode .titre { display: flex; align-items: baseline; gap: 8px; font-weight: 650; font-size: 16px; }
+.mode .titre small { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--discret); text-transform: uppercase; letter-spacing: .05em; }
+.mode .exemple { margin: 10px 0; padding: 9px 11px; border-radius: 7px; background: var(--creux); font-size: 14px; }
+.mode .exemple b { font-weight: 600; padding: 0 3px; border-radius: 3px; background: var(--personne); }
+.mode .exemple u { text-decoration: none; background: #111; color: #111; border-radius: 2px; padding: 0 3px; user-select: none; }
+.mode p { margin: 0; color: var(--discret); font-size: 13.5px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Celodata</h1>
+  <div class="logo"><i aria-hidden="true"></i>Celodata</div>
   <nav role="tablist" hidden id="onglets">
-    <button role="tab" aria-selected="true" data-onglet="filtrer">1. Filtrer</button>
-    <button role="tab" aria-selected="false" data-onglet="restaurer">2. Restaurer</button>
+    <button role="tab" aria-selected="true" data-onglet="filtrer">Protéger un document</button>
+    <button role="tab" aria-selected="false" data-onglet="restaurer">Restaurer</button>
+    <button role="tab" aria-selected="false" data-onglet="surveille">Dossier surveillé<span class="pastille" id="pastille" hidden></span></button>
     <button role="tab" aria-selected="false" data-onglet="regles">Règles</button>
     <button role="tab" aria-selected="false" data-onglet="journal">Journal</button>
   </nav>
-  <span id="etat"></span>
+  <span id="etat" role="status"></span>
 </header>
 
 <main>
@@ -99,92 +190,192 @@ code { font: 13px Consolas, "Cascadia Mono", monospace; }
     </form>
   </section>
 
-  <section id="filtrer" hidden>
-    <h2>Texte à envoyer à l'IA</h2>
-    <p class="aide">Collez le texte ici, ou déposez un fichier (texte, Word .docx, Excel .xlsx, PDF, PDF scanné). Rien ne quitte cette machine.</p>
-    <textarea id="source" placeholder="Collez votre texte…" spellcheck="false"></textarea>
-    <div class="barre">
-      <button class="action" id="btn-analyser">Analyser</button>
-      <button class="second" id="btn-ouvrir">Ouvrir un fichier…</button>
-      <button class="second" id="btn-dossier">Filtrer un dossier…</button>
-      <button class="second" id="btn-vider">Vider</button>
-      <span class="info" id="info-analyse"></span>
+  <!-- ================= Protéger un document ================= -->
+  <section id="filtrer" hidden style="height:100%">
+    <div class="page" id="vue-deposer">
+      <ol class="etapes" aria-label="Étapes"><li class="ici"><b>1</b>Déposer</li><li><b>2</b>Vérifier</li><li><b>3</b>Exporter</li></ol>
+      <div class="message" id="depot-erreur" role="alert"></div>
+      <div id="depot">
+        <div class="dessin" aria-hidden="true"></div>
+        <h2>Déposez un document ici</h2>
+        <p class="aide" style="margin:0">Word, Excel, PDF, PDF scanné ou fichier texte. Rien ne quitte cette machine.</p>
+        <div class="barre">
+          <button class="action" id="btn-ouvrir">Choisir un fichier…</button>
+          <button class="second" id="btn-coller">Coller un texte</button>
+        </div>
+      </div>
+      <div class="carte" id="bloc-coller" hidden style="margin-top:16px">
+        <h3>Texte à protéger</h3>
+        <textarea id="source" placeholder="Collez votre texte ici…" spellcheck="false" aria-label="Texte à protéger"></textarea>
+        <div class="barre" style="margin-top:12px">
+          <button class="action" id="btn-analyser">Analyser</button>
+          <button class="second" id="btn-annuler-coller">Annuler</button>
+        </div>
+      </div>
+      <div class="carte" style="margin-top:16px">
+        <h3>Traiter un dossier entier</h3>
+        <p class="aide">Tous les documents du dossier sont traités sans aperçu et rangés dans un sous-dossier. Les originaux ne sont pas modifiés.</p>
+        <div class="barre">
+          <select id="dossier-mode" aria-label="Traitement du dossier">
+            <option value="pseudonymisation">Pseudonymiser (réversible)</option>
+            <option value="caviardage">Caviarder (définitif)</option>
+          </select>
+          <button class="second" id="btn-dossier">Choisir le dossier…</button>
+          <span class="info" id="info-dossier"></span>
+        </div>
+      </div>
+      <div class="carte" id="bloc-dossier" hidden>
+        <h3>Dossier traité</h3>
+        <p class="aide" id="dossier-aide"></p>
+        <div class="defile"><table>
+          <thead><tr><th>Document</th><th class="nombre">Passages masqués</th><th class="nombre">À vérifier</th><th>Résultat</th></tr></thead>
+          <tbody id="dossier-lignes"></tbody>
+        </table></div>
+      </div>
     </div>
 
-    <div id="bloc-dossier" hidden>
-      <h2>Dossier filtré</h2>
-      <p class="aide" id="dossier-aide"></p>
-      <div class="defile"><table>
-        <thead><tr><th>Document</th><th class="nombre">Passages masqués</th><th class="nombre">À vérifier</th><th>Résultat</th></tr></thead>
-        <tbody id="dossier-lignes"></tbody>
-      </table></div>
+    <div id="attente" hidden role="status">
+      <div class="tourne" aria-hidden="true"></div>
+      <h2 id="attente-titre">Analyse en cours…</h2>
+      <p class="aide">Le document ne s'affiche qu'une fois ses données repérées.</p>
     </div>
 
-    <div id="bloc-apercu" hidden>
-      <h2>Aperçu</h2>
-      <p class="aide">Cliquez sur un passage surligné pour ne plus le masquer. Sélectionnez du texte pour le masquer. Les passages « à vérifier » ne sont masqués que si vous cliquez dessus.</p>
-      <div class="message" id="avert-scan" role="alert"></div>
-      <div class="zone" id="apercu" tabindex="0"></div>
-      <div class="barre">
-        <button class="action" id="btn-filtrer">Copier le texte filtré</button>
-        <button class="action" id="btn-enregistrer" hidden>Enregistrer le fichier filtré…</button>
-        <span class="info" id="info-filtre"></span>
+    <div id="verifier" hidden>
+      <div class="gauche">
+        <div class="entete-doc">
+          <button class="second" id="btn-retour-depot" aria-label="Revenir au dépôt">←</button>
+          <strong id="doc-nom"></strong>
+          <span class="info" id="doc-bilan"></span>
+        </div>
+        <div class="bureau">
+          <div class="message" id="avert-scan" role="alert" style="max-width:800px;margin:0 auto 12px"></div>
+          <div class="feuille" id="apercu" tabindex="0"></div>
+        </div>
+      </div>
+      <aside id="panneau" aria-label="Données à masquer">
+        <div class="haut">
+          <h3>À masquer</h3>
+          <span class="info">Décochez ce qui peut rester. Sélectionnez du texte dans le document pour en masquer davantage.</span>
+          <input type="search" id="filtre-liste" placeholder="Filtrer la liste…" aria-label="Filtrer la liste">
+        </div>
+        <div id="liste"></div>
+        <div class="bas">
+          <form id="autre">
+            <input type="text" id="autre-terme" placeholder="Masquer un autre terme…" aria-label="Autre terme à masquer" autocomplete="off" spellcheck="false">
+            <select id="autre-type" aria-label="Type du terme"></select>
+          </form>
+          <span class="info" id="autre-info"></span>
+          <button class="action" id="btn-continuer">Continuer →</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="page" id="vue-exporter" hidden>
+      <ol class="etapes" aria-label="Étapes"><li class="fait"><b>✓</b>Déposer</li><li class="fait"><b>✓</b>Vérifier</li><li class="ici"><b>3</b>Exporter</li></ol>
+      <h2>Que voulez-vous obtenir ?</h2>
+      <p class="aide" id="export-bilan"></p>
+      <div class="modes" role="radiogroup" aria-label="Traitement">
+        <label class="mode">
+          <input type="radio" name="mode" value="pseudonymisation" checked>
+          <div class="titre">Pseudonymiser <small>Réversible</small></div>
+          <div class="exemple">Le dossier de <b>PERSONNE_1</b> sera examiné lundi.</div>
+          <p>Chaque donnée devient un jeton. Le texte reste lisible par une IA, et Celodata remet les vraies valeurs dans sa réponse.</p>
+        </label>
+        <label class="mode">
+          <input type="radio" name="mode" value="caviardage">
+          <div class="titre">Caviarder <small>Définitif</small></div>
+          <div class="exemple">Le dossier de <u>█████████</u> sera examiné lundi.</div>
+          <p>Chaque donnée est retirée pour de bon. Aucun retour possible : gardez l'original à part.</p>
+        </label>
+      </div>
+      <div class="carte">
+        <p class="aide" id="export-aide" style="margin-bottom:12px"></p>
+        <div class="barre">
+          <button class="action" id="btn-enregistrer">Enregistrer le fichier…</button>
+          <button class="second" id="btn-filtrer">Copier le texte</button>
+          <button class="lien" id="btn-retour-verif" style="margin-left:auto">← Revenir à la vérification</button>
+        </div>
       </div>
       <div class="message" id="filtre-erreur" role="alert"></div>
+      <div class="message bon" id="export-ok" role="status"></div>
       <div id="bloc-filtre" hidden>
-        <h2>Texte filtré</h2>
-        <p class="aide">C'est ce texte qui est dans le presse-papiers. Collez-le dans votre IA.</p>
+        <h3>Texte copié dans le presse-papiers</h3>
         <div class="zone" id="filtre"></div>
       </div>
+      <div class="barre" style="margin-top:18px"><button class="second" id="btn-nouveau">Protéger un autre document</button></div>
     </div>
   </section>
 
-  <section id="restaurer" hidden>
-    <h2>Réponse de l'IA</h2>
-    <p class="aide">Collez la réponse, ou restaurez un fichier rendu par l'IA (Word, Excel, texte). Les jetons sont remplacés par les vraies valeurs.</p>
-    <textarea id="reponse" placeholder="Collez la réponse de l'IA…" spellcheck="false"></textarea>
-    <div class="barre">
+  <!-- ================= Restaurer ================= -->
+  <section id="restaurer" hidden><div class="page">
+    <h2>Restaurer la réponse de l'IA</h2>
+    <p class="aide">Collez la réponse, ou restaurez un fichier rendu par l'IA (Word, Excel, texte). Les jetons sont remplacés par les vraies valeurs. Un document caviardé ne peut pas être restauré.</p>
+    <textarea id="reponse" placeholder="Collez la réponse de l'IA…" spellcheck="false" aria-label="Réponse de l'IA"></textarea>
+    <div class="barre" style="margin:12px 0 20px">
       <button class="action" id="btn-restaurer">Restaurer</button>
       <button class="second" id="btn-restaurer-fichier">Restaurer un fichier…</button>
       <span class="info" id="info-restaure"></span>
     </div>
     <div id="bloc-restaure" hidden>
       <div class="message" id="alertes-restaure" role="alert"></div>
-      <h2>Réponse restaurée</h2>
+      <h3>Réponse restaurée</h3>
       <div class="zone" id="restaure"></div>
-      <div class="barre"><button class="action" id="btn-copier-restaure">Copier</button><span class="info" id="info-copie"></span></div>
+      <div class="barre" style="margin-top:12px"><button class="action" id="btn-copier-restaure">Copier</button><span class="info" id="info-copie"></span></div>
     </div>
-  </section>
+  </div></section>
 
-  <section id="regles" hidden>
+  <!-- ================= Dossier surveillé ================= -->
+  <section id="surveille" hidden><div class="page">
+    <h2>Dossier surveillé</h2>
+    <p class="aide">Les documents déposés dans ce dossier sont analysés en tâche de fond, tant que Celodata est ouvert. Ils vous attendent ici, prêts à vérifier. Rien n'est enregistré sans votre validation.</p>
+    <div class="carte">
+      <div class="barre">
+        <span id="surveille-chemin"><span class="info">Aucun dossier surveillé.</span></span>
+        <button class="action" id="btn-surveiller" style="margin-left:auto">Choisir un dossier…</button>
+        <button class="second" id="btn-arreter" hidden>Arrêter</button>
+      </div>
+    </div>
+    <div class="carte" id="surveille-bloc" hidden>
+      <div class="defile"><table>
+        <thead><tr><th>Document</th><th>État</th><th></th></tr></thead>
+        <tbody id="surveille-lignes"></tbody>
+      </table></div>
+    </div>
+  </div></section>
+
+  <!-- ================= Règles ================= -->
+  <section id="regles" hidden><div class="page">
     <h2>Règles du projet</h2>
-    <p class="aide">Elles s'appliquent à tous les textes de ce projet, y compris aux dossiers. Elles sont rangées chiffrées dans la table.</p>
+    <p class="aide">Elles s'appliquent à tous les documents, y compris aux dossiers. Elles sont rangées chiffrées dans la table.</p>
     <div class="message" id="regle-erreur" role="alert"></div>
-    <form class="barre" id="regle-form">
-      <select id="regle-genre" aria-label="Genre de règle">
-        <option value="terme">Toujours masquer ce terme</option>
-        <option value="motif">Masquer ce qui suit ce motif</option>
-        <option value="jamais">Ne jamais masquer ce terme</option>
-      </select>
-      <input type="text" id="regle-texte" aria-label="Terme ou motif" placeholder="Nom de code, client, référence interne…" autocomplete="off" spellcheck="false">
-      <select id="regle-type" aria-label="Type"></select>
-      <button class="action" type="submit">Ajouter</button>
-    </form>
-    <p class="aide" id="regle-aide"></p>
-    <div class="defile"><table>
+    <div class="carte">
+      <form class="barre" id="regle-form">
+        <select id="regle-genre" aria-label="Genre de règle">
+          <option value="terme">Toujours masquer ce terme</option>
+          <option value="motif">Masquer ce qui suit ce motif</option>
+          <option value="jamais">Ne jamais masquer ce terme</option>
+        </select>
+        <input type="text" id="regle-texte" style="flex:1 1 220px;min-width:0" aria-label="Terme ou motif" placeholder="Nom de code, client, référence interne…" autocomplete="off" spellcheck="false">
+        <select id="regle-type" aria-label="Type"></select>
+        <button class="action" type="submit">Ajouter</button>
+      </form>
+      <p class="info" id="regle-aide" style="margin:10px 0 0"></p>
+    </div>
+    <div class="carte"><div class="defile"><table>
       <thead><tr><th>Règle</th><th>Texte</th><th>Type</th><th></th></tr></thead>
       <tbody id="regle-lignes"></tbody>
-    </table></div>
-  </section>
+    </table></div></div>
+  </div></section>
 
-  <section id="journal" hidden>
+  <!-- ================= Journal ================= -->
+  <section id="journal" hidden><div class="page" style="max-width:1080px">
     <h2>Journal</h2>
     <p class="aide">Les 200 derniers traitements. Le journal ne contient que des décomptes, jamais de vraie valeur. Le nom du fichier y est chiffré.</p>
-    <div class="defile"><table>
+    <div class="carte"><div class="defile"><table>
       <thead><tr><th>Date</th><th>Action</th><th>Document</th><th>Détail</th><th>Origine des passages</th></tr></thead>
       <tbody id="journal-lignes"></tbody>
-    </table></div>
-  </section>
+    </table></div></div>
+  </div></section>
 </main>
 
 <div id="ajout" hidden>
@@ -211,13 +402,25 @@ const FAMILLES = {
 const NUMEROS = ["TELEPHONE","MAIL","NIR","IBAN","BIC","SIRET","TVA","PLAQUE","IP","MAC","MACHINE","URL",
   "IDENTIFIANT","MATRICULE","NUM_CLIENT","NUM_CONTRAT","DATE","DATE_NAISSANCE","MONTANT"];
 const famille = t => FAMILLES[t] || (NUMEROS.includes(t) ? "numero" : "autre");
+const NOMS = {
+  PERSONNE: "Personne", ORGANISATION: "Organisation", ADRESSE: "Adresse", VILLE: "Ville", LIEU: "Lieu",
+  TELEPHONE: "Téléphone", MAIL: "Courriel", DATE: "Date", DATE_NAISSANCE: "Date de naissance",
+  NIR: "N° de sécurité sociale", IBAN: "IBAN", BIC: "BIC", SIRET: "SIRET ou SIREN", TVA: "N° de TVA",
+  PLAQUE: "Plaque", IP: "Adresse IP", MAC: "Adresse MAC", MACHINE: "Machine", URL: "Lien",
+  IDENTIFIANT: "Identifiant", LOGIN: "Identifiant de connexion", MATRICULE: "Matricule",
+  NUM_CLIENT: "N° client", NUM_CONTRAT: "N° de contrat", MONTANT: "Montant", PROJET: "Projet",
+  SANTE: "Santé", SYNDICAT: "Syndicat", SECRET: "Secret (supprimé)", FONCTION: "Fonction", AUTRE: "Autre",
+};
+const nomType = t => NOMS[t] || t.toLowerCase().replace(/_/g, " ");
+const pluriel = (n, mot, s = "s") => `${n} ${mot}${n > 1 ? s : ""}`;
 
 let texte = "";          // texte analysé
 let passages = [];       // {debut, fin, type, actif, suggestion}
 let selection = null;    // {debut, fin} en attente d'ajout
-let fichier = "";        // nom du fichier chargé, pour le journal
-let formate = false;     // le fichier chargé est un Word, un Excel ou un PDF : il peut être enregistré filtré
-let scan = 0;            // pages du fichier lues par reconnaissance de caractères
+let fichier = "";        // nom du fichier chargé
+let formate = false;     // Word, Excel ou PDF : enregistré dans un format de document
+let estPdf = false;
+let scan = 0;            // pages lues par reconnaissance de caractères
 
 function copier(contenu) {
   const z = document.createElement("textarea");
@@ -227,6 +430,17 @@ function copier(contenu) {
   z.remove();
   return ok;
 }
+function cellule(tr, contenu, classe) {
+  const td = document.createElement("td");
+  if (classe) td.className = classe;
+  td.append(contenu); tr.append(td);
+  return td;
+}
+function ligneVide(corps, colonnes, message) {
+  const tr = document.createElement("tr");
+  cellule(tr, message, "vide").colSpan = colonnes;
+  corps.append(tr);
+}
 
 // ---------- ouverture ----------
 async function demarrer() {
@@ -235,7 +449,7 @@ async function demarrer() {
   $("porte-titre").textContent = e.table_existe ? "Ouvrir le projet" : "Créer le projet";
   $("porte-aide").textContent = e.table_existe
     ? "Entrez le mot de passe de la table de correspondance."
-    : "Choisissez un mot de passe d'au moins 8 caractères. Il protège la table de correspondance. S'il est perdu, les textes déjà filtrés ne pourront plus être restaurés.";
+    : "Choisissez un mot de passe d'au moins 8 caractères. Il protège la table de correspondance. S'il est perdu, les textes déjà pseudonymisés ne pourront plus être restaurés.";
   $("bloc-confirmation").hidden = e.table_existe;
   $("porte").dataset.nouvelle = e.table_existe ? "" : "1";
   $("mdp").focus();
@@ -256,59 +470,140 @@ function entrer() {
   $("porte").hidden = true; $("onglets").hidden = false; $("filtrer").hidden = false;
   $("etat").textContent = "Chargement du modèle…";
   api().preparer().then(r => {
-    $("etat").textContent = r.modele ? "Règles + modèle d'entités" : "Règles seules : modèle d'entités absent";
+    $("etat").textContent = r.modele ? "Prêt · règles et modèle d'entités" : "Règles seules · les noms ne sont pas détectés";
+    $("etat").className = r.modele ? "pret" : "limite";
   });
-  $("source").focus();
+  suivreSurveillance();
+  setInterval(suivreSurveillance, 3000);
 }
-document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
-  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["filtrer", "restaurer", "regles", "journal"].forEach(o => { $(o).hidden = b.dataset.onglet !== o; });
+const ONGLETS = ["filtrer", "restaurer", "surveille", "regles", "journal"];
+function onglet(nom) {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x.dataset.onglet === nom));
+  ONGLETS.forEach(o => { $(o).hidden = nom !== o; });
   $("ajout").hidden = true;
-  if (b.dataset.onglet === "regles") chargerRegles();
-  if (b.dataset.onglet === "journal") chargerJournal();
-}));
-function cellule(tr, contenu, classe) {
-  const td = document.createElement("td");
-  if (classe) td.className = classe;
-  td.append(contenu); tr.append(td);
-  return td;
+  if (nom === "regles") chargerRegles();
+  if (nom === "journal") chargerJournal();
+  if (nom === "surveille") suivreSurveillance();
 }
-function ligneVide(corps, colonnes, message) {
-  const tr = document.createElement("tr");
-  cellule(tr, message, "vide").colSpan = colonnes;
-  corps.append(tr);
-}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => onglet(b.dataset.onglet)));
 
-// ---------- analyse et aperçu ----------
+// ---------- les quatre vues de « Protéger un document » ----------
+function vue(nom) {
+  $("vue-deposer").hidden = nom !== "deposer";
+  $("attente").hidden = nom !== "attente";
+  $("verifier").hidden = nom !== "verifier";
+  $("vue-exporter").hidden = nom !== "exporter";
+  $("ajout").hidden = true;
+}
+function attendre(titre) { $("attente-titre").textContent = titre; vue("attente"); }
+function vider() {
+  texte = ""; passages = []; fichier = ""; formate = false; estPdf = false; scan = 0;
+  $("source").value = ""; $("bloc-coller").hidden = true; $("depot-erreur").textContent = "";
+  $("apercu").textContent = ""; $("liste").textContent = ""; $("filtre").textContent = "";
+  api().oublier();
+  vue("deposer");
+}
+function refuser(message) { vue("deposer"); $("depot-erreur").textContent = message; }
+
+// ---------- déposer ----------
+$("btn-coller").addEventListener("click", () => { $("bloc-coller").hidden = false; $("source").focus(); });
+$("btn-annuler-coller").addEventListener("click", () => { $("bloc-coller").hidden = true; $("source").value = ""; });
 $("btn-analyser").addEventListener("click", async () => {
-  texte = $("source").value.replace(/\r\n?/g, "\n");
-  if (!texte.trim()) return;
-  $("btn-analyser").disabled = true;
-  $("info-analyse").textContent = "Analyse en cours…";
+  const colle = $("source").value.replace(/\r\n?/g, "\n");
+  if (!colle.trim()) return;
+  await api().oublier();
+  fichier = ""; formate = false; estPdf = false; scan = 0;
+  analyser(colle, "Analyse du texte…");
+});
+async function analyser(contenu, titre, dejaFaite) {
+  $("depot-erreur").textContent = "";
+  attendre(titre);
   try {
-    const r = await api().analyser(texte);
+    const r = dejaFaite || await api().analyser(contenu);
+    texte = contenu;
     passages = [
       ...r.detections.map(d => ({...d, actif: true, suggestion: false})),
       ...r.suggestions.map(d => ({...d, actif: false, suggestion: true})),
     ].sort((a, b) => a.debut - b.debut);
-    $("info-analyse").textContent = r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.";
-    $("bloc-apercu").hidden = false; $("bloc-filtre").hidden = true; $("info-filtre").textContent = "";
-    $("btn-enregistrer").hidden = !formate;
+    $("doc-nom").textContent = fichier || "Texte collé";
     $("avert-scan").textContent = scan
-      ? `Document scanné : ${scan} page${scan > 1 ? "s ont été lues" : " a été lue"} par reconnaissance de caractères. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué. Relisez tout l'aperçu avant d'envoyer.`
-      : "";
+      ? `Document scanné : ${pluriel(scan, "page")} ${scan > 1 ? "ont été lues" : "a été lue"} par reconnaissance de caractères. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué. Relisez tout le document avant de continuer.`
+      : (r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.");
+    $("filtre-liste").value = ""; $("autre-info").textContent = "";
     dessiner();
+    vue("verifier");
+    $("apercu").parentElement.scrollTop = 0;
   } catch (e) {
-    $("info-analyse").textContent = "Erreur : " + e;
+    refuser("Erreur pendant l'analyse : " + e);
   }
-  $("btn-analyser").disabled = false;
+}
+function charger(r) {
+  if (r.annule) { vue("deposer"); return; }
+  if (!r.ok) { refuser(r.erreur); return; }
+  fichier = r.nom; formate = !!r.format; estPdf = !!r.pdf; scan = r.pages_scannees || 0;
+  analyser(r.texte, `Analyse de ${r.nom}…`, r.analyse);
+}
+$("btn-ouvrir").addEventListener("click", async () => {
+  $("depot-erreur").textContent = "";
+  const r = await api().ouvrir_fichier();
+  if (!r.annule) attendre("Lecture du document…");
+  charger(r);
 });
-$("btn-vider").addEventListener("click", () => {
-  $("source").value = ""; texte = ""; passages = []; fichier = ""; formate = false; scan = 0;
-  $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true; $("info-analyse").textContent = ""; $("ajout").hidden = true;
-  $("source").focus();
+// Dépôt d'un fichier n'importe où dans la vue.
+const depot = $("depot");
+window.addEventListener("dragover", ev => ev.preventDefault());
+window.addEventListener("drop", ev => ev.preventDefault());
+$("vue-deposer").addEventListener("dragover", ev => { ev.preventDefault(); depot.classList.add("survol"); });
+$("vue-deposer").addEventListener("dragleave", ev => { if (!$("vue-deposer").contains(ev.relatedTarget)) depot.classList.remove("survol"); });
+$("vue-deposer").addEventListener("drop", async ev => {
+  ev.preventDefault(); depot.classList.remove("survol");
+  const f = ev.dataTransfer.files[0];
+  if (!f) return;
+  attendre(`Lecture de ${f.name}…`);
+  // Le fichier est lu en mémoire puis confié au moteur : rien n'est écrit sur disque.
+  const octets = new Uint8Array(await f.arrayBuffer());
+  let binaire = "";
+  for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
+  charger(await api().lire_fichier(f.name, btoa(binaire)));
 });
 
+// Dossier entier, sans aperçu.
+$("btn-dossier").addEventListener("click", async () => {
+  const boutons = ["btn-dossier", "btn-ouvrir", "btn-coller"];
+  boutons.forEach(b => { $(b).disabled = true; });
+  $("info-dossier").textContent = "Traitement en cours : quelques secondes par document…";
+  try {
+    const r = await api().filtrer_dossier($("dossier-mode").value);
+    if (!r.annule) {
+      const corps = $("dossier-lignes");
+      const caviar = r.traitement === "caviardage";
+      corps.textContent = "";
+      r.fichiers.forEach(f => {
+        const tr = document.createElement("tr");
+        cellule(tr, f.fichier);
+        cellule(tr, f.ok ? String(f.masques) : "", "nombre");
+        cellule(tr, f.ok && f.a_verifier ? String(f.a_verifier) : "", "nombre");
+        cellule(tr, f.ok ? (caviar ? "caviardé" : "pseudonymisé") + (f.remarque ? ` (${f.remarque})` : "") : f.erreur, f.ok ? "" : "erreur");
+        corps.append(tr);
+      });
+      if (!r.fichiers.length) ligneVide(corps, 4, "Aucun document lisible dans ce dossier.");
+      const faits = r.fichiers.filter(f => f.ok).length, rates = r.fichiers.length - faits;
+      $("dossier-aide").textContent = `${pluriel(faits, "document")} ${caviar ? "caviardé" : "pseudonymisé"}${faits > 1 ? "s" : ""}`
+        + (rates ? `, ${rates} non traité${rates > 1 ? "s" : ""}` : "")
+        + `. Les fichiers sont dans ${r.sortie}. Ils n'ont pas été vérifiés à l'écran : relisez-les avant de les transmettre.`
+        + (r.modele ? "" : " Modèle d'entités absent : les noms n'ont pas été détectés.");
+      $("bloc-dossier").hidden = false;
+      $("bloc-dossier").scrollIntoView({behavior: "smooth", block: "nearest"});
+    }
+    $("info-dossier").textContent = "";
+  } catch (e) {
+    $("info-dossier").textContent = "Erreur : " + e;
+  }
+  boutons.forEach(b => { $(b).disabled = false; });
+});
+
+// ---------- vérifier ----------
+const valeur = p => texte.slice(p.debut, p.fin);
 function dessiner() {
   const zone = $("apercu");
   zone.textContent = "";
@@ -316,25 +611,81 @@ function dessiner() {
   passages.forEach((p, i) => {
     zone.append(texte.slice(position, p.debut));
     const m = document.createElement("mark");
-    m.textContent = texte.slice(p.debut, p.fin);
-    m.dataset.i = i; m.dataset.type = p.type; m.tabIndex = 0; m.setAttribute("role", "button");
+    m.textContent = valeur(p);
+    m.dataset.i = i; m.tabIndex = 0; m.setAttribute("role", "button");
     m.className = p.actif ? famille(p.type) : (p.suggestion ? "suggestion" : "inactif");
-    m.title = p.actif ? "Cliquer pour ne plus masquer" : "Cliquer pour masquer";
+    m.title = `${nomType(p.type)} · ` + (p.actif ? "cliquer pour ne plus masquer" : "cliquer pour masquer");
     zone.append(m);
     position = p.fin;
   });
   zone.append(texte.slice(position));
-  const n = passages.filter(p => p.actif).length;
+  lister();
+}
+function lister() {
+  const liste = $("liste"), cherche = $("filtre-liste").value.trim().toLowerCase();
+  liste.textContent = "";
+  // Un groupe par type ; les fonctions « à vérifier » non cochées ont leur propre groupe, en tête.
+  const groupes = new Map();
+  passages.forEach((p, i) => {
+    const cle = p.suggestion && !p.actif ? "?" : p.type;
+    if (!groupes.has(cle)) groupes.set(cle, new Map());
+    const g = groupes.get(cle), v = valeur(p);
+    if (!g.has(v)) g.set(v, {n: 0, actif: p.actif, premier: i});
+    g.get(v).n++;
+  });
+  const ordre = [...groupes.keys()].sort((a, b) => a === "?" ? -1 : b === "?" ? 1 : nomType(a).localeCompare(nomType(b), "fr"));
+  let montres = 0;
+  ordre.forEach(cle => {
+    const lignes = [...groupes.get(cle)].filter(([v]) => !cherche || v.toLowerCase().includes(cherche));
+    if (!lignes.length) return;
+    const bloc = document.createElement("div");
+    bloc.className = "groupe " + (cle === "?" ? "averifier" : famille(cle));
+    const titre = document.createElement("h4");
+    titre.append(document.createElement("i"), cle === "?" ? "À vérifier" : nomType(cle));
+    const compte = document.createElement("span"); compte.textContent = lignes.length; titre.append(compte);
+    bloc.append(titre);
+    lignes.forEach(([v, x]) => {
+      const ligne = document.createElement("div");
+      ligne.className = "ligne" + (x.actif || cle === "?" ? "" : " non");
+      const case_ = document.createElement("input");
+      case_.type = "checkbox"; case_.checked = x.actif;
+      case_.setAttribute("aria-label", (x.actif ? "Ne plus masquer " : "Masquer ") + v);
+      case_.addEventListener("change", () => basculer(x.premier));
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = v; b.title = "Voir dans le document";
+      b.addEventListener("click", () => viser(x.premier));
+      ligne.append(case_, b);
+      if (x.n > 1) { const n = document.createElement("small"); n.textContent = "× " + x.n; ligne.append(n); }
+      bloc.append(ligne);
+      montres++;
+    });
+    liste.append(bloc);
+  });
+  if (!montres) {
+    const vide = document.createElement("p");
+    vide.className = "info"; vide.style.padding = "12px 8px";
+    vide.textContent = passages.length ? "Rien ne correspond à ce filtre." : "Aucune donnée repérée. Sélectionnez du texte dans le document pour le masquer.";
+    liste.append(vide);
+  }
+  const n = new Set(passages.filter(p => p.actif).map(valeur)).size;
   const v = passages.filter(p => p.suggestion && !p.actif).length;
-  $("info-filtre").textContent = `${n} passage${n > 1 ? "s" : ""} masqué${n > 1 ? "s" : ""}` + (v ? `, ${v} à vérifier` : "");
-  $("bloc-filtre").hidden = true;
+  $("doc-bilan").textContent = `${pluriel(n, "donnée")} à masquer` + (v ? ` · ${v} à vérifier` : "");
+}
+$("filtre-liste").addEventListener("input", lister);
+function viser(i) {
+  const m = $("apercu").querySelector(`mark[data-i="${i}"]`);
+  if (!m) return;
+  document.querySelectorAll("mark.vise").forEach(x => x.classList.remove("vise"));
+  m.classList.add("vise");
+  m.scrollIntoView({behavior: "smooth", block: "center"});
 }
 function basculer(i) {
-  const valeur = texte.slice(passages[i].debut, passages[i].fin);
-  const actif = !passages[i].actif;
+  const v = valeur(passages[i]), actif = !passages[i].actif;
   // Une même valeur est masquée partout ou nulle part.
-  passages.forEach(p => { if (texte.slice(p.debut, p.fin) === valeur) p.actif = actif; });
+  passages.forEach(p => { if (valeur(p) === v) p.actif = actif; });
+  const haut = $("liste").scrollTop;
   dessiner();
+  $("liste").scrollTop = haut;
 }
 $("apercu").addEventListener("click", ev => {
   const m = ev.target.closest("mark");
@@ -343,7 +694,17 @@ $("apercu").addEventListener("click", ev => {
 $("apercu").addEventListener("keydown", ev => {
   if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches("mark")) { ev.preventDefault(); basculer(+ev.target.dataset.i); }
 });
-
+function masquerPartout(terme, type) {
+  const nouveaux = [];
+  for (let i = texte.indexOf(terme); i !== -1; i = texte.indexOf(terme, i + terme.length))
+    nouveaux.push({debut: i, fin: i + terme.length, type, actif: true, suggestion: false});
+  if (!nouveaux.length) return 0;
+  passages = passages
+    .filter(p => nouveaux.every(n => p.fin <= n.debut || p.debut >= n.fin))
+    .concat(nouveaux).sort((a, b) => a.debut - b.debut);
+  dessiner();
+  return nouveaux.length;
+}
 // Sélection à la souris : proposer de masquer le passage.
 function position(noeud, decalage) {
   const r = document.createRange();
@@ -370,96 +731,120 @@ document.addEventListener("mouseup", ev => {
 });
 $("ajout-ok").addEventListener("click", () => {
   if (!selection) return;
-  const valeur = texte.slice(selection.debut, selection.fin), type = $("ajout-type").value;
-  const nouveaux = [];
-  for (let i = texte.indexOf(valeur); i !== -1; i = texte.indexOf(valeur, i + valeur.length))
-    nouveaux.push({debut: i, fin: i + valeur.length, type, actif: true, suggestion: false});
-  passages = passages
-    .filter(p => nouveaux.every(n => p.fin <= n.debut || p.debut >= n.fin))
-    .concat(nouveaux).sort((a, b) => a.debut - b.debut);
+  masquerPartout(texte.slice(selection.debut, selection.fin), $("ajout-type").value);
   selection = null; $("ajout").hidden = true; window.getSelection().removeAllRanges();
-  dessiner();
 });
+$("autre-type").innerHTML = $("ajout-type").innerHTML;
+$("autre-type").value = "AUTRE";
+$("autre").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const terme = $("autre-terme").value.trim();
+  if (!terme) return;
+  const n = masquerPartout(terme, $("autre-type").value);
+  $("autre-info").textContent = n ? `« ${terme} » masqué ${n} fois.` : `« ${terme} » ne figure pas dans le document (les majuscules comptent).`;
+  if (n) $("autre-terme").value = "";
+});
+$("btn-retour-depot").addEventListener("click", vider);
 
+// ---------- exporter ----------
+const mode = () => document.querySelector("input[name=mode]:checked").value;
+function decrireExport() {
+  const caviar = mode() === "caviardage", ext = (fichier.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  let produit;
+  if (estPdf) produit = caviar
+    ? "Vous obtiendrez un PDF fait d'images : des rectangles noirs couvrent les données, et il ne reste aucun texte dessous."
+    : "Vous obtiendrez un Word neuf qui contient le texte pseudonymisé. La mise en page du PDF n'est pas gardée.";
+  else if (formate) produit = `Vous obtiendrez un ${ext === ".xlsx" ? "Excel" : "Word"} ${caviar ? "caviardé" : "pseudonymisé"}, mise en forme gardée, propriétés (auteur, société) vidées.`;
+  else produit = `Vous obtiendrez un fichier texte ${caviar ? "caviardé" : "pseudonymisé"}.`;
+  $("export-aide").textContent = produit;
+  $("filtre-erreur").textContent = ""; $("export-ok").textContent = ""; $("bloc-filtre").hidden = true;
+}
+document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", decrireExport));
+$("btn-continuer").addEventListener("click", () => {
+  const n = passages.filter(p => p.actif).length, v = passages.filter(p => p.suggestion && !p.actif).length;
+  $("export-bilan").textContent = `${fichier || "Texte collé"} · ${pluriel(n, "passage")} masqué${n > 1 ? "s" : ""}`
+    + (v ? ` · ${pluriel(v, "fonction")} à vérifier laissée${v > 1 ? "s" : ""} en clair` : "");
+  decrireExport();
+  vue("exporter");
+});
+$("btn-retour-verif").addEventListener("click", () => vue("verifier"));
+$("btn-nouveau").addEventListener("click", vider);
+const retenus = () => passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
+const retires = () => [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(valeur))];
 $("btn-filtrer").addEventListener("click", async () => {
-  $("filtre-erreur").textContent = "";
-  const actifs = passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
-  const retirees = [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(p => texte.slice(p.debut, p.fin)))];
-  const r = await api().filtrer(texte, actifs, retirees, fichier);
+  $("filtre-erreur").textContent = ""; $("export-ok").textContent = "";
+  const r = await api().filtrer(texte, retenus(), retires(), fichier, mode());
   if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
   $("filtre").textContent = r.texte; $("bloc-filtre").hidden = false;
-  $("info-filtre").textContent = copier(r.texte) ? "Texte filtré copié dans le presse-papiers." : "Copie impossible : sélectionnez le texte filtré ci-dessous.";
+  if (!copier(r.texte)) $("filtre-erreur").textContent = "Copie impossible : sélectionnez le texte ci-dessous.";
   $("bloc-filtre").scrollIntoView({behavior: "smooth", block: "nearest"});
 });
-
-// Fichier Word ou Excel : le fichier filtré est enregistré dans son format, mise en forme gardée.
 $("btn-enregistrer").addEventListener("click", async () => {
-  $("filtre-erreur").textContent = "";
-  const actifs = passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
-  const retirees = [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(p => texte.slice(p.debut, p.fin)))];
-  const r = await api().enregistrer_filtre(texte, actifs, retirees);
-  if (r.annule) return;
-  if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
-  $("info-filtre").textContent = `Fichier filtré enregistré : ${r.chemin}`
-    + (r.avertissements.length ? ` Attention : ${r.avertissements.join(", ")}.` : "");
-});
-
-// Dépôt d'un fichier.
-const source = $("source");
-source.addEventListener("dragover", ev => { ev.preventDefault(); source.classList.add("survol"); });
-source.addEventListener("dragleave", () => source.classList.remove("survol"));
-source.addEventListener("drop", async ev => {
-  ev.preventDefault(); source.classList.remove("survol");
-  const f = ev.dataTransfer.files[0];
-  if (!f) return;
-  // Le fichier est lu en mémoire puis confié au moteur, qui sait ouvrir Word et PDF.
-  const octets = new Uint8Array(await f.arrayBuffer());
-  let binaire = "";
-  for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
-  charger(await api().lire_fichier(f.name, btoa(binaire)));
-});
-source.addEventListener("input", () => { fichier = ""; formate = false; scan = 0; });
-function charger(r) {
-  if (r.annule) return;
-  if (!r.ok) { $("info-analyse").textContent = r.erreur; return; }
-  source.value = r.texte; fichier = r.nom; formate = !!r.format; scan = r.pages_scannees || 0;
-  $("bloc-apercu").hidden = true; $("bloc-dossier").hidden = true;
-  $("info-analyse").textContent = `${r.nom} chargé${scan ? " (document scanné, lu par reconnaissance de caractères)" : ""}. Cliquez sur « Analyser ».`;
-}
-$("btn-ouvrir").addEventListener("click", async () => charger(await api().ouvrir_fichier()));
-
-// Dossier entier, sans aperçu.
-$("btn-dossier").addEventListener("click", async () => {
-  const boutons = ["btn-dossier", "btn-analyser", "btn-ouvrir"];
-  boutons.forEach(b => { $(b).disabled = true; });
-  $("info-analyse").textContent = "Choisissez un dossier. Le traitement peut prendre quelques secondes par document…";
+  $("filtre-erreur").textContent = ""; $("export-ok").textContent = "";
+  $("btn-enregistrer").disabled = true;
   try {
-    const r = await api().filtrer_dossier();
-    if (r.annule) { $("info-analyse").textContent = ""; }
-    else {
-      const corps = $("dossier-lignes");
-      corps.textContent = "";
-      r.fichiers.forEach(f => {
-        const tr = document.createElement("tr");
-        cellule(tr, f.fichier);
-        cellule(tr, f.ok ? String(f.masques) : "", "nombre");
-        cellule(tr, f.ok && f.a_verifier ? String(f.a_verifier) : "", "nombre");
-        cellule(tr, f.ok ? "filtré" + (f.remarque ? ` (${f.remarque})` : "") : f.erreur, f.ok ? "" : "erreur");
-        corps.append(tr);
-      });
-      if (!r.fichiers.length) ligneVide(corps, 4, "Aucun document lisible dans ce dossier.");
-      const faits = r.fichiers.filter(f => f.ok).length, rates = r.fichiers.length - faits;
-      $("dossier-aide").textContent = `${faits} document${faits > 1 ? "s" : ""} filtré${faits > 1 ? "s" : ""}`
-        + (rates ? `, ${rates} non lu${rates > 1 ? "s" : ""}` : "")
-        + `. Les textes filtrés sont dans ${r.sortie}. Ils n'ont pas été vérifiés à l'écran : relisez-les avant envoi, surtout ceux qui ont des fonctions « à vérifier ».`
-        + (r.modele ? "" : " Modèle d'entités absent : les noms n'ont pas été détectés.");
-      $("bloc-dossier").hidden = false; $("bloc-apercu").hidden = true; $("info-analyse").textContent = "";
-    }
+    const r = await api().enregistrer_filtre(texte, retenus(), retires(), mode(), fichier);
+    if (r.annule) return;
+    if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
+    $("export-ok").textContent = `Fichier enregistré : ${r.chemin}`
+      + (r.avertissements.length ? ` Attention : ${r.avertissements.join(", ")}.` : "");
+    suivreSurveillance();
   } catch (e) {
-    $("info-analyse").textContent = "Erreur : " + e;
+    $("filtre-erreur").textContent = "Erreur : " + e;
+  } finally {
+    $("btn-enregistrer").disabled = false;
   }
-  boutons.forEach(b => { $(b).disabled = false; });
 });
+
+// ---------- dossier surveillé ----------
+const ETATS = {analyse: "Analyse en cours…", traite: "Traité"};
+function afficherSurveillance(r) {
+  const actif = !!r.dossier;
+  $("btn-arreter").hidden = !actif;
+  $("btn-surveiller").textContent = actif ? "Changer de dossier…" : "Choisir un dossier…";
+  $("btn-surveiller").className = actif ? "second" : "action";
+  const chemin = $("surveille-chemin");
+  chemin.textContent = "";
+  if (actif) { const c = document.createElement("code"); c.textContent = r.dossier; chemin.append(c); }
+  else { const s = document.createElement("span"); s.className = "info"; s.textContent = "Aucun dossier surveillé."; chemin.append(s); }
+  $("surveille-bloc").hidden = !actif;
+  const prets = r.documents.filter(d => d.etat === "pret").length;
+  $("pastille").hidden = !prets; $("pastille").textContent = prets;
+  const corps = $("surveille-lignes");
+  corps.textContent = "";
+  r.documents.forEach(d => {
+    const tr = document.createElement("tr");
+    cellule(tr, d.nom);
+    cellule(tr, d.etat === "erreur" ? d.erreur
+      : d.etat === "pret" ? `Prêt · ${pluriel(d.masques, "passage")} repéré${d.masques > 1 ? "s" : ""}` + (d.pages_scannees ? " · scan à relire" : "")
+      : ETATS[d.etat], d.etat === "erreur" ? "erreur" : "");
+    const fin = cellule(tr, "", "nombre");
+    if (d.etat === "pret" || d.etat === "traite") {
+      const b = document.createElement("button");
+      b.className = d.etat === "pret" ? "action" : "second";
+      b.textContent = d.etat === "pret" ? "Vérifier" : "Rouvrir";
+      b.setAttribute("aria-label", `${b.textContent} ${d.nom}`);
+      b.addEventListener("click", async () => {
+        const doc = await api().ouvrir_surveille(d.id);
+        onglet("filtrer");
+        charger(doc);
+      });
+      fin.append(b);
+    }
+    corps.append(tr);
+  });
+  if (!r.documents.length) ligneVide(corps, 3, "Le dossier est vide pour l'instant. Déposez-y un document : il apparaîtra ici.");
+}
+let surveillanceVue = "";
+async function suivreSurveillance() {
+  const r = await api().surveillance();
+  const image = JSON.stringify(r);
+  if (image === surveillanceVue) return;   // rien de neuf : l'écran n'est pas redessiné
+  surveillanceVue = image;
+  afficherSurveillance(r);
+}
+$("btn-surveiller").addEventListener("click", async () => { const r = await api().choisir_dossier_surveille(); if (!r.annule) suivreSurveillance(); });
+$("btn-arreter").addEventListener("click", async () => { await api().arreter_surveillance(); suivreSurveillance(); });
 
 // ---------- règles du projet ----------
 const GENRES = {terme: "Toujours masquer", motif: "Motif", jamais: "Ne jamais masquer"};
@@ -480,20 +865,20 @@ async function chargerRegles() {
   const r = await api().regles();
   const corps = $("regle-lignes");
   corps.textContent = "";
-  const ligne = (genre, texte, type, retirer) => {
+  const ligne = (genre, contenu, type, retirer) => {
     const tr = document.createElement("tr");
     cellule(tr, GENRES[genre]);
-    const code = document.createElement("code"); code.textContent = texte;
-    cellule(tr, code); cellule(tr, type);
+    const code = document.createElement("code"); code.textContent = contenu;
+    cellule(tr, code); cellule(tr, type ? nomType(type) : "");
     const b = document.createElement("button");
-    b.className = "second"; b.textContent = "Retirer"; b.setAttribute("aria-label", "Retirer la règle " + texte);
+    b.className = "second"; b.textContent = "Retirer"; b.setAttribute("aria-label", "Retirer la règle " + contenu);
     b.addEventListener("click", async () => { await retirer(); chargerRegles(); });
     cellule(tr, b, "nombre");
     corps.append(tr);
   };
   r.regles.forEach(x => ligne(x.genre, x.texte, x.type, () => api().supprimer_regle(x.id)));
   r.jamais.forEach(t => ligne("jamais", t, "", () => api().ne_plus_ignorer(t)));
-  if (!r.regles.length && !r.jamais.length) ligneVide(corps, 4, "Aucune règle pour l'instant. Les passages démasqués dans l'aperçu apparaîtront ici.");
+  if (!r.regles.length && !r.jamais.length) ligneVide(corps, 4, "Aucune règle pour l'instant. Les passages décochés à la vérification apparaîtront ici.");
 }
 $("regle-form").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -506,7 +891,7 @@ $("regle-form").addEventListener("submit", async ev => {
 
 // ---------- journal ----------
 const SOURCES = {regles: "règles", projet: "règles du projet", table: "table", manuel: "ajout à la main"};
-const decompte = (o, noms) => Object.entries(o || {}).map(([k, n]) => `${(noms && noms[k]) || k} ${n}`).join(", ");
+const decompte = (o, noms) => Object.entries(o || {}).map(([k, n]) => `${noms ? (noms[k] || k) : nomType(k)} ${n}`).join(", ");
 async function chargerJournal() {
   const lignes = await api().journal();
   const corps = $("journal-lignes");
@@ -515,11 +900,13 @@ async function chargerJournal() {
     const tr = document.createElement("tr");
     cellule(tr, new Date(l.date).toLocaleString("fr-FR"));
     const filtrage = l.action === "filtrage";
-    cellule(tr, filtrage ? (l.mode === "lot" ? "Filtrage (dossier, sans aperçu)" : "Filtrage (aperçu)") : "Restauration");
+    cellule(tr, filtrage
+      ? (l.traitement === "caviardage" ? "Caviardage" : "Pseudonymisation") + (l.mode === "lot" ? " (dossier, sans aperçu)" : l.mode === "passerelle" ? " (passerelle)" : "")
+      : "Restauration");
     cellule(tr, l.fichier || "texte collé");
     cellule(tr, filtrage
       ? (decompte(l.par_type) || "rien à masquer")
-      : `${l.inconnus} jeton${l.inconnus > 1 ? "s" : ""} inconnu${l.inconnus > 1 ? "s" : ""}, ${l.approximatifs} approché${l.approximatifs > 1 ? "s" : ""}`);
+      : `${pluriel(l.inconnus, "jeton")} inconnu${l.inconnus > 1 ? "s" : ""}, ${l.approximatifs} approché${l.approximatifs > 1 ? "s" : ""}`);
     cellule(tr, filtrage ? decompte(l.par_source, SOURCES) + (l.score_min == null ? "" : ` · score mini ${l.score_min}`) : "");
     corps.append(tr);
   });
@@ -531,7 +918,7 @@ $("btn-restaurer").addEventListener("click", async () => {
   const reponse = $("reponse").value;
   if (!reponse.trim()) return;
   const r = await api().restaurer(reponse);
-  $("restaure").textContent = r.texte; $("bloc-restaure").hidden = false; $("info-copie").textContent = "";
+  $("restaure").textContent = r.texte; $("bloc-restaure").hidden = false; $("info-copie").textContent = ""; $("info-restaure").textContent = "";
   const alertes = $("alertes-restaure");
   alertes.textContent = "";
   const bloc = (titre, liste) => {
@@ -551,8 +938,8 @@ $("btn-restaurer-fichier").addEventListener("click", async () => {
   if (!r.ok) { $("info-restaure").textContent = r.erreur; return; }
   const n = r.inconnus.length, a = r.approximatifs.length;
   $("info-restaure").textContent = `Fichier restauré enregistré : ${r.chemin}`
-    + (n ? ` ${n} jeton${n > 1 ? "s" : ""} absent${n > 1 ? "s" : ""} de la table, laissé${n > 1 ? "s" : ""} tel${n > 1 ? "s" : ""} quel${n > 1 ? "s" : ""}.` : "")
-    + (a ? ` ${a} jeton${a > 1 ? "s" : ""} reconnu${a > 1 ? "s" : ""} sous une forme approchée, à vérifier.` : "");
+    + (n ? ` ${pluriel(n, "jeton")} absent${n > 1 ? "s" : ""} de la table, laissé${n > 1 ? "s" : ""} tel${n > 1 ? "s" : ""} quel${n > 1 ? "s" : ""}.` : "")
+    + (a ? ` ${pluriel(a, "jeton")} reconnu${a > 1 ? "s" : ""} sous une forme approchée, à vérifier.` : "");
 });
 $("btn-copier-restaure").addEventListener("click", () => {
   $("info-copie").textContent = copier($("restaure").textContent) ? "Copié." : "Copie impossible.";

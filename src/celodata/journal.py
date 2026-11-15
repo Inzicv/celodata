@@ -9,14 +9,24 @@ from celodata.table import Table
 
 
 def filtrage(
-    table: Table, detections: list[Detection], *, mode: str, detecteur: str, fichier: str | None = None
+    table: Table,
+    detections: list[Detection],
+    *,
+    mode: str,
+    detecteur: str,
+    fichier: str | None = None,
+    traitement: str = "pseudonymisation",
 ) -> None:
-    """`mode` vaut "apercu" (vérifié à l'écran) ou "lot" (dossier traité sans aperçu)."""
+    """`mode` vaut "apercu" (vérifié à l'écran) ou "lot" (dossier traité sans aperçu).
+
+    `traitement` vaut "pseudonymisation" (jetons, réversible) ou "caviardage" (définitif).
+    """
     scores = [d.score for d in detections]
     table.journaliser(
         {
             "action": "filtrage",
             "mode": mode,
+            "traitement": traitement,
             "detecteur": detecteur,
             "par_type": dict(Counter(d.type for d in detections)),
             # D'où vient chaque passage masqué : règles, modèle, règles du projet, table, ajout à la main.

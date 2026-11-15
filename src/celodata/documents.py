@@ -108,34 +108,7 @@ def _pdf(contenu: bytes, scans: bool) -> tuple[str, int]:
 
     Une page sans texte est une image : elle est lue par la reconnaissance de caractères si `scans` le permet.
     """
-    from pypdf import PdfReader
+    from celodata import pdf
 
-    try:
-        lecteur = PdfReader(io.BytesIO(contenu))
-        if lecteur.is_encrypted and not lecteur.decrypt(""):
-            raise DocumentIllisible("Ce PDF est protégé par un mot de passe.")
-        pages = [(page.extract_text() or "").strip() for page in lecteur.pages]
-    except DocumentIllisible:
-        raise
-    except Exception as e:
-        raise DocumentIllisible(f"PDF illisible ({type(e).__name__}).") from None
-
-    vides = [i for i, page in enumerate(pages) if not page]
-    if vides:
-        from celodata import ocr
-
-        if not scans:
-            raise DocumentIllisible(
-                "PDF scanné : ouvrez-le dans l'appli, où le texte lu peut être vérifié avant d'être filtré."
-            )
-        try:
-            for i in vides:
-                pages[i] = ocr.lire_page_pdf(contenu, i).strip()
-        except ocr.LectureImpossible as e:
-            raise DocumentIllisible(f"PDF scanné, impossible à lire : {e}") from None
-        except Exception as e:
-            raise DocumentIllisible(f"PDF scanné, impossible à lire ({type(e).__name__}).") from None
-    texte = "\n\n".join(p for p in pages if p)
-    if not texte.strip():
-        raise DocumentIllisible("Aucun texte dans ce PDF, même en le lisant comme un document scanné.")
-    return texte, sum(1 for i in vides if pages[i])
+    lu = pdf.lire(contenu, scans)
+    return lu.texte, lu.pages_scannees
