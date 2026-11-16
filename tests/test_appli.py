@@ -66,3 +66,39 @@ def test_les_corrections_deviennent_la_memoire_du_projet(api):
 def test_chevauchement_signale(api):
     r = api.filtrer("abcdef", [{"debut": 0, "fin": 4, "type": "A"}, {"debut": 2, "fin": 6, "type": "A"}], [])
     assert r["ok"] is False
+
+
+def test_le_theme_choisi_est_retenu(tmp_path):
+    a = Api(tmp_path / "p.celodata", regles_seules)
+    assert a.etat()["theme"] == ""
+    a.choisir_theme("dark")
+    # Lu avant l'ouverture de la table : l'écran du mot de passe a déjà le bon thème.
+    assert Api(tmp_path / "p.celodata", regles_seules).etat()["theme"] == "dark"
+    a.choisir_theme("n'importe quoi")
+    assert a.etat()["theme"] == ""
+
+
+def test_avancement_et_annulation(api):
+    from celodata import suivi
+
+    assert api.avancement()["etape"] == ""
+    vus = []
+
+    class Lent:
+        nom = "lent"
+
+        def detecter(self, texte):
+            for numero in suivi.parcourir("analyse", range(5)):
+                vus.append(api.avancement())
+                if numero == 2:
+                    api.annuler()
+            return []
+
+    api._detecteur = Lent()
+    assert api.analyser("Bonjour") == {"annule": True}
+    # Arrêté au bloc qui suit la demande, pas à la fin.
+    assert [(a["etape"], a["fait"], a["total"]) for a in vus] == [("analyse", 0, 5), ("analyse", 1, 5), ("analyse", 2, 5)]
+    assert api.avancement()["etape"] == ""
+    # L'annulation ne vaut que pour le travail en cours : l'analyse suivante va au bout.
+    api._detecteur = DetecteurCompose("regles", [DetecteurRegles()])
+    assert "detections" in api.analyser("Écrire à jean.dupont@exemple.fr")

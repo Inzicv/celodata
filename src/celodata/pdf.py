@@ -12,7 +12,7 @@ import ctypes
 import io
 from dataclasses import dataclass, field
 
-from celodata import ocr
+from celodata import ocr, suivi
 from celodata.detection.base import Detection
 from celodata.documents import DocumentIllisible
 
@@ -121,7 +121,7 @@ def lire(contenu: bytes, scans: bool = True) -> PdfLu:
     longueur = 0
     try:
         lu.pages = len(document)
-        for numero in range(len(document)):
+        for numero in suivi.parcourir("lecture", range(len(document))):
             page = document[numero]
             texte, zones = _page_texte(page, numero, longueur)
             if not texte.strip():
@@ -227,7 +227,7 @@ def zones_graphiques(contenu: bytes, lu: PdfLu) -> list[ZoneGraphique]:
     document = _ouvrir(contenu)
     sortie: list[ZoneGraphique] = []
     try:
-        for numero in range(len(document)):
+        for numero in suivi.parcourir("zones", range(len(document))):
             image = document[numero].render(scale=_POINTS_REPERAGE / 72).to_pil().convert("L")
             largeur, hauteur = image.size
             encre = image.point(lambda v: 255 if v < 200 else 0)

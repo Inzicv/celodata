@@ -6,6 +6,7 @@ Elles s'installent avec : uv sync --extra modeles
 
 from collections.abc import Callable
 
+from celodata import suivi
 from celodata.detection.base import Detecteur, Detection, blocs
 
 # Type Celodata -> libellé donné aux modèles GLiNER, qui cherchent ce qu'on leur décrit.
@@ -48,7 +49,7 @@ class DetecteurGliner2:
 
     def detecter(self, texte: str) -> list[Detection]:
         detections = []
-        for position, ligne in blocs(texte):
+        for position, ligne in suivi.parcourir("analyse", blocs(texte)):
             resultat = self._modele.extract_entities(
                 ligne,
                 list(self._types),
@@ -81,7 +82,7 @@ class DetecteurGliner:
 
     def detecter(self, texte: str) -> list[Detection]:
         detections = []
-        for position, ligne in blocs(texte):
+        for position, ligne in suivi.parcourir("analyse", blocs(texte)):
             for e in self._modele.predict_entities(ligne, list(self._types), threshold=self._seuil):
                 detections.append(
                     Detection(
@@ -108,7 +109,7 @@ class DetecteurTransformers:
 
     def detecter(self, texte: str) -> list[Detection]:
         detections = []
-        for position, ligne in blocs(texte):
+        for position, ligne in suivi.parcourir("analyse", blocs(texte)):
             for e in self._pipeline(ligne):
                 type_ = self.TYPES.get(e["entity_group"])
                 if type_:

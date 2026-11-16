@@ -5,197 +5,320 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Celodata</title>
 <style>
+/* Rail neutre à gauche, document au centre, surlignage par type de donnée. Polices de Windows seulement : l'appli ne se connecte jamais. */
 :root {
-  --fond: #f4f3ef; --carte: #ffffff; --creux: #ecebe5; --texte: #1c1d1f; --discret: #66665f; --trait: #dddbd3;
-  --accent: #1f5f8b; --accent-fonce: #174a6d; --accent-texte: #ffffff; --accent-pale: #e4eff7;
-  --alerte: #a13d2d; --alerte-fond: #fbeae6; --bon: #2f7a4d; --bon-fond: #e3f2e8;
-  --personne: #cfe3f5; --lieu: #d3ecd6; --numero: #fbe3c0; --sensible: #e6d7f3; --secret: #f6cfcf; --autre: #e3e2dc;
-  --p-personne: #3b7fb8; --p-lieu: #3e9a55; --p-numero: #c98a25; --p-sensible: #8a5cb8; --p-secret: #c0504d; --p-autre: #8a8980;
-  --ombre: 0 1px 2px rgba(20,20,20,.06), 0 6px 20px rgba(20,20,20,.06);
+  --fond: #F4F3EF; --carte: #FFFFFF; --creux: #ECEAE4; --texte: #1B1C1A; --discret: #5E5F59; --trait: #DCDAD2;
+  --rail: #ECEAE4; --rail-actif: #FFFFFF; --rail-texte: #4A4B46; --rail-fort: #1B1C1A;
+  --accent: #1F5C4A; --accent-fonce: #164437; --accent-texte: #FFFFFF; --accent-pale: #E3EEE9;
+  --alerte: #A3412D; --alerte-fond: #FBEAE6; --bon: #2E7D4F; --bon-fond: #E3F2E8; --attention: #7A4A08; --attention-fond: #FBEBD0;
+  --personne: #D5E3F6; --t-personne: #1B3F73; --lieu: #E6E9BF; --t-lieu: #474E0C; --numero: #FBDDA6; --t-numero: #633806;
+  --sensible: #F6CBDA; --t-sensible: #72243E; --secret: #F7C1C1; --t-secret: #791F1F; --autre: #E5E3DC; --t-autre: #45453F;
+  --barre: #1B1C1A;
+  --ombre: 0 1px 2px rgba(20,20,18,.08), 0 6px 20px rgba(20,20,18,.08);
+  color-scheme: light;
+  --police: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --titre: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, monospace;
+}
+/* Thème : celui de Windows par défaut, ou celui choisi dans le rail (data-theme sur <html>). */
+:root[data-theme="dark"] {
+  --fond: #151614; --carte: #1E1F1D; --creux: #282A27; --texte: #ECEBE6; --discret: #A5A69F; --trait: #343632;
+  --rail: #1A1B19; --rail-actif: #2B2D2A; --rail-texte: #B9BAB3; --rail-fort: #FFFFFF;
+  --accent: #7FC4AC; --accent-fonce: #9AD4BF; --accent-texte: #0E221B; --accent-pale: #1F3A31;
+  --alerte: #F0A493; --alerte-fond: #40231D; --bon: #86CFA0; --bon-fond: #1D3A28; --attention: #F5C77A; --attention-fond: #4A3410;
+  --personne: #23406B; --t-personne: #D5E3F6; --lieu: #4F5A12; --t-lieu: #EEF1C8; --numero: #6B3A0A; --t-numero: #FBDDA6;
+  --sensible: #5A2238; --t-sensible: #F6CBDA; --secret: #5E1E1E; --t-secret: #F7C1C1; --autre: #3A3B37; --t-autre: #E5E3DC;
+  --barre: #ECEBE6;
+  --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+  color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --fond: #17181a; --carte: #222427; --creux: #2b2d31; --texte: #ecebe6; --discret: #a3a29b; --trait: #3a3c40;
-    --accent: #6bb1e0; --accent-fonce: #8cc4ea; --accent-texte: #0f1d27; --accent-pale: #1f3443;
-    --alerte: #f0a493; --alerte-fond: #40231d; --bon: #86cfa0; --bon-fond: #1d3a28;
-    --personne: #244a66; --lieu: #26503a; --numero: #5e4520; --sensible: #4a3564; --secret: #6a2c2c; --autre: #45464a;
-    --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  :root:not([data-theme="light"]) {
+  --fond: #151614; --carte: #1E1F1D; --creux: #282A27; --texte: #ECEBE6; --discret: #A5A69F; --trait: #343632;
+  --rail: #1A1B19; --rail-actif: #2B2D2A; --rail-texte: #B9BAB3; --rail-fort: #FFFFFF;
+  --accent: #7FC4AC; --accent-fonce: #9AD4BF; --accent-texte: #0E221B; --accent-pale: #1F3A31;
+  --alerte: #F0A493; --alerte-fond: #40231D; --bon: #86CFA0; --bon-fond: #1D3A28; --attention: #F5C77A; --attention-fond: #4A3410;
+  --personne: #23406B; --t-personne: #D5E3F6; --lieu: #4F5A12; --t-lieu: #EEF1C8; --numero: #6B3A0A; --t-numero: #FBDDA6;
+  --sensible: #5A2238; --t-sensible: #F6CBDA; --secret: #5E1E1E; --t-secret: #F7C1C1; --autre: #3A3B37; --t-autre: #E5E3DC;
+  --barre: #ECEBE6;
+  --ombre: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
+  color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+body { margin: 0; background: var(--fond); color: var(--texte); font: 15px/1.55 var(--police); display: flex; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+svg.ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- barre du haut ---------- */
-header { display: flex; align-items: center; gap: 20px; padding: 0 22px; height: 56px; flex: none; background: var(--carte); border-bottom: 1px solid var(--trait); }
-.logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; letter-spacing: .01em; }
-.logo i { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); position: relative; }
-.logo i::before, .logo i::after { content: ""; position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: var(--accent-texte); }
-.logo i::before { top: 6px; } .logo i::after { top: 13px; right: 9px; }
-nav { display: flex; gap: 2px; height: 100%; }
-nav button { background: none; border: 0; border-bottom: 3px solid transparent; border-top: 3px solid transparent; padding: 0 13px; color: var(--discret); }
-nav button:hover { color: var(--texte); }
-nav button[aria-selected="true"] { color: var(--texte); border-bottom-color: var(--accent); font-weight: 600; }
-.pastille { display: inline-block; min-width: 19px; padding: 0 6px; margin-left: 6px; border-radius: 10px; background: var(--accent); color: var(--accent-texte); font-size: 12px; font-weight: 600; text-align: center; }
-#etat { margin-left: auto; display: flex; align-items: center; gap: 7px; color: var(--discret); font-size: 13px; }
-#etat::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--p-autre); }
-#etat.pret::before { background: var(--bon); } #etat.limite::before { background: var(--p-numero); }
+/* ---------- rail ---------- */
+#rail { flex: none; width: 210px; background: var(--rail); border-right: 1px solid var(--trait); color: var(--rail-texte); display: flex; flex-direction: column; padding: 18px 12px 14px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 650 17px var(--titre); color: var(--rail-fort); padding: 0 8px 20px; }
+.logo i { flex: none; width: 20px; height: 9px; background: currentColor; border-radius: 1px; }
+nav { display: flex; flex-direction: column; gap: 2px; }
+nav button { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-radius: 4px; padding: 8px 10px; text-align: left; color: var(--rail-texte); }
+nav button:hover { background: color-mix(in srgb, var(--rail-fort) 7%, transparent); color: var(--rail-fort); }
+nav button[aria-selected="true"] { background: var(--rail-actif); color: var(--rail-fort); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+.pastille { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 4px; background: var(--accent); color: var(--accent-texte); font-size: 13px; font-weight: 650; text-align: center; }
+nav .pastille { margin-left: auto; }
+.pied { margin-top: auto; display: grid; gap: 7px; padding: 12px 8px 0; border-top: 1px solid var(--trait); font-size: 13px; }
+.pied span { display: flex; align-items: flex-start; gap: 8px; }
+.theme { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--trait); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.theme button { border: 0; background: none; padding: 4px 0; color: var(--rail-texte); font-size: 13px; }
+.theme button[aria-pressed="true"] { background: var(--rail-actif); color: var(--rail-fort); font-weight: 600; }
+#etat::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--rail-texte); flex: none; margin-top: 6px; }
+#etat.pret::before { background: var(--bon); } #etat.limite::before { background: #C98A25; }
 
-main { flex: 1; min-height: 0; overflow: auto; }
-.page { max-width: 880px; margin: 0 auto; padding: 28px 24px 40px; }
-h2 { font-size: 22px; font-weight: 650; margin: 0 0 6px; letter-spacing: -.01em; }
-h3 { font-size: 15px; font-weight: 650; margin: 0 0 4px; }
-p.aide { margin: 0 0 16px; color: var(--discret); }
-.carte { background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; }
+main { flex: 1; min-width: 0; min-height: 0; overflow: auto; position: relative; }
+main > section { min-height: 100%; }
+.page { max-width: 860px; margin: 0 auto; padding: 30px 32px 44px; }
+h2 { font: 650 24px/1.25 var(--titre); letter-spacing: -.012em; margin: 0 0 6px; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--titre); margin: 0 0 6px; }
+p.aide { margin: 0 0 18px; color: var(--discret); max-width: 66ch; }
+.carte { background: var(--carte); border: 1px solid var(--trait); border-radius: 6px; padding: 18px 20px; margin-bottom: 16px; }
 .barre { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.action { background: var(--accent); color: var(--accent-texte); border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 600; }
+.action { background: var(--accent); color: var(--accent-texte); border: 0; border-radius: 4px; padding: 9px 16px; font-weight: 600; }
 .action:hover:not(:disabled) { background: var(--accent-fonce); }
-.second { background: var(--carte); border: 1px solid var(--trait); border-radius: 8px; padding: 8px 15px; }
+.second { background: var(--carte); border: 1px solid var(--trait); border-radius: 4px; padding: 8px 14px; }
 .second:hover:not(:disabled) { border-color: var(--discret); }
-.lien { background: none; border: 0; padding: 4px 2px; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.lien { background: none; border: 0; padding: 4px 2px; color: var(--accent); font-weight: 600; }
+.lien:hover { text-decoration: underline; text-underline-offset: 3px; }
 .info { color: var(--discret); font-size: 13px; }
-.message { padding: 10px 14px; border-radius: 8px; margin: 0 0 14px; background: var(--alerte-fond); color: var(--alerte); }
+.message { display: flex; gap: 9px; padding: 10px 14px; border-radius: 4px; margin: 0 0 14px; background: var(--alerte-fond); color: var(--alerte); }
 .message.bon { background: var(--bon-fond); color: var(--bon); }
-.message:empty { display: none; }
-input[type=text], input[type=password], input[type=search], select, textarea { padding: 8px 10px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); }
-textarea { width: 100%; min-height: 200px; padding: 14px; resize: vertical; font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
-.zone { width: 100%; padding: 14px; border: 1px solid var(--trait); border-radius: 8px; background: var(--carte); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 44vh; overflow: auto; font: 14px/1.6 Consolas, "Cascadia Mono", monospace; }
+#alertes-restaure { display: block; }
+.message:empty, #alertes-restaure:empty { display: none; }
+input[type=text], input[type=password], input[type=search], select, textarea { padding: 8px 10px; border: 1px solid var(--trait); border-radius: 4px; background: var(--carte); }
+textarea { width: 100%; min-height: 220px; padding: 14px; resize: vertical; font: 14px/1.65 var(--police); }
+.zone { width: 100%; padding: 14px; border-radius: 4px; background: var(--creux); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 44vh; overflow: auto; font: 14px/1.65 var(--police); }
 ul.liste { margin: 6px 0 0; padding-left: 20px; }
 .defile { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--trait); vertical-align: middle; }
-th { color: var(--discret); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--trait); vertical-align: middle; }
+th { color: var(--discret); font-weight: 600; font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
 td.nombre, th.nombre { text-align: right; font-variant-numeric: tabular-nums; }
-td.erreur { color: var(--alerte); } td.vide { color: var(--discret); }
-code { font: 13px Consolas, "Cascadia Mono", monospace; }
+td.erreur { color: var(--alerte); } td.vide { color: var(--discret); text-align: center; padding: 28px 12px; }
+code { font: 13px var(--mono); background: var(--creux); padding: 1px 6px; border-radius: 3px; overflow-wrap: anywhere; }
+.carte.tableau { padding: 6px 8px; }
+.etiquette { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 2px 10px; border-radius: 6px; white-space: nowrap; background: var(--creux); color: var(--discret); }
+.etiquette.pret { background: var(--accent-pale); color: var(--accent-fonce); font-weight: 600; }
+.etiquette.bon { background: var(--bon-fond); color: var(--bon); }
+.etiquette.scan { background: var(--attention-fond); color: var(--attention); }
+.etiquette.alerte { background: var(--alerte-fond); color: var(--alerte); }
 
 /* ---------- mot de passe ---------- */
-#porte { max-width: 430px; margin: 9vh auto; padding: 30px; background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; box-shadow: var(--ombre); }
-#porte label { display: block; margin: 14px 0 4px; font-weight: 600; }
+#porte { display: grid; place-items: center; padding: 24px; }
+#porte form { width: min(430px, 100%); background: var(--carte); border: 1px solid var(--trait); border-radius: 6px; padding: 30px; box-shadow: var(--ombre); }
+#porte .logo { color: var(--texte); padding: 0 0 22px; }
+#porte label { display: block; margin: 16px 0 6px; font-weight: 600; }
 #porte input { width: 100%; }
-#porte .action { margin-top: 20px; width: 100%; }
+.champ { position: relative; }
+.champ input { padding-right: 44px; }
+.oeil { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); border: 0; background: none; padding: 6px; border-radius: 3px; color: var(--discret); display: grid; }
+.jauge { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; }
+.jauge i { height: 4px; border-radius: 2px; background: var(--creux); }
+.jauge[data-n="1"] i:nth-child(1) { background: var(--alerte); }
+.jauge[data-n="2"] i:nth-child(-n+2) { background: #C98A25; }
+.jauge[data-n="3"] i:nth-child(-n+3), .jauge[data-n="4"] i { background: var(--bon); }
+.avert { display: flex; gap: 10px; margin-top: 18px; padding: 12px 14px; border-radius: 4px; background: var(--accent-pale); font-size: 13.5px; }
+.avert svg.ico { color: var(--accent); }
+#porte .action { margin-top: 20px; width: 100%; padding: 11px; }
 
 /* ---------- étapes ---------- */
-.etapes { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 22px; }
-.etapes li { display: flex; align-items: center; gap: 8px; padding: 5px 13px 5px 6px; border-radius: 20px; color: var(--discret); font-size: 14px; }
-.etapes li b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--trait); font-size: 12px; font-weight: 600; }
-.etapes li.ici { background: var(--carte); color: var(--texte); font-weight: 600; border: 1px solid var(--trait); }
+.etapes { display: flex; align-items: center; gap: 8px; list-style: none; padding: 0; margin: 0 0 22px; font-size: 14px; color: var(--discret); }
+.etapes li { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.etapes li + li::before { content: ""; width: 22px; height: 1px; background: var(--trait); }
+.etapes li b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--trait); font-size: 13px; font-weight: 600; }
+.etapes li.ici { color: var(--texte); font-weight: 600; }
 .etapes li.ici b { background: var(--accent); border-color: var(--accent); color: var(--accent-texte); }
-.etapes li.fait b { background: var(--bon-fond); border-color: transparent; color: var(--bon); }
+.etapes li.fait { color: var(--bon); }
+.etapes li.fait b { background: var(--bon-fond); border-color: transparent; }
 
 /* ---------- déposer ---------- */
-#depot { border: 2px dashed var(--trait); border-radius: 16px; background: var(--carte); padding: 46px 24px; text-align: center; transition: border-color .15s, background .15s; }
+#depot { border: 1px dashed var(--discret); border-radius: 6px; background: var(--carte); padding: 44px 24px 36px; display: grid; justify-items: center; text-align: center; gap: 6px; transition: border-color .15s, background .15s; }
 #depot.survol { border-color: var(--accent); background: var(--accent-pale); }
-#depot .dessin { width: 54px; height: 66px; margin: 0 auto 16px; border: 2px solid var(--discret); border-radius: 7px; position: relative; opacity: .7; }
-#depot .dessin::before { content: ""; position: absolute; left: 10px; right: 10px; top: 16px; height: 2px; background: var(--discret); box-shadow: 0 10px 0 var(--discret), 0 20px 0 var(--accent), 0 30px 0 var(--discret); }
-#depot h2 { margin-bottom: 4px; }
-#depot .barre { justify-content: center; margin-top: 18px; }
-.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .deux { grid-template-columns: 1fr; } }
+#depot h2 { margin: 0; }
+details.carte { padding: 0; margin-top: 16px; }
+details.carte summary { cursor: pointer; padding: 15px 20px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 10px; }
+details.carte summary::-webkit-details-marker { display: none; }
+details.carte summary::after { content: "+"; margin-left: auto; color: var(--discret); font-size: 18px; font-weight: 400; }
+details.carte[open] summary::after { content: "−"; }
+details.carte .corps { padding: 0 20px 18px; }
+#recents { margin-top: 22px; }
+#recents h3 { font-size: 14px; color: var(--discret); }
+.recent { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 4px; background: var(--carte); border: 1px solid var(--trait); margin-top: 8px; }
+.recent div { flex: 1; min-width: 0; }
+.recent strong { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- attente ---------- */
 #attente { text-align: center; padding: 15vh 24px; }
 .tourne { width: 38px; height: 38px; margin: 0 auto 18px; border-radius: 50%; border: 3px solid var(--trait); border-top-color: var(--accent); animation: tourne .9s linear infinite; }
 @keyframes tourne { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .tourne { animation-duration: 3s; } }
+#attente .aide { margin: 0 auto 18px; }
+.progres { width: min(420px, 100%); height: 6px; margin: 0 auto 10px; border-radius: 3px; background: var(--creux); overflow: hidden; }
+.progres i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.progres.vague i { width: 35%; animation: va 1.4s ease-in-out infinite alternate; transition: none; }
+@keyframes va { from { margin-left: 0; } to { margin-left: 65%; } }
+#attente-detail { display: block; min-height: 1.6em; margin-bottom: 18px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .tourne { animation-duration: 3s; } .progres.vague i { animation: none; width: 100%; opacity: .4; } * { transition: none !important; } }
 
 /* ---------- vérifier ---------- */
-#verifier { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100%; }
-#verifier .gauche { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.entete-doc { display: flex; align-items: center; gap: 12px; padding: 12px 22px; flex: none; }
-.entete-doc strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entete-doc .info { margin-left: auto; white-space: nowrap; }
-.bureau { flex: 1; min-height: 0; overflow: auto; padding: 6px 22px 28px; }
-.feuille { max-width: 800px; margin: 0 auto; background: var(--carte); border: 1px solid var(--trait); border-radius: 6px; box-shadow: var(--ombre); padding: 44px 52px; min-height: 60vh; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.75; tab-size: 4; }
-mark { border-radius: 4px; padding: 1px 2px; color: inherit; cursor: pointer; background: var(--autre); box-shadow: inset 0 -2px 0 var(--p-autre); }
-mark.personne { background: var(--personne); box-shadow: inset 0 -2px 0 var(--p-personne); }
-mark.lieu { background: var(--lieu); box-shadow: inset 0 -2px 0 var(--p-lieu); }
-mark.numero { background: var(--numero); box-shadow: inset 0 -2px 0 var(--p-numero); }
-mark.sensible { background: var(--sensible); box-shadow: inset 0 -2px 0 var(--p-sensible); }
-mark.secret { background: var(--secret); box-shadow: inset 0 -2px 0 var(--p-secret); }
-mark.inactif { background: none; box-shadow: none; text-decoration: line-through; text-decoration-color: var(--discret); }
-mark.suggestion { background: none; box-shadow: none; outline: 1px dashed var(--alerte); }
-mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
-#panneau { display: flex; flex-direction: column; min-height: 0; background: var(--carte); border-left: 1px solid var(--trait); }
-#panneau .haut { padding: 16px 16px 10px; flex: none; }
-#panneau .haut input { width: 100%; margin-top: 8px; }
-#liste { flex: 1; min-height: 0; overflow: auto; padding: 0 8px; }
-.groupe { margin-bottom: 6px; }
-.groupe h4 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 8px 4px; font-size: 12px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; color: var(--discret); }
-.groupe h4 i { width: 9px; height: 9px; border-radius: 50%; background: var(--p-autre); }
-.groupe h4 span { margin-left: auto; font-weight: 500; }
-.personne > h4 i { background: var(--p-personne); } .lieu > h4 i { background: var(--p-lieu); }
-.numero > h4 i { background: var(--p-numero); } .sensible > h4 i { background: var(--p-sensible); }
-.secret > h4 i { background: var(--p-secret); } .averifier > h4 i { background: var(--alerte); }
-.ligne { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: 7px; }
+#verifier { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+.entete-doc { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 22px; background: var(--carte); border-bottom: 1px solid var(--trait); }
+.entete-doc .etapes { margin: 0; }
+.entete-doc strong { font: 600 15px var(--titre); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; max-width: 32ch; }
+#btn-retour-depot { padding: 6px 9px; display: grid; }
+#legende { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+#legende span { font-size: 13px; padding: 2px 9px; border-radius: 3px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.espace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; min-height: 0; }
+.gauche { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.bureau { flex: 1; min-height: 0; overflow: auto; padding: 20px 26px 34px; }
+.outils-doc { display: flex; align-items: center; gap: 10px; max-width: 760px; margin: 0 auto 12px; }
+.feuille { max-width: 760px; margin: 0 auto; background: var(--carte); border: 1px solid var(--trait); border-radius: 1px; padding: 44px 52px; min-height: 60vh; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.85; tab-size: 4; }
+mark { border-radius: 3px; padding: 1px 3px; cursor: pointer; background: var(--autre); color: var(--t-autre); }
+mark.personne, .lg-personne { background: var(--personne); color: var(--t-personne); }
+mark.lieu, .lg-lieu { background: var(--lieu); color: var(--t-lieu); }
+mark.numero, .lg-numero { background: var(--numero); color: var(--t-numero); }
+mark.sensible, .lg-sensible { background: var(--sensible); color: var(--t-sensible); }
+mark.secret, .lg-secret { background: var(--secret); color: var(--t-secret); }
+.lg-autre { background: var(--autre); color: var(--t-autre); }
+mark.inactif { background: none; color: var(--discret); text-decoration: line-through; text-decoration-color: var(--discret); }
+mark.suggestion, .lg-averifier { background: none; color: inherit; outline: 1px dashed var(--alerte); outline-offset: -1px; }
+.lg-averifier { color: var(--alerte); }
+mark.vise { box-shadow: 0 0 0 2px var(--accent); }
+#panneau { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; background: var(--carte); border-left: 1px solid var(--trait); }
+#panneau .haut { padding: 16px 16px 8px; display: grid; gap: 10px; }
+#panneau .haut h3 { margin: 0; }
+#filtre-liste { width: 100%; }
+#liste { min-height: 0; overflow: auto; padding: 0 8px 8px; }
+.groupe h4 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 8px 4px; font-size: 13px; font-weight: 600; color: var(--discret); }
+.groupe h4 i { width: 10px; height: 10px; border-radius: 3px; background: var(--autre); }
+.groupe h4 span { margin-left: auto; font-weight: 500; font-variant-numeric: tabular-nums; }
+.groupe h4 i { box-shadow: inset 0 0 0 1.5px var(--t-autre); }
+.personne > h4 i { background: var(--personne); box-shadow: inset 0 0 0 1.5px var(--t-personne); }
+.lieu > h4 i { background: var(--lieu); box-shadow: inset 0 0 0 1.5px var(--t-lieu); }
+.numero > h4 i { background: var(--numero); box-shadow: inset 0 0 0 1.5px var(--t-numero); }
+.sensible > h4 i { background: var(--sensible); box-shadow: inset 0 0 0 1.5px var(--t-sensible); }
+.secret > h4 i { background: var(--secret); box-shadow: inset 0 0 0 1.5px var(--t-secret); } .averifier > h4 i { background: none; outline: 1px dashed var(--alerte); outline-offset: -1px; }
+.ligne { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: 3px; }
 .ligne:hover { background: var(--creux); }
-.ligne input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.ligne input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; margin: 0; }
 .ligne button { flex: 1; min-width: 0; background: none; border: 0; padding: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ligne small { color: var(--discret); flex: none; }
+.ligne small { color: var(--discret); flex: none; font-variant-numeric: tabular-nums; }
 .ligne.non button { color: var(--discret); text-decoration: line-through; }
-#panneau .bas { flex: none; padding: 12px 16px 16px; border-top: 1px solid var(--trait); }
-#autre { display: flex; gap: 6px; margin-bottom: 4px; }
-#autre input { flex: 1; min-width: 0; } #autre select { width: 108px; }
-#panneau .bas .action { width: 100%; margin-top: 10px; padding: 11px; }
-@media (max-width: 900px) { #verifier { grid-template-columns: minmax(0, 1fr) 280px; } .feuille { padding: 28px 26px; } }
-.bascule { display: inline-flex; border: 1px solid var(--trait); border-radius: 8px; overflow: hidden; flex: none; }
-.bascule button { border: 0; background: var(--carte); padding: 6px 13px; }
-.bascule button[aria-pressed="true"] { background: var(--accent); color: var(--accent-texte); font-weight: 600; }
-#pages .info { display: block; max-width: 800px; margin: 0 auto 12px; }
-.pagevue { position: relative; max-width: 800px; min-height: 120px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--trait); box-shadow: var(--ombre); cursor: crosshair; user-select: none; }
+#panneau .bas { padding: 12px 16px 16px; border-top: 1px solid var(--trait); display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+#autre { display: flex; gap: 6px; }
+#autre input { flex: 1; min-width: 0; } #autre select { width: 112px; }
+#btn-continuer { padding: 11px; }
+#doc-bilan { text-align: center; }
+.bascule { display: inline-flex; border: 1px solid var(--trait); border-radius: 4px; overflow: hidden; flex: none; background: var(--carte); }
+.bascule button { border: 0; background: none; padding: 6px 13px; }
+.bascule button[aria-pressed="true"] { background: var(--accent-pale); color: var(--accent-fonce); font-weight: 600; }
+.bascule .pastille { margin-left: 6px; }
+#pages .info { display: block; max-width: 760px; margin: 0 auto 12px; }
+.pagevue { position: relative; max-width: 760px; min-height: 120px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--trait); box-shadow: var(--ombre); cursor: crosshair; user-select: none; }
 .pagevue img { display: block; width: 100%; pointer-events: none; }
 .zg { position: absolute; background: rgba(0,0,0,.86); outline: 2px solid #000; cursor: pointer; }
-.zg.non { background: none; outline: 2px dashed #a13d2d; }
-.zg.trace { background: rgba(31,95,139,.3); outline: 2px solid #1f5f8b; pointer-events: none; }
-#ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 10px; box-shadow: var(--ombre); }
+.zg.non { background: none; outline: 2px dashed #A3412D; }
+.zg.trace { background: rgba(31,92,74,.3); outline: 2px solid #1F5C4A; pointer-events: none; }
+#ajout { position: fixed; z-index: 5; display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--carte); border: 1px solid var(--trait); border-radius: 4px; box-shadow: var(--ombre); font-size: 13.5px; }
+#ajout .action { padding: 6px 12px; }
 
 /* ---------- exporter ---------- */
-.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
-@media (max-width: 760px) { .modes { grid-template-columns: 1fr; } }
-.mode { display: block; position: relative; background: var(--carte); border: 2px solid var(--trait); border-radius: 12px; padding: 16px 18px; cursor: pointer; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+.mode { display: grid; gap: 6px; position: relative; background: var(--carte); border: 2px solid var(--trait); border-radius: 6px; padding: 16px 18px; cursor: pointer; }
 .mode input { position: absolute; opacity: 0; }
 .mode:has(input:checked) { border-color: var(--accent); background: var(--accent-pale); }
 .mode:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.mode .titre { display: flex; align-items: baseline; gap: 8px; font-weight: 650; font-size: 16px; }
-.mode .titre small { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--discret); text-transform: uppercase; letter-spacing: .05em; }
-.mode .exemple { margin: 10px 0; padding: 9px 11px; border-radius: 7px; background: var(--creux); font-size: 14px; }
-.mode .exemple b { font-weight: 600; padding: 0 3px; border-radius: 3px; background: var(--personne); }
-.mode .exemple u { text-decoration: none; background: #111; color: #111; border-radius: 2px; padding: 0 3px; user-select: none; }
+.mode .titre { display: flex; align-items: baseline; gap: 8px; font: 600 16px var(--titre); }
+.mode .titre small { margin-left: auto; font: 600 13px var(--police); padding: 1px 8px; border-radius: 4px; }
+.reversible { background: var(--bon-fond); color: var(--bon); }
+.definitif { background: var(--alerte-fond); color: var(--alerte); }
 .mode p { margin: 0; color: var(--discret); font-size: 13.5px; }
+.avantapres { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--trait); border-radius: 6px; overflow: hidden; background: var(--carte); }
+.avantapres > div { padding: 14px 18px; min-width: 0; }
+.avantapres > div + div { border-left: 1px solid var(--trait); }
+.avantapres h4 { margin: 0 0 6px; font-size: 13px; color: var(--discret); font-weight: 600; }
+.avantapres .texte { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.75; max-height: 240px; overflow: auto; }
+.avantapres mark { cursor: default; }
+.jeton { color: var(--accent); font-weight: 600; }
+.noir { background: var(--barre); color: transparent; border-radius: 2px; user-select: none; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 8px; }
+.actions .lien { margin-left: auto; }
+#bloc-filtre { margin-top: 16px; }
+
+/* ---------- restaurer ---------- */
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.deux > .carte { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.deux h3 { margin: 0; }
+.attente-resultat { display: grid; place-items: center; text-align: center; min-height: 220px; color: var(--discret); border-radius: 4px; background: var(--creux); padding: 20px; }
+
+/* ---------- toast ---------- */
+#toast { position: fixed; left: calc(50% + 105px); bottom: 24px; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; display: flex; align-items: center; gap: 8px; max-width: min(560px, 80vw); background: var(--texte); color: var(--carte); padding: 9px 16px; border-radius: 4px; font-weight: 600; font-size: 14px; transition: opacity .2s, transform .2s; z-index: 9; }
+#toast.vu { opacity: 1; transform: translate(-50%, 0); }
+#toast svg.ico { width: 16px; height: 16px; stroke-width: 2.4; }
+
+@media (max-width: 1060px) {
+  #rail { width: 184px; }
+  .espace { grid-template-columns: minmax(0, 1fr) 270px; }
+  .feuille { padding: 30px 30px; }
+  #toast { left: calc(50% + 92px); }
+}
+@media (max-width: 900px) {
+  .modes, .deux, .avantapres { grid-template-columns: 1fr; }
+  .avantapres > div + div { border-left: 0; border-top: 1px solid var(--trait); }
+  #legende { margin-left: 0; }
+}
 </style>
 </head>
 <body>
-<header>
-  <div class="logo"><i aria-hidden="true"></i>Celodata</div>
-  <nav role="tablist" hidden id="onglets">
-    <button role="tab" aria-selected="true" data-onglet="filtrer">Protéger un document</button>
+<aside id="rail" hidden>
+  <div class="logo"><i aria-hidden=\"true\"></i>Celodata
+  </div>
+  <nav role="tablist" aria-orientation="vertical" id="onglets">
+    <button role="tab" aria-selected="true" data-onglet="filtrer">Protéger</button>
     <button role="tab" aria-selected="false" data-onglet="restaurer">Restaurer</button>
     <button role="tab" aria-selected="false" data-onglet="surveille">Dossier surveillé<span class="pastille" id="pastille" hidden></span></button>
     <button role="tab" aria-selected="false" data-onglet="regles">Règles</button>
     <button role="tab" aria-selected="false" data-onglet="journal">Journal</button>
   </nav>
-  <span id="etat" role="status"></span>
-</header>
+  <div class="pied">
+    <div class="theme" id="theme" role="group" aria-label="Thème">
+      <button type="button" data-t="light" aria-pressed="false">Clair</button>
+      <button type="button" data-t="dark" aria-pressed="false">Sombre</button>
+      <button type="button" data-t="" aria-pressed="true">Auto</button>
+    </div>
+    <span id="etat" role="status"></span>
+    <span>Table chiffrée, aucune connexion sortante.</span>
+  </div>
+</aside>
 
 <main>
   <section id="porte">
-    <h2 id="porte-titre">Ouvrir le projet</h2>
-    <p class="aide" id="porte-aide"></p>
-    <div class="message" id="porte-erreur" role="alert"></div>
     <form id="porte-form">
+      <div class="logo"><i aria-hidden=\"true\"></i>Celodata
+      </div>
+      <h2 id="porte-titre">Ouvrir la table</h2>
+      <p class="aide" id="porte-aide" style="margin:0 0 4px"></p>
+      <div class="message" id="porte-erreur" role="alert" style="margin:12px 0 0"></div>
       <label for="mdp">Mot de passe</label>
-      <input type="password" id="mdp" autocomplete="off" required>
+      <div class="champ">
+        <input type="password" id="mdp" autocomplete="off" required>
+        <button type="button" class="oeil" id="oeil" aria-label="Afficher le mot de passe"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
       <div id="bloc-confirmation">
+        <div class="jauge" id="jauge" data-n="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="info" id="jauge-txt" style="margin-top:4px">Au moins 8 caractères. Une phrase de plusieurs mots est le plus simple à retenir.</div>
         <label for="mdp2">Confirmer le mot de passe</label>
         <input type="password" id="mdp2" autocomplete="off">
+        <div class="avert"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Notez-le en lieu sûr. Il n'existe aucun moyen de le récupérer : sans lui, les réponses de l'IA ne pourront plus être restaurées.</span></div>
       </div>
-      <button class="action" type="submit">Ouvrir</button>
+      <button class="action" type="submit" id="porte-ok">Ouvrir la table</button>
     </form>
   </section>
 
@@ -205,35 +328,37 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
       <ol class="etapes" aria-label="Étapes"><li class="ici"><b>1</b>Déposer</li><li><b>2</b>Vérifier</li><li><b>3</b>Exporter</li></ol>
       <div class="message" id="depot-erreur" role="alert"></div>
       <div id="depot">
-        <div class="dessin" aria-hidden="true"></div>
-        <h2>Déposez un document ici</h2>
-        <p class="aide" style="margin:0">Word, Excel, PDF, PDF scanné ou fichier texte. Rien ne quitte cette machine.</p>
-        <div class="barre">
-          <button class="action" id="btn-ouvrir">Choisir un fichier…</button>
+        <h2>Déposez un document</h2>
+        <p class="aide" style="margin:0">Il est analysé sur ce poste. Vous verrez ses données surlignées avant tout export.</p>
+        <p class="info" style="margin:6px 0 16px">Word, Excel, PDF (scannés compris) et texte.</p>
+        <div class="barre" style="justify-content:center">
+          <button class="action" id="btn-ouvrir">Choisir un fichier</button>
           <button class="second" id="btn-coller">Coller un texte</button>
         </div>
       </div>
       <div class="carte" id="bloc-coller" hidden style="margin-top:16px">
         <h3>Texte à protéger</h3>
-        <textarea id="source" placeholder="Collez votre texte ici…" spellcheck="false" aria-label="Texte à protéger"></textarea>
+        <textarea id="source" placeholder="Collez ici le texte que vous voulez envoyer à l'IA" spellcheck="false" aria-label="Texte à protéger"></textarea>
         <div class="barre" style="margin-top:12px">
-          <button class="action" id="btn-analyser">Analyser</button>
-          <button class="second" id="btn-annuler-coller">Annuler</button>
+          <button class="action" id="btn-analyser">Analyser le texte</button>
+          <button class="lien" id="btn-annuler-coller">Annuler</button>
         </div>
       </div>
-      <div class="carte" style="margin-top:16px">
-        <h3>Traiter un dossier entier</h3>
-        <p class="aide">Tous les documents du dossier sont traités sans aperçu et rangés dans un sous-dossier. Les originaux ne sont pas modifiés.</p>
-        <div class="barre">
-          <select id="dossier-mode" aria-label="Traitement du dossier">
-            <option value="pseudonymisation">Pseudonymiser (réversible)</option>
-            <option value="caviardage">Caviarder (définitif)</option>
-          </select>
-          <button class="second" id="btn-dossier">Choisir le dossier…</button>
-          <span class="info" id="info-dossier"></span>
+      <details class="carte" id="bloc-lot">
+        <summary><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Traiter un dossier entier</summary>
+        <div class="corps">
+          <p class="aide">Tous les documents du dossier sont traités sans aperçu, puis rangés dans un sous-dossier. Les originaux ne changent pas. Relisez les fichiers produits avant de les transmettre.</p>
+          <div class="barre">
+            <select id="dossier-mode" aria-label="Traitement du dossier">
+              <option value="pseudonymisation">Pseudonymiser, réversible</option>
+              <option value="caviardage">Caviarder, définitif</option>
+            </select>
+            <button class="second" id="btn-dossier">Choisir le dossier</button>
+            <span class="info" id="info-dossier"></span>
+          </div>
         </div>
-      </div>
-      <div class="carte" id="bloc-dossier" hidden>
+      </details>
+      <div class="carte" id="bloc-dossier" hidden style="margin-top:16px">
         <h3>Dossier traité</h3>
         <p class="aide" id="dossier-aide"></p>
         <div class="defile"><table>
@@ -241,118 +366,139 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
           <tbody id="dossier-lignes"></tbody>
         </table></div>
       </div>
+      <div id="recents" hidden>
+        <h3>Prêts dans le dossier surveillé</h3>
+        <div id="recents-liste"></div>
+      </div>
     </div>
 
     <div id="attente" hidden role="status">
-      <div class="tourne" aria-hidden="true"></div>
       <h2 id="attente-titre">Analyse en cours…</h2>
-      <p class="aide">Le document ne s'affiche qu'une fois ses données repérées.</p>
+      <p class="aide">Le document s'affiche une fois ses données repérées.</p>
+      <div class="progres vague" id="progres" role="progressbar" aria-label="Avancement" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+      <span class="info" id="attente-detail"></span>
+      <button class="second" id="btn-annuler-analyse">Annuler</button>
     </div>
 
     <div id="verifier" hidden>
-      <div class="gauche">
-        <div class="entete-doc">
-          <button class="second" id="btn-retour-depot" aria-label="Revenir au dépôt">←</button>
-          <strong id="doc-nom"></strong>
-          <div class="bascule" id="bascule" hidden role="group" aria-label="Affichage du document">
-            <button type="button" data-v="texte" aria-pressed="true">Texte</button>
-            <button type="button" data-v="pages" aria-pressed="false">Pages<span class="pastille" id="nb-zones" hidden></span></button>
-          </div>
-          <span class="info" id="doc-bilan"></span>
-        </div>
-        <div class="bureau">
-          <div class="message" id="avert-scan" role="alert" style="max-width:800px;margin:0 auto 12px"></div>
-          <div class="feuille" id="apercu" tabindex="0"></div>
-          <div id="pages" hidden>
-            <span class="info">Les zones noires seront recouvertes dans le PDF caviardé : ce sont les endroits où il y a de l'encre sans texte lu (tampon, signature, mot manuscrit, passage illisible). Cliquez sur une zone pour la laisser visible. Tracez un rectangle à la souris pour en ajouter une.</span>
-            <div id="pages-liste"></div>
-          </div>
-        </div>
+      <div class="entete-doc">
+        <button class="second" id="btn-retour-depot" aria-label="Revenir au dépôt" title="Revenir au dépôt"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <ol class="etapes" aria-label="Étapes"><li class="fait"><b>✓</b>Déposer</li><li class="ici"><b>2</b>Vérifier</li><li><b>3</b>Exporter</li></ol>
+        <strong id="doc-nom"></strong>
+        <div id="legende" aria-label="Légende des couleurs"></div>
       </div>
-      <aside id="panneau" aria-label="Données à masquer">
-        <div class="haut">
-          <h3>À masquer</h3>
-          <span class="info">Décochez ce qui peut rester. Sélectionnez du texte dans le document pour en masquer davantage.</span>
-          <input type="search" id="filtre-liste" placeholder="Filtrer la liste…" aria-label="Filtrer la liste">
+      <div class="espace">
+        <div class="gauche">
+          <div class="bureau">
+            <div class="outils-doc" id="outils-doc" hidden>
+              <div class="bascule" id="bascule" role="group" aria-label="Affichage du document">
+                <button type="button" data-v="texte" aria-pressed="true">Texte</button>
+                <button type="button" data-v="pages" aria-pressed="false">Pages<span class="pastille" id="nb-zones" hidden></span></button>
+              </div>
+            </div>
+            <div class="message" id="avert-scan" role="alert" style="max-width:760px;margin:0 auto 12px"></div>
+            <div class="feuille" id="apercu" tabindex="0" aria-label="Document, données surlignées"></div>
+            <div id="pages" hidden>
+              <span class="info">Les zones noires seront recouvertes dans le PDF caviardé : il y a de l'encre sans texte lu (tampon, signature, mot manuscrit, passage illisible). Cliquez une zone pour la laisser visible. Tracez un rectangle à la souris pour en ajouter une.</span>
+              <div id="pages-liste"></div>
+            </div>
+          </div>
         </div>
-        <div id="liste"></div>
-        <div class="bas">
-          <form id="autre">
-            <input type="text" id="autre-terme" placeholder="Masquer un autre terme…" aria-label="Autre terme à masquer" autocomplete="off" spellcheck="false">
-            <select id="autre-type" aria-label="Type du terme"></select>
-          </form>
-          <span class="info" id="autre-info"></span>
-          <button class="action" id="btn-continuer">Continuer →</button>
-        </div>
-      </aside>
+        <aside id="panneau" aria-label="Données à masquer">
+          <div class="haut">
+            <h3 id="titre-liste">À masquer</h3>
+            <span class="info">Cliquez un passage pour le laisser en clair. Sélectionnez du texte pour en masquer davantage.</span>
+            <input type="search" id="filtre-liste" placeholder="Chercher dans la liste" aria-label="Chercher dans la liste">
+          </div>
+          <div id="liste"></div>
+          <div class="bas">
+            <form id="autre">
+              <input type="text" id="autre-terme" placeholder="Masquer un autre terme" aria-label="Autre terme à masquer" autocomplete="off" spellcheck="false">
+              <select id="autre-type" aria-label="Type du terme"></select>
+            </form>
+            <span class="info" id="autre-info"></span>
+            <button class="action" id="btn-continuer">Exporter</button>
+            <span class="info" id="doc-bilan"></span>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <div class="page" id="vue-exporter" hidden>
       <ol class="etapes" aria-label="Étapes"><li class="fait"><b>✓</b>Déposer</li><li class="fait"><b>✓</b>Vérifier</li><li class="ici"><b>3</b>Exporter</li></ol>
-      <h2>Que voulez-vous obtenir ?</h2>
-      <p class="aide" id="export-bilan"></p>
+      <h2>Que voulez-vous en faire ?</h2>
+      <p class="aide" id="export-bilan" style="margin:0"></p>
       <div class="modes" role="radiogroup" aria-label="Traitement">
         <label class="mode">
           <input type="radio" name="mode" value="pseudonymisation" checked>
-          <div class="titre">Pseudonymiser <small>Réversible</small></div>
-          <div class="exemple">Le dossier de <b>PERSONNE_1</b> sera examiné lundi.</div>
-          <p>Chaque donnée devient un jeton. Le texte reste lisible par une IA, et Celodata remet les vraies valeurs dans sa réponse.</p>
+          <span class="titre">L'envoyer à une IA <small class="reversible">Réversible</small></span>
+          <p>Chaque donnée devient un jeton. Celodata remettra les vraies valeurs dans la réponse.</p>
         </label>
         <label class="mode">
           <input type="radio" name="mode" value="caviardage">
-          <div class="titre">Caviarder <small>Définitif</small></div>
-          <div class="exemple">Le dossier de <u>█████████</u> sera examiné lundi.</div>
-          <p>Chaque donnée est retirée pour de bon. Aucun retour possible : gardez l'original à part.</p>
+          <span class="titre">Le transmettre caviardé <small class="definitif">Définitif</small></span>
+          <p>Les données sont retirées pour de bon. Aucun retour possible : gardez l'original à part.</p>
         </label>
       </div>
-      <div class="carte">
-        <p class="aide" id="export-aide" style="margin-bottom:12px"></p>
-        <div class="barre">
-          <button class="action" id="btn-enregistrer">Enregistrer le fichier…</button>
-          <button class="second" id="btn-filtrer">Copier le texte</button>
-          <button class="lien" id="btn-retour-verif" style="margin-left:auto">← Revenir à la vérification</button>
-        </div>
+      <div class="avantapres">
+        <div><h4>Votre document</h4><div class="texte" id="avant"></div></div>
+        <div><h4 id="titre-apres">Ce que l'IA recevra</h4><div class="texte" id="apres"></div></div>
       </div>
+      <p class="info" id="apercu-note" style="margin:8px 0 0"></p>
+      <div class="actions">
+        <button class="action" id="btn-filtrer">Copier pour l'IA</button>
+        <button class="second" id="btn-enregistrer">Enregistrer le fichier</button>
+        <button class="lien" id="btn-retour-verif">Revenir à la vérification</button>
+      </div>
+      <p class="info" id="export-aide" style="margin:0 0 14px"></p>
       <div class="message" id="filtre-erreur" role="alert"></div>
       <div class="message bon" id="export-ok" role="status"></div>
       <div id="bloc-filtre" hidden>
-        <h3>Texte copié dans le presse-papiers</h3>
+        <h3>Texte copié</h3>
         <div class="zone" id="filtre"></div>
       </div>
-      <div class="barre" style="margin-top:18px"><button class="second" id="btn-nouveau">Protéger un autre document</button></div>
+      <div class="barre" style="margin-top:20px"><button class="second" id="btn-nouveau">Protéger un autre document</button></div>
     </div>
   </section>
 
   <!-- ================= Restaurer ================= -->
-  <section id="restaurer" hidden><div class="page">
+  <section id="restaurer" hidden><div class="page" style="max-width:1040px">
     <h2>Restaurer la réponse de l'IA</h2>
-    <p class="aide">Collez la réponse, ou restaurez un fichier rendu par l'IA (Word, Excel, texte). Les jetons sont remplacés par les vraies valeurs. Un document caviardé ne peut pas être restauré.</p>
-    <textarea id="reponse" placeholder="Collez la réponse de l'IA…" spellcheck="false" aria-label="Réponse de l'IA"></textarea>
-    <div class="barre" style="margin:12px 0 20px">
-      <button class="action" id="btn-restaurer">Restaurer</button>
-      <button class="second" id="btn-restaurer-fichier">Restaurer un fichier…</button>
-      <span class="info" id="info-restaure"></span>
-    </div>
-    <div id="bloc-restaure" hidden>
-      <div class="message" id="alertes-restaure" role="alert"></div>
-      <h3>Réponse restaurée</h3>
-      <div class="zone" id="restaure"></div>
-      <div class="barre" style="margin-top:12px"><button class="action" id="btn-copier-restaure">Copier</button><span class="info" id="info-copie"></span></div>
+    <p class="aide">Collez la réponse, ou ouvrez le fichier Word, Excel ou texte qu'elle vous a rendu. Les jetons redeviennent les vraies valeurs. Un document caviardé ne peut pas être restauré.</p>
+    <div class="deux">
+      <div class="carte">
+        <h3>Réponse de l'IA</h3>
+        <textarea id="reponse" placeholder="Collez ici la réponse de l'IA" spellcheck="false" aria-label="Réponse de l'IA"></textarea>
+        <div class="barre">
+          <button class="action" id="btn-restaurer">Restaurer</button>
+          <button class="second" id="btn-restaurer-fichier">Restaurer un fichier</button>
+        </div>
+        <span class="info" id="info-restaure"></span>
+      </div>
+      <div class="carte">
+        <div class="barre"><h3>Réponse restaurée</h3><button class="second" id="btn-copier-restaure" style="margin-left:auto;padding:5px 12px" hidden>Copier</button></div>
+        <div class="attente-resultat" id="restaure-vide">La réponse avec les vraies valeurs s'affichera ici.</div>
+        <div id="bloc-restaure" hidden>
+          <div class="zone" id="restaure" style="max-height:52vh"></div>
+          <div class="message" id="alertes-restaure" role="alert" style="margin:10px 0 0"></div>
+          <span class="info" id="info-copie"></span>
+        </div>
+      </div>
     </div>
   </div></section>
 
   <!-- ================= Dossier surveillé ================= -->
   <section id="surveille" hidden><div class="page">
     <h2>Dossier surveillé</h2>
-    <p class="aide">Les documents déposés dans ce dossier sont analysés en tâche de fond, tant que Celodata est ouvert. Ils vous attendent ici, prêts à vérifier. Rien n'est enregistré sans votre validation.</p>
+    <p class="aide">Chaque document déposé dans ce dossier est analysé en tâche de fond, tant que Celodata est ouvert. Il vous attend ici, prêt à vérifier. Rien n'est enregistré sans vous.</p>
     <div class="carte">
       <div class="barre">
-        <span id="surveille-chemin"><span class="info">Aucun dossier surveillé.</span></span>
-        <button class="action" id="btn-surveiller" style="margin-left:auto">Choisir un dossier…</button>
-        <button class="second" id="btn-arreter" hidden>Arrêter</button>
+        <span id="surveille-chemin" style="min-width:0"><span class="info">Aucun dossier surveillé.</span></span>
+        <button class="action" id="btn-surveiller" style="margin-left:auto">Choisir un dossier</button>
+        <button class="lien" id="btn-arreter" hidden>Arrêter</button>
       </div>
     </div>
-    <div class="carte" id="surveille-bloc" hidden>
+    <div class="carte tableau" id="surveille-bloc" hidden>
       <div class="defile"><table>
         <thead><tr><th>Document</th><th>État</th><th></th></tr></thead>
         <tbody id="surveille-lignes"></tbody>
@@ -362,23 +508,30 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   <!-- ================= Règles ================= -->
   <section id="regles" hidden><div class="page">
-    <h2>Règles du projet</h2>
-    <p class="aide">Elles s'appliquent à tous les documents, y compris aux dossiers. Elles sont rangées chiffrées dans la table.</p>
+    <h2>Règles</h2>
+    <p class="aide">Elles s'appliquent à tous vos documents, dossiers compris, et sont rangées chiffrées dans la table. Les passages laissés en clair à la vérification s'ajoutent ici.</p>
     <div class="message" id="regle-erreur" role="alert"></div>
     <div class="carte">
-      <form class="barre" id="regle-form">
-        <select id="regle-genre" aria-label="Genre de règle">
+      <form id="regle-form" style="display:grid;gap:12px">
+        <div class="bascule" id="genres" role="group" aria-label="Genre de règle" style="justify-self:start">
+          <button type="button" data-g="terme" aria-pressed="true">Toujours masquer</button>
+          <button type="button" data-g="motif" aria-pressed="false">Masquer un motif</button>
+          <button type="button" data-g="jamais" aria-pressed="false">Ne jamais masquer</button>
+        </div>
+        <select id="regle-genre" aria-label="Genre de règle" hidden>
           <option value="terme">Toujours masquer ce terme</option>
           <option value="motif">Masquer ce qui suit ce motif</option>
           <option value="jamais">Ne jamais masquer ce terme</option>
         </select>
-        <input type="text" id="regle-texte" style="flex:1 1 220px;min-width:0" aria-label="Terme ou motif" placeholder="Nom de code, client, référence interne…" autocomplete="off" spellcheck="false">
-        <select id="regle-type" aria-label="Type"></select>
-        <button class="action" type="submit">Ajouter</button>
+        <div class="barre">
+          <input type="text" id="regle-texte" style="flex:1 1 220px;min-width:0" aria-label="Terme ou motif" autocomplete="off" spellcheck="false">
+          <select id="regle-type" aria-label="Type"></select>
+          <button class="action" type="submit">Ajouter la règle</button>
+        </div>
+        <p class="info" id="regle-aide" style="margin:0"></p>
       </form>
-      <p class="info" id="regle-aide" style="margin:10px 0 0"></p>
     </div>
-    <div class="carte"><div class="defile"><table>
+    <div class="carte tableau"><div class="defile"><table>
       <thead><tr><th>Règle</th><th>Texte</th><th>Type</th><th></th></tr></thead>
       <tbody id="regle-lignes"></tbody>
     </table></div></div>
@@ -387,12 +540,14 @@ mark.vise { outline: 2px solid var(--accent); outline-offset: 1px; }
   <!-- ================= Journal ================= -->
   <section id="journal" hidden><div class="page" style="max-width:1080px">
     <h2>Journal</h2>
-    <p class="aide">Les 200 derniers traitements. Le journal ne contient que des décomptes, jamais de vraie valeur. Le nom du fichier y est chiffré.</p>
-    <div class="carte"><div class="defile"><table>
-      <thead><tr><th>Date</th><th>Action</th><th>Document</th><th>Détail</th><th>Origine des passages</th></tr></thead>
+    <p class="aide">Les 200 derniers traitements. Seulement des décomptes, jamais de vraie valeur. Le nom du fichier y est chiffré.</p>
+    <div class="carte tableau"><div class="defile"><table>
+      <thead><tr><th>Quand</th><th>Action</th><th>Document</th><th>Détail</th><th>Origine des passages</th></tr></thead>
       <tbody id="journal-lignes"></tbody>
     </table></div></div>
   </div></section>
+
+  <div id="toast" role="status"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="toast-texte"></span></div>
 </main>
 
 <div id="ajout" hidden>
@@ -419,6 +574,7 @@ const FAMILLES = {
 const NUMEROS = ["TELEPHONE","MAIL","NIR","IBAN","BIC","SIRET","TVA","PLAQUE","IP","MAC","MACHINE","URL",
   "IDENTIFIANT","MATRICULE","NUM_CLIENT","NUM_CONTRAT","DATE","DATE_NAISSANCE","MONTANT"];
 const famille = t => FAMILLES[t] || (NUMEROS.includes(t) ? "numero" : "autre");
+const LEGENDE = [["personne", "Personnes"], ["lieu", "Lieux"], ["numero", "Numéros"], ["sensible", "Sensibles"], ["secret", "Secrets"], ["autre", "Autres"]];
 const NOMS = {
   PERSONNE: "Personne", ORGANISATION: "Organisation", ADRESSE: "Adresse", VILLE: "Ville", LIEU: "Lieu",
   TELEPHONE: "Téléphone", MAIL: "Courriel", DATE: "Date", DATE_NAISSANCE: "Date de naissance",
@@ -461,19 +617,62 @@ function ligneVide(corps, colonnes, message) {
   cellule(tr, message, "vide").colSpan = colonnes;
   corps.append(tr);
 }
+function etiquette(contenu, genre) {
+  const s = document.createElement("span");
+  s.className = "etiquette" + (genre ? " " + genre : "");
+  s.textContent = contenu;
+  return s;
+}
+let minuteur = 0;
+function annoncer(message) {
+  $("toast-texte").textContent = message; $("toast").classList.add("vu");
+  clearTimeout(minuteur); minuteur = setTimeout(() => $("toast").classList.remove("vu"), 2800);
+}
+
+// ---------- thème ----------
+function appliquerTheme(theme) {
+  if (theme) document.documentElement.dataset.theme = theme;
+  else delete document.documentElement.dataset.theme;
+  $("theme").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === (theme || ""))));
+}
+$("theme").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  appliquerTheme(b.dataset.t);
+  api().choisir_theme(b.dataset.t);
+});
 
 // ---------- ouverture ----------
 async function demarrer() {
   const e = await api().etat();
+  appliquerTheme(e.theme);
   if (e.ouverte) return entrer();
-  $("porte-titre").textContent = e.table_existe ? "Ouvrir le projet" : "Créer le projet";
+  $("porte-titre").textContent = e.table_existe ? "Ouvrir la table" : "Créer votre table";
   $("porte-aide").textContent = e.table_existe
-    ? "Entrez le mot de passe de la table de correspondance."
-    : "Choisissez un mot de passe d'au moins 8 caractères. Il protège la table de correspondance. S'il est perdu, les textes déjà pseudonymisés ne pourront plus être restaurés.";
+    ? "Entrez le mot de passe de votre table de correspondance."
+    : "La table garde la correspondance entre vos données et leurs jetons. Elle reste chiffrée sur ce poste.";
+  $("porte-ok").textContent = e.table_existe ? "Ouvrir la table" : "Créer la table";
   $("bloc-confirmation").hidden = e.table_existe;
   $("porte").dataset.nouvelle = e.table_existe ? "" : "1";
   $("mdp").focus();
 }
+$("oeil").addEventListener("click", () => {
+  const visible = $("mdp").type === "text";
+  $("mdp").type = $("mdp2").type = visible ? "password" : "text";
+  $("oeil").setAttribute("aria-label", visible ? "Afficher le mot de passe" : "Masquer le mot de passe");
+});
+$("mdp").addEventListener("input", () => {
+  const v = $("mdp").value;
+  const n = !v ? 0 : v.length < 8 ? 1 : v.length < 12 ? 2 : (v.length >= 16 || /\s|-/.test(v)) ? 4 : 3;
+  $("jauge").dataset.n = n;
+  $("jauge-txt").textContent = [
+    "Au moins 8 caractères. Une phrase de plusieurs mots est le plus simple à retenir.",
+    "Trop court : il faut au moins 8 caractères.",
+    "Correct. Quelques caractères de plus le rendraient solide.",
+    "Solide.",
+    "Très solide.",
+  ][n];
+});
 $("porte-form").addEventListener("submit", async ev => {
   ev.preventDefault();
   const erreur = $("porte-erreur");
@@ -487,10 +686,10 @@ $("porte-form").addEventListener("submit", async ev => {
   entrer();
 });
 function entrer() {
-  $("porte").hidden = true; $("onglets").hidden = false; $("filtrer").hidden = false;
+  $("porte").hidden = true; $("rail").hidden = false; $("filtrer").hidden = false;
   $("etat").textContent = "Chargement du modèle…";
   api().preparer().then(r => {
-    $("etat").textContent = r.modele ? "Prêt · règles et modèle d'entités" : "Règles seules · les noms ne sont pas détectés";
+    $("etat").textContent = r.modele ? "Noms et numéros détectés" : "Règles seules : les noms ne sont pas détectés";
     $("etat").className = r.modele ? "pret" : "limite";
   });
   suivreSurveillance();
@@ -514,8 +713,60 @@ function vue(nom) {
   $("verifier").hidden = nom !== "verifier";
   $("vue-exporter").hidden = nom !== "exporter";
   $("ajout").hidden = true;
+  document.querySelector("main").scrollTop = 0;
 }
-function attendre(titre) { $("attente-titre").textContent = titre; vue("attente"); }
+function attendre(titre) {
+  $("attente-titre").textContent = titre;
+  if ($("attente").hidden) { avancer({etape: ""}); vue("attente"); }
+}
+
+// ---------- avancement et annulation ----------
+let course = 0;          // numéro du travail en cours : le résultat d'un travail annulé est ignoré
+let minuteurSuivi = null;
+function duree(s) {
+  if (s < 55) return `${Math.max(5, Math.ceil(s / 5) * 5)} s`;
+  return `${Math.round(s / 60)} min`;
+}
+function avancer(a) {
+  const barre = $("progres");
+  const mesure = a.total > 1;
+  barre.classList.toggle("vague", !mesure);
+  barre.firstElementChild.style.width = mesure ? `${Math.round(100 * a.fait / a.total)}%` : "";
+  if (mesure) barre.setAttribute("aria-valuenow", Math.round(100 * a.fait / a.total)); else barre.removeAttribute("aria-valuenow");
+  const page = `page ${Math.min(a.fait + 1, a.total)} sur ${a.total}`;
+  let detail = {
+    lecture: mesure ? `Lecture du document, ${page}` : "Lecture du document",
+    zones: mesure ? `Recherche des tampons et signatures, ${page}` : "Recherche des tampons et signatures",
+    modele: "Chargement du modèle d'entités, une seule fois par ouverture",
+    attente: "En attente : un autre document est en cours d'analyse",
+    analyse: mesure ? `Recherche des données, ${Math.round(100 * a.fait / a.total)} %` : "Recherche des données",
+  }[a.etape] || "";
+  // Le temps restant est estimé sur l'étape en cours, dès qu'une part mesurable est faite.
+  if (mesure && a.fait >= 1 && a.depuis >= 2) {
+    const reste = a.depuis * (a.total - a.fait) / a.fait;
+    if (reste >= 3) detail += `. Encore environ ${duree(reste)}`;
+  }
+  $("attente-detail").textContent = detail;
+}
+function finSuivi() { clearInterval(minuteurSuivi); minuteurSuivi = null; }
+function suivre() {
+  finSuivi();
+  const moi = ++course;
+  minuteurSuivi = setInterval(async () => {
+    const a = await api().avancement();
+    if (moi !== course || !a.etape) return;
+    if ($("attente").hidden) vue("attente");
+    avancer(a);
+  }, 400);
+  return moi;
+}
+$("btn-annuler-analyse").addEventListener("click", () => {
+  course++; finSuivi();
+  api().annuler();
+  api().oublier();
+  vue("deposer");
+  toast("Analyse annulée");
+});
 function vider() {
   texte = ""; passages = []; fichier = ""; formate = false; estPdf = false; scan = 0; zones = []; nbPages = 0;
   $("source").value = ""; $("bloc-coller").hidden = true; $("depot-erreur").textContent = "";
@@ -530,46 +781,55 @@ $("btn-coller").addEventListener("click", () => { $("bloc-coller").hidden = fals
 $("btn-annuler-coller").addEventListener("click", () => { $("bloc-coller").hidden = true; $("source").value = ""; });
 $("btn-analyser").addEventListener("click", async () => {
   const colle = $("source").value.replace(/\r\n?/g, "\n");
-  if (!colle.trim()) return;
+  if (!colle.trim()) { $("source").focus(); return; }
   await api().oublier();
   fichier = ""; formate = false; estPdf = false; scan = 0; zones = []; nbPages = 0;
   analyser(colle, "Analyse du texte…");
 });
-async function analyser(contenu, titre, dejaFaite) {
+async function analyser(contenu, titre, dejaFaite, enCours) {
   $("depot-erreur").textContent = "";
+  const moi = enCours || suivre();
   attendre(titre);
   try {
     const r = dejaFaite || await api().analyser(contenu);
+    if (moi !== course) return;
+    finSuivi();
+    if (r.annule) { vue("deposer"); return; }
     texte = contenu;
     passages = [
       ...r.detections.map(d => ({...d, actif: true, suggestion: false})),
       ...r.suggestions.map(d => ({...d, actif: false, suggestion: true})),
     ].sort((a, b) => a.debut - b.debut);
     $("doc-nom").textContent = fichier || "Texte collé";
+    $("doc-nom").title = fichier || "";
     $("avert-scan").textContent = scan
       ? `Document scanné : ${pluriel(scan, "page")} ${scan > 1 ? "ont été lues" : "a été lue"} par reconnaissance de caractères. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est pas masqué. Relisez tout le document avant de continuer.`
       : (r.modele ? "" : "Modèle d'entités absent : seules les règles ont tourné, les noms ne sont pas détectés.");
     $("filtre-liste").value = ""; $("autre-info").textContent = "";
-    pagesFaites = false; $("pages-liste").textContent = ""; $("bascule").hidden = !estPdf; affichage("texte");
+    pagesFaites = false; $("pages-liste").textContent = ""; $("outils-doc").hidden = !estPdf; affichage("texte");
     dessiner();
     vue("verifier");
     $("apercu").parentElement.scrollTop = 0;
   } catch (e) {
+    if (moi !== course) return;
+    finSuivi();
     refuser("Erreur pendant l'analyse : " + e);
   }
 }
-function charger(r) {
-  if (r.annule) { vue("deposer"); return; }
-  if (!r.ok) { refuser(r.erreur); return; }
+function charger(r, moi) {
+  if (moi && moi !== course) return;
+  if (r.annule) { finSuivi(); vue("deposer"); return; }
+  if (!r.ok) { finSuivi(); refuser(r.erreur); return; }
   fichier = r.nom; formate = !!r.format; estPdf = !!r.pdf; scan = r.pages_scannees || 0;
   zones = (r.zones || []).map(z => ({...z, actif: true, manuel: false})); nbPages = r.pages || 0;
-  analyser(r.texte, `Analyse de ${r.nom}…`, r.analyse);
+  analyser(r.texte, `Analyse de ${r.nom}…`, r.analyse, moi);
 }
 $("btn-ouvrir").addEventListener("click", async () => {
   $("depot-erreur").textContent = "";
-  const r = await api().ouvrir_fichier();
-  if (!r.annule) attendre("Lecture du document…");
-  charger(r);
+  // L'écran d'attente s'affiche dès que la lecture commence, une fois le fichier choisi.
+  const moi = suivre();
+  $("attente-titre").textContent = "Lecture du document…";
+  charger(await api().ouvrir_fichier(), moi);
 });
 // Dépôt d'un fichier n'importe où dans la vue.
 const depot = $("depot");
@@ -581,12 +841,13 @@ $("vue-deposer").addEventListener("drop", async ev => {
   ev.preventDefault(); depot.classList.remove("survol");
   const f = ev.dataTransfer.files[0];
   if (!f) return;
+  const moi = suivre();
   attendre(`Lecture de ${f.name}…`);
   // Le fichier est lu en mémoire puis confié au moteur : rien n'est écrit sur disque.
   const octets = new Uint8Array(await f.arrayBuffer());
   let binaire = "";
   for (let i = 0; i < octets.length; i += 0x8000) binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 0x8000));
-  charger(await api().lire_fichier(f.name, btoa(binaire)));
+  charger(await api().lire_fichier(f.name, btoa(binaire)), moi);
 });
 
 // Dossier entier, sans aperçu.
@@ -605,7 +866,8 @@ $("btn-dossier").addEventListener("click", async () => {
         cellule(tr, f.fichier);
         cellule(tr, f.ok ? String(f.masques) : "", "nombre");
         cellule(tr, f.ok && f.a_verifier ? String(f.a_verifier) : "", "nombre");
-        cellule(tr, f.ok ? (caviar ? "caviardé" : "pseudonymisé") + (f.remarque ? ` (${f.remarque})` : "") : f.erreur, f.ok ? "" : "erreur");
+        if (f.ok) cellule(tr, etiquette((caviar ? "Caviardé" : "Pseudonymisé") + (f.remarque ? ` (${f.remarque})` : ""), f.remarque ? "scan" : "bon"));
+        else cellule(tr, f.erreur, "erreur");
         corps.append(tr);
       });
       if (!r.fichiers.length) ligneVide(corps, 4, "Aucun document lisible dans ce dossier.");
@@ -616,6 +878,7 @@ $("btn-dossier").addEventListener("click", async () => {
         + (r.modele ? "" : " Modèle d'entités absent : les noms n'ont pas été détectés.");
       $("bloc-dossier").hidden = false;
       $("bloc-dossier").scrollIntoView({behavior: "smooth", block: "nearest"});
+      annoncer(`Dossier traité : ${pluriel(faits, "document")}`);
     }
     $("info-dossier").textContent = "";
   } catch (e) {
@@ -636,7 +899,7 @@ function dessiner() {
     m.textContent = valeur(p);
     m.dataset.i = i; m.tabIndex = 0; m.setAttribute("role", "button");
     m.className = p.actif ? famille(p.type) : (p.suggestion ? "suggestion" : "inactif");
-    m.title = `${nomType(p.type)} · ` + (p.actif ? "cliquer pour ne plus masquer" : "cliquer pour masquer");
+    m.title = `${nomType(p.type)} · ` + (p.actif ? "cliquer pour laisser en clair" : "cliquer pour masquer");
     zone.append(m);
     position = p.fin;
   });
@@ -671,13 +934,13 @@ function lister() {
       ligne.className = "ligne" + (x.actif || cle === "?" ? "" : " non");
       const case_ = document.createElement("input");
       case_.type = "checkbox"; case_.checked = x.actif;
-      case_.setAttribute("aria-label", (x.actif ? "Ne plus masquer " : "Masquer ") + v);
+      case_.setAttribute("aria-label", (x.actif ? "Laisser en clair " : "Masquer ") + v);
       case_.addEventListener("change", () => basculer(x.premier));
       const b = document.createElement("button");
       b.type = "button"; b.textContent = v; b.title = "Voir dans le document";
       b.addEventListener("click", () => viser(x.premier));
       ligne.append(case_, b);
-      if (x.n > 1) { const n = document.createElement("small"); n.textContent = "× " + x.n; ligne.append(n); }
+      if (x.n > 1) { const n = document.createElement("small"); n.textContent = "×" + x.n; ligne.append(n); }
       bloc.append(ligne);
       montres++;
     });
@@ -686,13 +949,25 @@ function lister() {
   if (!montres) {
     const vide = document.createElement("p");
     vide.className = "info"; vide.style.padding = "12px 8px";
-    vide.textContent = passages.length ? "Rien ne correspond à ce filtre." : "Aucune donnée repérée. Sélectionnez du texte dans le document pour le masquer.";
+    vide.textContent = passages.length ? "Rien ne correspond à cette recherche." : "Aucune donnée repérée. Sélectionnez du texte dans le document pour le masquer.";
     liste.append(vide);
   }
+  // Légende : valeurs distinctes masquées, par famille de couleur.
+  const parFamille = {};
+  passages.filter(p => p.actif).forEach(p => { (parFamille[famille(p.type)] ||= new Set()).add(valeur(p)); });
   const n = new Set(passages.filter(p => p.actif).map(valeur)).size;
-  const v = passages.filter(p => p.suggestion && !p.actif).length;
+  const v = new Set(passages.filter(p => p.suggestion && !p.actif).map(valeur)).size;
   const z = zones.filter(x => x.actif).length;
-  $("doc-bilan").textContent = `${pluriel(n, "donnée")} à masquer` + (v ? ` · ${v} à vérifier` : "") + (z ? ` · ${pluriel(z, "zone")} sans texte` : "");
+  const legende = $("legende");
+  legende.textContent = "";
+  LEGENDE.forEach(([cle, nom]) => {
+    if (!parFamille[cle]) return;
+    const s = document.createElement("span"); s.className = "lg-" + cle; s.textContent = `${nom} ${parFamille[cle].size}`; legende.append(s);
+  });
+  if (v) { const s = document.createElement("span"); s.className = "lg-averifier"; s.textContent = `À vérifier ${v}`; legende.append(s); }
+  $("titre-liste").textContent = n ? `${pluriel(n, "donnée")} à masquer` : "Rien à masquer pour l'instant";
+  $("btn-continuer").textContent = n ? `Exporter ${pluriel(n, "donnée")}` : "Exporter sans rien masquer";
+  $("doc-bilan").textContent = [v ? `${pluriel(v, "fonction")} à vérifier, laissée${v > 1 ? "s" : ""} en clair` : "", z ? `${pluriel(z, "zone")} sans texte à recouvrir` : ""].filter(Boolean).join(". ");
   $("nb-zones").hidden = !z; $("nb-zones").textContent = z;
 }
 $("filtre-liste").addEventListener("input", lister);
@@ -755,8 +1030,10 @@ document.addEventListener("mouseup", ev => {
 });
 $("ajout-ok").addEventListener("click", () => {
   if (!selection) return;
-  masquerPartout(texte.slice(selection.debut, selection.fin), $("ajout-type").value);
+  const terme = texte.slice(selection.debut, selection.fin);
+  const n = masquerPartout(terme, $("ajout-type").value);
   selection = null; $("ajout").hidden = true; window.getSelection().removeAllRanges();
+  if (n) annoncer(n > 1 ? `« ${terme} » masqué ${n} fois` : `« ${terme} » masqué`);
 });
 $("autre-type").innerHTML = $("ajout-type").innerHTML;
 $("autre-type").value = "AUTRE";
@@ -843,24 +1120,51 @@ document.addEventListener("mouseup", () => {
 
 // ---------- exporter ----------
 const mode = () => document.querySelector("input[name=mode]:checked").value;
+// Aperçu local, sans rien écrire dans la table : les numéros des jetons sont attribués à l'export.
+function apercuExport() {
+  const caviar = mode() === "caviardage", avant = $("avant"), apres = $("apres");
+  avant.textContent = ""; apres.textContent = "";
+  let position = 0;
+  passages.forEach(p => {
+    const entre = texte.slice(position, p.debut), v = valeur(p);
+    avant.append(entre); apres.append(entre);
+    if (p.actif) {
+      const m = document.createElement("mark"); m.className = famille(p.type); m.textContent = v; avant.append(m);
+      const s = document.createElement("span");
+      if (caviar) { s.className = "noir"; s.textContent = v; }
+      else { s.className = "jeton"; s.textContent = p.type === "SECRET" ? "[SECRET_SUPPRIMÉ]" : `${p.type}_n`; }
+      apres.append(s);
+    } else { avant.append(v); apres.append(v); }
+    position = p.fin;
+  });
+  avant.append(texte.slice(position)); apres.append(texte.slice(position));
+  $("titre-apres").textContent = caviar ? "Ce que le destinataire recevra" : "Ce que l'IA recevra";
+  $("apercu-note").textContent = caviar
+    ? (estPdf ? "Dans le PDF, chaque donnée est couverte d'un rectangle noir." : "Chaque donnée devient une marque █████.")
+    : "Chaque jeton reçoit son numéro à l'export, par exemple PERSONNE_12. Une même valeur garde toujours le même jeton.";
+}
 function decrireExport() {
   const caviar = mode() === "caviardage", ext = (fichier.match(/\.[^.]+$/) || [""])[0].toLowerCase();
   let produit;
   const z = zones.filter(x => x.actif).length;
   if (estPdf) produit = caviar
-    ? "Vous obtiendrez un PDF fait d'images : des rectangles noirs couvrent les données, et il ne reste aucun texte dessous."
+    ? "Le fichier enregistré sera un PDF fait d'images : des rectangles noirs couvrent les données, et il ne reste aucun texte dessous."
       + (z ? ` ${pluriel(z, "zone")} sans texte lu (tampon, signature, passage illisible) ${z > 1 ? "seront aussi recouvertes" : "sera aussi recouverte"} : voir « Pages » à l'étape Vérifier.` : "")
-    : "Vous obtiendrez un Word neuf qui contient le texte pseudonymisé. La mise en page, les images, les tampons et les signatures du PDF n'y sont pas repris.";
-  else if (formate) produit = `Vous obtiendrez un ${ext === ".xlsx" ? "Excel" : "Word"} ${caviar ? "caviardé" : "pseudonymisé"}, mise en forme gardée, propriétés (auteur, société) vidées.`;
-  else produit = `Vous obtiendrez un fichier texte ${caviar ? "caviardé" : "pseudonymisé"}.`;
+    : "Le fichier enregistré sera un Word neuf avec le texte pseudonymisé. La mise en page, les images, les tampons et les signatures du PDF n'y sont pas repris.";
+  else if (formate) produit = `Le fichier enregistré sera un ${ext === ".xlsx" ? "Excel" : "Word"} ${caviar ? "caviardé" : "pseudonymisé"}, mise en forme gardée, propriétés (auteur, société) vidées.`;
+  else produit = `Le fichier enregistré sera un fichier texte ${caviar ? "caviardé" : "pseudonymisé"}.`;
   $("export-aide").textContent = produit;
+  $("btn-filtrer").textContent = caviar ? "Copier le texte" : "Copier pour l'IA";
+  const libelle = estPdf ? (caviar ? "le PDF" : "le Word") : formate ? (ext === ".xlsx" ? "l'Excel" : "le Word") : "le fichier";
+  $("btn-enregistrer").textContent = `Enregistrer ${libelle}`;
   $("filtre-erreur").textContent = ""; $("export-ok").textContent = ""; $("bloc-filtre").hidden = true;
+  apercuExport();
 }
 document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", decrireExport));
 $("btn-continuer").addEventListener("click", () => {
   const n = passages.filter(p => p.actif).length, v = passages.filter(p => p.suggestion && !p.actif).length;
-  $("export-bilan").textContent = `${fichier || "Texte collé"} · ${pluriel(n, "passage")} masqué${n > 1 ? "s" : ""}`
-    + (v ? ` · ${pluriel(v, "fonction")} à vérifier laissée${v > 1 ? "s" : ""} en clair` : "");
+  $("export-bilan").textContent = `${fichier || "Texte collé"} : ${pluriel(n, "passage")} masqué${n > 1 ? "s" : ""}`
+    + (v ? `, ${pluriel(v, "fonction")} à vérifier laissée${v > 1 ? "s" : ""} en clair` : "") + ".";
   decrireExport();
   vue("exporter");
 });
@@ -873,7 +1177,8 @@ $("btn-filtrer").addEventListener("click", async () => {
   const r = await api().filtrer(texte, retenus(), retires(), fichier, mode());
   if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
   $("filtre").textContent = r.texte; $("bloc-filtre").hidden = false;
-  if (!copier(r.texte)) $("filtre-erreur").textContent = "Copie impossible : sélectionnez le texte ci-dessous.";
+  if (copier(r.texte)) annoncer(mode() === "caviardage" ? "Texte caviardé copié" : "Texte copié, prêt à coller dans l'IA");
+  else $("filtre-erreur").textContent = "Copie impossible : sélectionnez le texte ci-dessous.";
   $("bloc-filtre").scrollIntoView({behavior: "smooth", block: "nearest"});
 });
 $("btn-enregistrer").addEventListener("click", async () => {
@@ -886,6 +1191,7 @@ $("btn-enregistrer").addEventListener("click", async () => {
     if (!r.ok) { $("filtre-erreur").textContent = r.erreur; return; }
     $("export-ok").textContent = `Fichier enregistré : ${r.chemin}`
       + (r.avertissements.length ? ` Attention : ${r.avertissements.join(", ")}.` : "");
+    annoncer("Fichier enregistré");
     suivreSurveillance();
   } catch (e) {
     $("filtre-erreur").textContent = "Erreur : " + e;
@@ -895,43 +1201,63 @@ $("btn-enregistrer").addEventListener("click", async () => {
 });
 
 // ---------- dossier surveillé ----------
-const ETATS = {analyse: "Analyse en cours…", traite: "Traité"};
+function ouvrirSurveille(d) {
+  return async () => {
+    const doc = await api().ouvrir_surveille(d.id);
+    onglet("filtrer");
+    charger(doc);
+  };
+}
 function afficherSurveillance(r) {
   const actif = !!r.dossier;
   $("btn-arreter").hidden = !actif;
-  $("btn-surveiller").textContent = actif ? "Changer de dossier…" : "Choisir un dossier…";
+  $("btn-surveiller").textContent = actif ? "Changer de dossier" : "Choisir un dossier";
   $("btn-surveiller").className = actif ? "second" : "action";
   const chemin = $("surveille-chemin");
   chemin.textContent = "";
-  if (actif) { const c = document.createElement("code"); c.textContent = r.dossier; chemin.append(c); }
-  else { const s = document.createElement("span"); s.className = "info"; s.textContent = "Aucun dossier surveillé."; chemin.append(s); }
+  if (actif) {
+    const c = document.createElement("code"); c.textContent = r.dossier;
+    chemin.append(c, " ", etiquette("Surveillé", "bon"));
+  } else { const s = document.createElement("span"); s.className = "info"; s.textContent = "Aucun dossier surveillé."; chemin.append(s); }
   $("surveille-bloc").hidden = !actif;
-  const prets = r.documents.filter(d => d.etat === "pret").length;
-  $("pastille").hidden = !prets; $("pastille").textContent = prets;
+  const prets = r.documents.filter(d => d.etat === "pret");
+  $("pastille").hidden = !prets.length; $("pastille").textContent = prets.length;
   const corps = $("surveille-lignes");
   corps.textContent = "";
   r.documents.forEach(d => {
     const tr = document.createElement("tr");
     cellule(tr, d.nom);
-    cellule(tr, d.etat === "erreur" ? d.erreur
-      : d.etat === "pret" ? `Prêt · ${pluriel(d.masques, "passage")} repéré${d.masques > 1 ? "s" : ""}` + (d.pages_scannees ? " · scan à relire" : "")
-      : ETATS[d.etat], d.etat === "erreur" ? "erreur" : "");
+    if (d.etat === "erreur") cellule(tr, d.erreur, "erreur");
+    else if (d.etat === "pret") cellule(tr, etiquette((d.pages_scannees ? "Scan à relire · " : "Prêt · ") + pluriel(d.masques, "passage"), d.pages_scannees ? "scan" : "pret"));
+    else cellule(tr, etiquette(d.etat === "traite" ? "Exporté" : "Analyse en cours…", d.etat === "traite" ? "bon" : ""));
     const fin = cellule(tr, "", "nombre");
     if (d.etat === "pret" || d.etat === "traite") {
       const b = document.createElement("button");
       b.className = d.etat === "pret" ? "action" : "second";
       b.textContent = d.etat === "pret" ? "Vérifier" : "Rouvrir";
       b.setAttribute("aria-label", `${b.textContent} ${d.nom}`);
-      b.addEventListener("click", async () => {
-        const doc = await api().ouvrir_surveille(d.id);
-        onglet("filtrer");
-        charger(doc);
-      });
+      b.addEventListener("click", ouvrirSurveille(d));
       fin.append(b);
     }
     corps.append(tr);
   });
-  if (!r.documents.length) ligneVide(corps, 3, "Le dossier est vide pour l'instant. Déposez-y un document : il apparaîtra ici.");
+  if (!r.documents.length) ligneVide(corps, 3, "Le dossier est vide pour l'instant. Déposez-y un document : il apparaîtra ici, prêt à vérifier.");
+  // Les documents prêts remontent aussi sur l'écran de dépôt.
+  const recents = $("recents-liste");
+  recents.textContent = "";
+  prets.forEach(d => {
+    const ligne = document.createElement("div"); ligne.className = "recent";
+    const corpsLigne = document.createElement("div");
+    const nom = document.createElement("strong"); nom.textContent = d.nom;
+    const detail = document.createElement("span"); detail.className = "info";
+    detail.textContent = `${pluriel(d.masques, "passage")} repéré${d.masques > 1 ? "s" : ""}` + (d.pages_scannees ? " · scan à relire en entier" : "");
+    corpsLigne.append(nom, detail);
+    const b = document.createElement("button"); b.className = "second"; b.textContent = "Vérifier";
+    b.setAttribute("aria-label", `Vérifier ${d.nom}`);
+    b.addEventListener("click", ouvrirSurveille(d));
+    ligne.append(corpsLigne, b); recents.append(ligne);
+  });
+  $("recents").hidden = !prets.length;
 }
 let surveillanceVue = "";
 async function suivreSurveillance() {
@@ -947,16 +1273,20 @@ $("btn-arreter").addEventListener("click", async () => { await api().arreter_sur
 // ---------- règles du projet ----------
 const GENRES = {terme: "Toujours masquer", motif: "Motif", jamais: "Ne jamais masquer"};
 const AIDES = {
-  terme: "Le terme est masqué partout où il apparaît en entier, sans tenir compte des majuscules.",
+  terme: "Le terme est masqué partout où il apparaît en entier, majuscules ou non.",
   motif: "Expression régulière. Exemple : TCK-\\d{6} masque les références du type TCK-204815.",
   jamais: "Le terme n'est plus proposé, même si un détecteur le trouve. Les majuscules comptent.",
 };
+const EXEMPLES = {terme: "Projet Hélios, nom d'un client…", motif: "TCK-\\d{6}", jamais: "Service client"};
 $("regle-type").innerHTML = $("ajout-type").innerHTML;
 function majGenre() {
   const g = $("regle-genre").value;
+  document.querySelectorAll("#genres button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === g));
   $("regle-type").hidden = g === "jamais";
   $("regle-aide").textContent = AIDES[g];
+  $("regle-texte").placeholder = EXEMPLES[g];
 }
+document.querySelectorAll("#genres button").forEach(b => b.addEventListener("click", () => { $("regle-genre").value = b.dataset.g; majGenre(); }));
 $("regle-genre").addEventListener("change", majGenre);
 majGenre();
 async function chargerRegles() {
@@ -965,18 +1295,18 @@ async function chargerRegles() {
   corps.textContent = "";
   const ligne = (genre, contenu, type, retirer) => {
     const tr = document.createElement("tr");
-    cellule(tr, GENRES[genre]);
+    cellule(tr, etiquette(GENRES[genre], genre === "jamais" ? "" : "pret"));
     const code = document.createElement("code"); code.textContent = contenu;
     cellule(tr, code); cellule(tr, type ? nomType(type) : "");
     const b = document.createElement("button");
-    b.className = "second"; b.textContent = "Retirer"; b.setAttribute("aria-label", "Retirer la règle " + contenu);
-    b.addEventListener("click", async () => { await retirer(); chargerRegles(); });
+    b.className = "lien"; b.textContent = "Retirer"; b.setAttribute("aria-label", "Retirer la règle " + contenu);
+    b.addEventListener("click", async () => { await retirer(); chargerRegles(); annoncer("Règle retirée"); });
     cellule(tr, b, "nombre");
     corps.append(tr);
   };
   r.regles.forEach(x => ligne(x.genre, x.texte, x.type, () => api().supprimer_regle(x.id)));
   r.jamais.forEach(t => ligne("jamais", t, "", () => api().ne_plus_ignorer(t)));
-  if (!r.regles.length && !r.jamais.length) ligneVide(corps, 4, "Aucune règle pour l'instant. Les passages décochés à la vérification apparaîtront ici.");
+  if (!r.regles.length && !r.jamais.length) ligneVide(corps, 4, "Aucune règle pour l'instant. Ajoutez un nom de projet ou de client à masquer partout, ou laissez un passage en clair à la vérification.");
 }
 $("regle-form").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -985,38 +1315,51 @@ $("regle-form").addEventListener("submit", async ev => {
   if (!r.ok) { $("regle-erreur").textContent = r.erreur; return; }
   $("regle-texte").value = "";
   chargerRegles();
+  annoncer("Règle ajoutée");
 });
 
 // ---------- journal ----------
 const SOURCES = {regles: "règles", projet: "règles du projet", table: "table", manuel: "ajout à la main"};
 const decompte = (o, noms) => Object.entries(o || {}).map(([k, n]) => `${noms ? (noms[k] || k) : nomType(k)} ${n}`).join(", ");
+function quand(iso) {
+  const d = new Date(iso), jour = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const ecart = Math.round((jour(new Date()) - jour(d)) / 864e5);
+  const heure = d.toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit"});
+  if (ecart === 0) return `Aujourd'hui, ${heure}`;
+  if (ecart === 1) return `Hier, ${heure}`;
+  return d.toLocaleString("fr-FR", {day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"});
+}
 async function chargerJournal() {
   const lignes = await api().journal();
   const corps = $("journal-lignes");
   corps.textContent = "";
   lignes.forEach(l => {
     const tr = document.createElement("tr");
-    cellule(tr, new Date(l.date).toLocaleString("fr-FR"));
+    cellule(tr, quand(l.date)).title = new Date(l.date).toLocaleString("fr-FR");
     const filtrage = l.action === "filtrage";
+    const caviar = l.traitement === "caviardage";
+    cellule(tr, etiquette(filtrage
+      ? (caviar ? "Caviardage" : "Pseudonymisation") + (l.mode === "lot" ? " (dossier)" : l.mode === "passerelle" ? " (passerelle)" : "")
+      : "Restauration", filtrage ? (caviar ? "alerte" : "pret") : "bon"));
+    cellule(tr, l.fichier || "Texte collé");
     cellule(tr, filtrage
-      ? (l.traitement === "caviardage" ? "Caviardage" : "Pseudonymisation") + (l.mode === "lot" ? " (dossier, sans aperçu)" : l.mode === "passerelle" ? " (passerelle)" : "")
-      : "Restauration");
-    cellule(tr, l.fichier || "texte collé");
-    cellule(tr, filtrage
-      ? (decompte(l.par_type) || "rien à masquer")
-      : `${pluriel(l.inconnus, "jeton")} inconnu${l.inconnus > 1 ? "s" : ""}, ${l.approximatifs} approché${l.approximatifs > 1 ? "s" : ""}`);
+      ? (decompte(l.par_type) || "Rien à masquer")
+      : (l.inconnus || l.approximatifs
+        ? `${pluriel(l.inconnus, "jeton")} inconnu${l.inconnus > 1 ? "s" : ""}, ${l.approximatifs} approché${l.approximatifs > 1 ? "s" : ""}`
+        : "Tous les jetons retrouvés"));
     cellule(tr, filtrage ? decompte(l.par_source, SOURCES) + (l.score_min == null ? "" : ` · score mini ${l.score_min}`) : "");
     corps.append(tr);
   });
-  if (!lignes.length) ligneVide(corps, 5, "Aucun traitement pour l'instant.");
+  if (!lignes.length) ligneVide(corps, 5, "Aucun traitement pour l'instant. Chaque document protégé ou restauré ajoutera une ligne ici.");
 }
 
 // ---------- restauration ----------
 $("btn-restaurer").addEventListener("click", async () => {
   const reponse = $("reponse").value;
-  if (!reponse.trim()) return;
+  if (!reponse.trim()) { $("reponse").focus(); return; }
   const r = await api().restaurer(reponse);
-  $("restaure").textContent = r.texte; $("bloc-restaure").hidden = false; $("info-copie").textContent = ""; $("info-restaure").textContent = "";
+  $("restaure").textContent = r.texte; $("bloc-restaure").hidden = false; $("restaure-vide").hidden = true;
+  $("btn-copier-restaure").hidden = false; $("info-copie").textContent = ""; $("info-restaure").textContent = "";
   const alertes = $("alertes-restaure");
   alertes.textContent = "";
   const bloc = (titre, liste) => {
@@ -1026,21 +1369,24 @@ $("btn-restaurer").addEventListener("click", async () => {
     liste.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.append(li); });
     alertes.append(p, ul);
   };
-  bloc("Jetons absents de la table, laissés tels quels :", r.inconnus);
+  bloc("Jetons absents de la table, laissés tels quels (l'IA les a peut-être inventés) :", r.inconnus);
   bloc("Jetons reconnus sous une forme approchée, à vérifier :", r.approximatifs);
+  annoncer("Réponse restaurée");
 });
 $("btn-restaurer-fichier").addEventListener("click", async () => {
   const r = await api().restaurer_fichier();
   if (r.annule) return;
-  $("bloc-restaure").hidden = true;
+  $("bloc-restaure").hidden = true; $("restaure-vide").hidden = false; $("btn-copier-restaure").hidden = true;
   if (!r.ok) { $("info-restaure").textContent = r.erreur; return; }
   const n = r.inconnus.length, a = r.approximatifs.length;
   $("info-restaure").textContent = `Fichier restauré enregistré : ${r.chemin}`
     + (n ? ` ${pluriel(n, "jeton")} absent${n > 1 ? "s" : ""} de la table, laissé${n > 1 ? "s" : ""} tel${n > 1 ? "s" : ""} quel${n > 1 ? "s" : ""}.` : "")
     + (a ? ` ${pluriel(a, "jeton")} reconnu${a > 1 ? "s" : ""} sous une forme approchée, à vérifier.` : "");
+  annoncer("Fichier restauré enregistré");
 });
 $("btn-copier-restaure").addEventListener("click", () => {
-  $("info-copie").textContent = copier($("restaure").textContent) ? "Copié." : "Copie impossible.";
+  if (copier($("restaure").textContent)) annoncer("Réponse copiée");
+  else $("info-copie").textContent = "Copie impossible : sélectionnez le texte.";
 });
 
 if (window.pywebview && window.pywebview.api) demarrer();

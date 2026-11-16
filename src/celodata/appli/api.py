@@ -7,11 +7,12 @@ publiques.
 import base64
 import re
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from celodata import journal, pdf
+from celodata import journal, pdf, suivi
 from celodata.detection.base import Detecteur, Detection
 from celodata.detection.fusion import DetecteurCompose
 from celodata.detection.listes import fonctions_a_verifier
@@ -63,6 +64,9 @@ def detecteur_par_defaut() -> tuple[Detecteur, bool]:
     return DetecteurCompose("celodata", [regles, modele]), True
 
 
+THEMES = ("light", "dark")
+
+
 class Api:
     def __init__(
         self,
@@ -77,6 +81,10 @@ class Api:
         # `dialogue("fichier")`, `dialogue("dossier")` ou `dialogue("enregistrer", nom proposé)`
         # ouvre la boîte de Windows et rend un chemin.
         self._dialogue = dialogue
+        self._theme = ""
+        # Travail lancé depuis l'écran : où il en est, et la demande d'arrêt.
+        self._avancement = {"etape": "", "fait": 0, "total": 0, "debut": 0.0}
+        self._annule = threading.Event()
         self._table: Table | None = None
         self._detecteur: Detecteur | None = None
         self._avec_modele = False
@@ -93,7 +101,42 @@ class Api:
 
     def etat(self) -> dict:
         existe = str(self._chemin) != ":memory:" and Path(self._chemin).exists()
-        return {"table_existe": existe, "ouverte": self._table is not None, "chemin": str(self._chemin)}
+        return {
+            "table_existe": existe,
+            "ouverte": self._table is not None,
+            "chemin": str(self._chemin),
+            "theme": self._lire_theme(),
+        }
+
+    def _fichier_theme(self) -> Path | None:
+        if str(self._chemin) == ":memory:":
+            return None
+        return Path(self._chemin).parent / "theme.txt"
+
+    def _lire_theme(self) -> str:
+        """Rend "light", "dark" ou "" (le thème de Windows)."""
+        fichier = self._fichier_theme()
+        if fichier is None:
+            return self._theme
+        try:
+            valeur = fichier.read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+        return valeur if valeur in THEMES else ""
+
+    def choisir_theme(self, theme: str) -> dict:
+        """Retient le thème de l'écran. Rien d'autre n'est écrit hors de la table."""
+        if theme not in THEMES:
+            theme = ""
+        self._theme = theme
+        fichier = self._fichier_theme()
+        if fichier is not None:
+            try:
+                fichier.parent.mkdir(parents=True, exist_ok=True)
+                fichier.write_text(theme, encoding="utf-8")
+            except OSError:
+                return {"ok": False}
+        return {"ok": True}
 
     def ouvrir(self, mot_de_passe: str) -> dict:
         with self._verrou:
@@ -118,6 +161,28 @@ class Api:
                 self._detecteur, self._avec_modele = self._fabrique()
             return {"modele": self._avec_modele}
 
+    # ---------- avancement et arrêt ----------
+
+    def _pas(self, etape: str, fait: int, total: int) -> None:
+        if self._annule.is_set():
+            raise suivi.Annule
+        debut = self._avancement["debut"] if self._avancement["etape"] == etape else time.monotonic()
+        self._avancement = {"etape": etape, "fait": fait, "total": total, "debut": debut}
+
+    def _fini(self) -> None:
+        self._avancement = {"etape": "", "fait": 0, "total": 0, "debut": 0.0}
+
+    def avancement(self) -> dict:
+        """Où en est la lecture ou l'analyse lancée depuis l'écran. `etape` est vide quand rien ne tourne."""
+        a = self._avancement
+        depuis = time.monotonic() - a["debut"] if a["etape"] else 0.0
+        return {"etape": a["etape"], "fait": a["fait"], "total": a["total"], "depuis": round(depuis, 1)}
+
+    def annuler(self) -> dict:
+        """Arrête la lecture ou l'analyse en cours, à la prochaine page ou au prochain bloc de texte."""
+        self._annule.set()
+        return {"ok": True}
+
     # ---------- filtrer et restaurer ----------
 
     def _analyser(self, texte: str) -> tuple[list[Detection], list[Detection]]:
@@ -140,9 +205,19 @@ class Api:
         }
 
     def analyser(self, texte: str) -> dict:
-        self.preparer()
-        with self._verrou:
-            return self._analyse(*self._analyser(texte))
+        self._annule.clear()
+        try:
+            if self._detecteur is None:
+                self._pas("modele", 0, 0)
+            self.preparer()
+            self._pas("attente", 0, 0)
+            with self._verrou, suivi.suivre(self._pas):
+                self._pas("analyse", 0, 0)
+                return self._analyse(*self._analyser(texte))
+        except suivi.Annule:
+            return {"annule": True}
+        finally:
+            self._fini()
 
     def _valider(self, texte: str, detections: list[dict], retirees: list[str]) -> list[Detection]:
         """Les passages validés dans l'aperçu. Les corrections deviennent la mémoire du projet."""
@@ -286,10 +361,17 @@ class Api:
 
     def _charger(self, nom: str, contenu: bytes) -> dict:
         self._charge = self._ouvert = None
+        self._annule.clear()
         try:
-            texte, self._charge, pages_scannees = self._lire(nom, contenu)
+            with suivi.suivre(self._pas):
+                self._pas("lecture", 0, 0)
+                texte, self._charge, pages_scannees = self._lire(nom, contenu)
         except DocumentIllisible as e:
             return {"ok": False, "erreur": str(e)}
+        except suivi.Annule:
+            return {"ok": False, "annule": True}
+        finally:
+            self._fini()
         return {
             "ok": True,
             "nom": nom,
