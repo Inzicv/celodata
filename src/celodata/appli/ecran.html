@@ -190,6 +190,7 @@ mark.secret, .lg-secret { background: var(--secret); color: var(--t-secret); }
 mark.inactif { background: none; color: var(--discret); text-decoration: line-through; text-decoration-color: var(--discret); }
 mark.suggestion, .lg-averifier { background: none; color: inherit; outline: 1px dashed var(--alerte); outline-offset: -1px; }
 .lg-averifier { color: var(--alerte); }
+mark.hors { background: none; color: inherit; padding: 0; border-bottom: 1px dotted var(--discret); border-radius: 0; }
 mark.vise { box-shadow: 0 0 0 2px var(--accent); }
 #panneau { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; background: var(--carte); border-left: 1px solid var(--trait); }
 #panneau .haut { padding: 16px 16px 8px; display: grid; gap: 10px; }
@@ -220,6 +221,15 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
 .bascule button { border: 0; background: none; padding: 6px 13px; }
 .bascule button[aria-pressed="true"] { background: var(--accent-pale); color: var(--accent-fonce); font-weight: 600; }
 .bascule .pastille { margin-left: 6px; }
+.bascule small { font-weight: 400; font-size: 13px; color: var(--discret); margin-left: 4px; }
+.choix-depot { display: flex; flex-wrap: wrap; gap: 10px 18px; justify-content: center; align-items: center; margin: 0 0 8px; }
+.reglage { display: inline-flex; gap: 8px; align-items: center; color: var(--discret); }
+#traitement-aide { display: block; margin: 0 0 16px; }
+#doc-traitement { font-size: 13px; color: var(--discret); white-space: nowrap; }
+.groupe h4 input { margin: 0; }
+.groupe.eteint h4 i { opacity: .35; }
+.cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; margin: 14px 0; }
+.cases label { display: flex; gap: 8px; align-items: center; }
 #pages .info { display: block; max-width: 760px; margin: 0 auto 12px; }
 .pagevue { position: relative; max-width: 760px; min-height: 120px; margin: 0 auto 18px; background: #fff; border: 1px solid var(--trait); box-shadow: var(--ombre); cursor: crosshair; user-select: none; }
 .pagevue img { display: block; width: 100%; pointer-events: none; }
@@ -331,6 +341,14 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
         <h2>Déposez un document</h2>
         <p class="aide" style="margin:0">Il est analysé sur ce poste. Vous verrez ses données surlignées avant tout export.</p>
         <p class="info" style="margin:6px 0 16px">Word, Excel, PDF (scannés compris) et texte.</p>
+        <div class="choix-depot">
+          <div class="bascule" id="traitement" role="group" aria-label="Traitement">
+            <button type="button" data-t="pseudonymisation" aria-pressed="true">Pseudonymiser<small>réversible</small></button>
+            <button type="button" data-t="caviardage" aria-pressed="false">Caviarder<small>définitif</small></button>
+          </div>
+          <label class="reglage">Préréglage <select id="prereglage" aria-label="Préréglage"></select></label>
+        </div>
+        <span class="info" id="traitement-aide"></span>
         <div class="barre" style="justify-content:center">
           <button class="action" id="btn-ouvrir">Choisir un fichier</button>
           <button class="second" id="btn-coller">Coller un texte</button>
@@ -349,11 +367,8 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
         <div class="corps">
           <p class="aide">Tous les documents du dossier sont traités sans aperçu, puis rangés dans un sous-dossier. Les originaux ne changent pas. Relisez les fichiers produits avant de les transmettre.</p>
           <div class="barre">
-            <select id="dossier-mode" aria-label="Traitement du dossier">
-              <option value="pseudonymisation">Pseudonymiser, réversible</option>
-              <option value="caviardage">Caviarder, définitif</option>
-            </select>
             <button class="second" id="btn-dossier">Choisir le dossier</button>
+            <span class="info" id="dossier-rappel"></span>
             <span class="info" id="info-dossier"></span>
           </div>
         </div>
@@ -385,6 +400,7 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
         <button class="second" id="btn-retour-depot" aria-label="Revenir au dépôt" title="Revenir au dépôt"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
         <ol class="etapes" aria-label="Étapes"><li class="fait"><b>✓</b>Déposer</li><li class="ici"><b>2</b>Vérifier</li><li><b>3</b>Exporter</li></ol>
         <strong id="doc-nom"></strong>
+        <span id="doc-traitement"></span>
         <div id="legende" aria-label="Légende des couleurs"></div>
       </div>
       <div class="espace">
@@ -510,6 +526,22 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
   <section id="regles" hidden><div class="page">
     <h2>Règles</h2>
     <p class="aide">Elles s'appliquent à tous vos documents, dossiers compris, et sont rangées chiffrées dans la table. Les passages laissés en clair à la vérification s'ajoutent ici.</p>
+    <div class="carte" id="bloc-prereglages">
+      <h3>Préréglage</h3>
+      <p class="aide">Un préréglage choisit les catégories masquées d'office. Les autres sont quand même repérées, et montrées décochées à la vérification : une case suffit pour les masquer. Les secrets sont toujours supprimés. Le choix vaut à partir du prochain document analysé.</p>
+      <div class="barre">
+        <select id="pre-choix" aria-label="Préréglage utilisé"></select>
+        <span class="info" id="pre-etat"></span>
+      </div>
+      <div class="cases" id="pre-cases"></div>
+      <div class="barre">
+        <input type="text" id="pre-nom" style="flex:1 1 220px;min-width:0" placeholder="Nom du préréglage" aria-label="Nom du préréglage" maxlength="40" autocomplete="off">
+        <button class="action" id="pre-enregistrer">Enregistrer</button>
+        <button class="lien" id="pre-supprimer" hidden></button>
+      </div>
+      <p class="info" style="margin:8px 0 0">Gardez le nom pour modifier ce préréglage, changez-le pour en créer un autre.</p>
+      <div class="message" id="pre-erreur" role="alert"></div>
+    </div>
     <div class="message" id="regle-erreur" role="alert"></div>
     <div class="carte">
       <form id="regle-form" style="display:grid;gap:12px">
@@ -567,12 +599,13 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
 const $ = id => document.getElementById(id);
 const api = () => window.pywebview.api;
 const FAMILLES = {
-  PERSONNE: "personne", LOGIN: "personne", FONCTION: "personne",
+  PERSONNE: "personne", LOGIN: "personne", FONCTION: "personne", ROLE: "personne", AGE: "personne",
+  COMMUN: "autre",
   ORGANISATION: "lieu", ADRESSE: "lieu", VILLE: "lieu", LIEU: "lieu", PROJET: "lieu",
   SANTE: "sensible", SYNDICAT: "sensible", SECRET: "secret",
 };
 const NUMEROS = ["TELEPHONE","MAIL","NIR","IBAN","BIC","SIRET","TVA","PLAQUE","IP","MAC","MACHINE","URL",
-  "IDENTIFIANT","MATRICULE","NUM_CLIENT","NUM_CONTRAT","DATE","DATE_NAISSANCE","MONTANT"];
+  "IDENTIFIANT","MATRICULE","NUM_CLIENT","NUM_CONTRAT","DATE","DATE_NAISSANCE","DATE_LOI","DUREE","MONTANT"];
 const famille = t => FAMILLES[t] || (NUMEROS.includes(t) ? "numero" : "autre");
 const LEGENDE = [["personne", "Personnes"], ["lieu", "Lieux"], ["numero", "Numéros"], ["sensible", "Sensibles"], ["secret", "Secrets"], ["autre", "Autres"]];
 const NOMS = {
@@ -582,13 +615,16 @@ const NOMS = {
   PLAQUE: "Plaque", IP: "Adresse IP", MAC: "Adresse MAC", MACHINE: "Machine", URL: "Lien",
   IDENTIFIANT: "Identifiant", LOGIN: "Identifiant de connexion", MATRICULE: "Matricule",
   NUM_CLIENT: "N° client", NUM_CONTRAT: "N° de contrat", MONTANT: "Montant", PROJET: "Projet",
+  ROLE: "Rôle ou métier", COMMUN: "Terme générique", DUREE: "Durée", DATE_LOI: "Date d'un texte de loi", AGE: "Âge",
   SANTE: "Santé", SYNDICAT: "Syndicat", SECRET: "Secret (supprimé)", FONCTION: "Fonction", AUTRE: "Autre",
 };
 const nomType = t => NOMS[t] || t.toLowerCase().replace(/_/g, " ");
 const pluriel = (n, mot, s = "s") => `${n} ${mot}${n > 1 ? s : ""}`;
 
 let texte = "";          // texte analysé
-let passages = [];       // {debut, fin, type, actif, suggestion}
+let passages = [];       // {debut, fin, type, actif, suggestion, hors} ; hors : catégorie laissée en clair
+let traitement = "pseudonymisation";
+let prereglages = {courant: "", categories: [], liste: []};
 let selection = null;    // {debut, fin} en attente d'ajout
 let fichier = "";        // nom du fichier chargé
 let formate = false;     // Word, Excel ou PDF : enregistré dans un format de document
@@ -694,7 +730,74 @@ function entrer() {
   });
   suivreSurveillance();
   setInterval(suivreSurveillance, 3000);
+  choisirTraitement(traitement);
+  chargerPrereglages();
 }
+
+// ---------- traitement et préréglage ----------
+function rappel() {
+  const nom = traitement === "caviardage" ? "Caviardage" : "Pseudonymisation";
+  $("doc-traitement").textContent = prereglages.courant ? `${nom} · ${prereglages.courant}` : nom;
+  $("dossier-rappel").textContent = `${nom}${prereglages.courant ? `, préréglage ${prereglages.courant}` : ""} : le choix fait plus haut.`;
+}
+function choisirTraitement(t) {
+  traitement = t;
+  document.querySelectorAll("#traitement button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === t));
+  document.querySelector(`input[name=mode][value=${t}]`).checked = true;
+  $("traitement-aide").textContent = t === "caviardage"
+    ? "Les données sont retirées pour de bon, sans retour possible : gardez l'original à part."
+    : "Chaque donnée devient un jeton. Celodata remettra les vraies valeurs dans la réponse de l'IA.";
+  rappel();
+  if (texte) lister();
+}
+document.querySelectorAll("#traitement button").forEach(b => b.addEventListener("click", () => choisirTraitement(b.dataset.t)));
+async function chargerPrereglages() {
+  prereglages = await api().prereglages();
+  ["prereglage", "pre-choix"].forEach(id => {
+    const s = $(id);
+    s.textContent = "";
+    prereglages.liste.forEach(x => {
+      const o = document.createElement("option");
+      o.value = x.nom; o.textContent = x.nom + (x.modifie ? " (modifié)" : "");
+      s.append(o);
+    });
+    s.value = prereglages.courant;
+  });
+  const p = prereglages.liste.find(x => x.nom === prereglages.courant);
+  const cases = $("pre-cases");
+  cases.textContent = "";
+  prereglages.categories.forEach(type => {
+    const l = document.createElement("label"), c = document.createElement("input");
+    c.type = "checkbox"; c.dataset.t = type; c.checked = !p.laisses.includes(type);
+    l.append(c, nomType(type));
+    cases.append(l);
+  });
+  $("pre-nom").value = p.nom;
+  $("pre-etat").textContent = `${prereglages.categories.length - p.laisses.length} catégories masquées sur ${prereglages.categories.length}`;
+  $("pre-supprimer").hidden = p.origine && !p.modifie;
+  $("pre-supprimer").textContent = p.origine ? "Remettre comme au départ" : "Supprimer ce préréglage";
+  $("pre-erreur").textContent = "";
+  rappel();
+}
+async function choisirPrereglage(nom) {
+  await api().choisir_prereglage(nom);
+  await chargerPrereglages();
+}
+$("prereglage").addEventListener("change", ev => choisirPrereglage(ev.target.value));
+$("pre-choix").addEventListener("change", ev => choisirPrereglage(ev.target.value));
+$("pre-enregistrer").addEventListener("click", async () => {
+  const nom = $("pre-nom").value.trim();
+  const laisses = [...document.querySelectorAll("#pre-cases input")].filter(c => !c.checked).map(c => c.dataset.t);
+  const r = await api().enregistrer_prereglage(nom, laisses);
+  if (!r.ok) { $("pre-erreur").textContent = r.erreur; return; }
+  await choisirPrereglage(nom);
+  annoncer("Préréglage enregistré");
+});
+$("pre-supprimer").addEventListener("click", async () => {
+  await api().supprimer_prereglage(prereglages.courant);
+  await chargerPrereglages();
+  annoncer("Préréglage retiré");
+});
 const ONGLETS = ["filtrer", "restaurer", "surveille", "regles", "journal"];
 function onglet(nom) {
   document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x.dataset.onglet === nom));
@@ -797,7 +900,7 @@ async function analyser(contenu, titre, dejaFaite, enCours) {
     if (r.annule) { vue("deposer"); return; }
     texte = contenu;
     passages = [
-      ...r.detections.map(d => ({...d, actif: true, suggestion: false})),
+      ...r.detections.map(d => ({...d, actif: !d.hors, suggestion: false, hors: !!d.hors})),
       ...r.suggestions.map(d => ({...d, actif: false, suggestion: true})),
     ].sort((a, b) => a.debut - b.debut);
     $("doc-nom").textContent = fichier || "Texte collé";
@@ -856,7 +959,7 @@ $("btn-dossier").addEventListener("click", async () => {
   boutons.forEach(b => { $(b).disabled = true; });
   $("info-dossier").textContent = "Traitement en cours : quelques secondes par document…";
   try {
-    const r = await api().filtrer_dossier($("dossier-mode").value);
+    const r = await api().filtrer_dossier(traitement);
     if (!r.annule) {
       const corps = $("dossier-lignes");
       const caviar = r.traitement === "caviardage";
@@ -898,8 +1001,8 @@ function dessiner() {
     const m = document.createElement("mark");
     m.textContent = valeur(p);
     m.dataset.i = i; m.tabIndex = 0; m.setAttribute("role", "button");
-    m.className = p.actif ? famille(p.type) : (p.suggestion ? "suggestion" : "inactif");
-    m.title = `${nomType(p.type)} · ` + (p.actif ? "cliquer pour laisser en clair" : "cliquer pour masquer");
+    m.className = p.actif ? famille(p.type) : (p.suggestion ? "suggestion" : p.hors ? "hors" : "inactif");
+    m.title = `${nomType(p.type)} · ` + (p.actif ? "cliquer pour laisser en clair" : p.hors ? "catégorie laissée en clair, cliquer pour masquer" : "cliquer pour masquer");
     zone.append(m);
     position = p.fin;
   });
@@ -918,14 +1021,25 @@ function lister() {
     if (!g.has(v)) g.set(v, {n: 0, actif: p.actif, premier: i});
     g.get(v).n++;
   });
-  const ordre = [...groupes.keys()].sort((a, b) => a === "?" ? -1 : b === "?" ? 1 : nomType(a).localeCompare(nomType(b), "fr"));
+  const actifs = cle => [...groupes.get(cle).values()].filter(x => x.actif).length;
+  const rang = cle => cle === "?" ? 0 : actifs(cle) ? 1 : 2;
+  const ordre = [...groupes.keys()].sort((a, b) => rang(a) - rang(b) || nomType(a).localeCompare(nomType(b), "fr"));
   let montres = 0;
   ordre.forEach(cle => {
     const lignes = [...groupes.get(cle)].filter(([v]) => !cherche || v.toLowerCase().includes(cherche));
     if (!lignes.length) return;
     const bloc = document.createElement("div");
-    bloc.className = "groupe " + (cle === "?" ? "averifier" : famille(cle));
+    bloc.className = "groupe " + (cle === "?" ? "averifier" : famille(cle)) + (rang(cle) === 2 ? " eteint" : "");
     const titre = document.createElement("h4");
+    if (cle !== "?") {
+      // Une case pour toute la catégorie : cochée si tout est masqué, entre deux si une partie l'est.
+      const tout = document.createElement("input"), n = actifs(cle), total = groupes.get(cle).size;
+      tout.type = "checkbox"; tout.checked = n === total; tout.indeterminate = n > 0 && n < total;
+      tout.title = n === total ? "Laisser toute la catégorie en clair" : "Masquer toute la catégorie";
+      tout.setAttribute("aria-label", `${tout.title} : ${nomType(cle)}`);
+      tout.addEventListener("change", () => basculerCategorie(cle, tout.checked));
+      titre.append(tout);
+    }
     titre.append(document.createElement("i"), cle === "?" ? "À vérifier" : nomType(cle));
     const compte = document.createElement("span"); compte.textContent = lignes.length; titre.append(compte);
     bloc.append(titre);
@@ -966,7 +1080,7 @@ function lister() {
   });
   if (v) { const s = document.createElement("span"); s.className = "lg-averifier"; s.textContent = `À vérifier ${v}`; legende.append(s); }
   $("titre-liste").textContent = n ? `${pluriel(n, "donnée")} à masquer` : "Rien à masquer pour l'instant";
-  $("btn-continuer").textContent = n ? `Exporter ${pluriel(n, "donnée")}` : "Exporter sans rien masquer";
+  $("btn-continuer").textContent = n ? `${traitement === "caviardage" ? "Caviarder" : "Pseudonymiser"} ${pluriel(n, "donnée")}` : "Exporter sans rien masquer";
   $("doc-bilan").textContent = [v ? `${pluriel(v, "fonction")} à vérifier, laissée${v > 1 ? "s" : ""} en clair` : "", z ? `${pluriel(z, "zone")} sans texte à recouvrir` : ""].filter(Boolean).join(". ");
   $("nb-zones").hidden = !z; $("nb-zones").textContent = z;
 }
@@ -982,6 +1096,17 @@ function basculer(i) {
   const v = valeur(passages[i]), actif = !passages[i].actif;
   // Une même valeur est masquée partout ou nulle part.
   passages.forEach(p => { if (valeur(p) === v) p.actif = actif; });
+  const haut = $("liste").scrollTop;
+  dessiner();
+  $("liste").scrollTop = haut;
+}
+function basculerCategorie(type, actif) {
+  passages.forEach(p => {
+    if (p.type !== type || (p.suggestion && !p.actif)) return;
+    p.actif = actif;
+    // Une catégorie décochée n'est pas une correction : ses valeurs ne sont pas retenues comme « à ne plus masquer ».
+    if (!actif && !p.suggestion) p.hors = true;
+  });
   const haut = $("liste").scrollTop;
   dessiner();
   $("liste").scrollTop = haut;
@@ -1160,7 +1285,7 @@ function decrireExport() {
   $("filtre-erreur").textContent = ""; $("export-ok").textContent = ""; $("bloc-filtre").hidden = true;
   apercuExport();
 }
-document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", decrireExport));
+document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", () => { choisirTraitement(mode()); lister(); decrireExport(); }));
 $("btn-continuer").addEventListener("click", () => {
   const n = passages.filter(p => p.actif).length, v = passages.filter(p => p.suggestion && !p.actif).length;
   $("export-bilan").textContent = `${fichier || "Texte collé"} : ${pluriel(n, "passage")} masqué${n > 1 ? "s" : ""}`
@@ -1171,7 +1296,8 @@ $("btn-continuer").addEventListener("click", () => {
 $("btn-retour-verif").addEventListener("click", () => vue("verifier"));
 $("btn-nouveau").addEventListener("click", vider);
 const retenus = () => passages.filter(p => p.actif).map(({debut, fin, type}) => ({debut, fin, type}));
-const retires = () => [...new Set(passages.filter(p => !p.actif && !p.suggestion).map(valeur))];
+// Les passages d'une catégorie laissée en clair ne sont pas des corrections : ils ne sont pas retenus.
+const retires = () => [...new Set(passages.filter(p => !p.actif && !p.suggestion && !p.hors).map(valeur))];
 $("btn-filtrer").addEventListener("click", async () => {
   $("filtre-erreur").textContent = ""; $("export-ok").textContent = "";
   const r = await api().filtrer(texte, retenus(), retires(), fichier, mode());

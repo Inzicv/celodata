@@ -25,6 +25,16 @@ VOIE = (
     r"cours|place|route|square|passage|résidence|rés\.)|(?i:zone artisanale|zone industrielle|lieu-dit))"
     r" [^\n,;()]{2,45}?"
 )
+# Textes de loi : leur date n'est pas une donnée personnelle (« la loi du 6 janvier 1978 »).
+TEXTE_LOI = r"(?:lois?|décrets?|règlements?|directives?|ordonnances?|arrêtés?|circulaires?|conventions? collectives?)"
+NOMBRE = (
+    r"(?:\d+(?:[.,]\d+)?|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|quinze|vingt|"
+    r"trente|quarante|cinquante|soixante|cent)"
+)
+UNITE_DUREE = (
+    r"(?:minutes?|heures?|jours?(?: ouvrés| ouvrables| calendaires| francs)?|semaines?|mois|"
+    r"trimestres?|semestres?|ans?|années?)"
+)
 # Mots qui annoncent un numéro de dossier, de client, de matricule...
 ANNONCE = (
     r"(?:matricule|client|contrat|dossier|commande|facture|chèque|cheque|adhérent|sociétaire|"
@@ -137,6 +147,23 @@ REGLES = [
     Regle("code_postal_ville", "ADRESSE", rf"(?<![\w-]){CODE_VILLE}", 0.6),
     Regle("projet", "PROJET", r"\b[Pp]rojet [A-ZÀ-Ý][\w-]+", 0.7),
     Regle("date", "DATE", rf"(?<![\w/]){DATE}(?![\w/])", 0.5, ignorer_casse=True),
+    # Date d'un texte de loi : rangée à part, pour pouvoir la laisser en clair.
+    Regle(
+        "date_loi",
+        "DATE_LOI",
+        rf"(?<=\b{TEXTE_LOI}\b[^.,;:\n]{{0,80}}?{E}du{E}){DATE}(?![\w/])",
+        0.95,
+        ignorer_casse=True,
+    ),
+    # Un âge désigne une personne ; une durée (« six mois », « 35 heures ») donne une indication.
+    Regle("age", "AGE", rf"(?<=\bâgée?s?{E}de{E})\d{{1,3}}{E}ans\b", 0.9, ignorer_casse=True),
+    Regle(
+        "duree",
+        "DUREE",
+        rf"(?<![\w,.])(?<!\bâgée?s?{E}de{E}){NOMBRE}{E}{UNITE_DUREE}(?!\w)",
+        0.6,
+        ignorer_casse=True,
+    ),
     *REGLES_LISTES,
 ]
 

@@ -344,9 +344,11 @@ def appliquer_caviardage(document: Formate, detections: list[Detection]) -> byte
     return document.enregistrer()
 
 
-def filtrer_fichier(nom: str, contenu: bytes, detecteur: Detecteur, table: Table) -> FichierFiltre:
+def filtrer_fichier(
+    nom: str, contenu: bytes, detecteur: Detecteur, table: Table, en_clair: frozenset[str] = frozenset()
+) -> FichierFiltre:
     document = ouvrir(nom, contenu)
-    detections = document.decouper(analyser(document.texte, detecteur, table))
+    detections = document.decouper(analyser(document.texte, detecteur, table, en_clair))
     return FichierFiltre(appliquer_filtrage(document, detections, table), detections, document.avertissements)
 
 

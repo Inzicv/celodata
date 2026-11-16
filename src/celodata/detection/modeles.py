@@ -12,6 +12,7 @@ from celodata.detection.base import Detecteur, Detection, blocs
 # Type Celodata -> libellé donné aux modèles GLiNER, qui cherchent ce qu'on leur décrit.
 LIBELLES = {
     "PERSONNE": "person",
+    "ROLE": "job title",
     "ORGANISATION": "organization",
     "ADRESSE": "address",
     "VILLE": "city",
@@ -19,6 +20,7 @@ LIBELLES = {
     "MAIL": "email",
     "DATE_NAISSANCE": "date of birth",
     "DATE": "date",
+    "DUREE": "duration",
     "NIR": "social security number",
     "PLAQUE": "license plate",
     "IBAN": "iban",

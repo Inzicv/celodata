@@ -40,12 +40,22 @@ _SITES = (
     r"(?:site|agence|usine|établissement|magasin|dépôt|entrepôt|bureau|antenne|filiale|"
     r"succursale|plateforme|atelier|centre)"
 )
+# Rôles tenus dans un contrat ou une formation : ils désignent une partie, pas une personne nommée.
+_ROLES = (
+    r"(?:stagiaires?|apprentie?s?|alternante?s?|intervenante?s?|formateurs?|formatrices?|"
+    r"tuteurs?|tutrices?|maîtres? de stage|maîtres? d'apprentissage|employeurs?|salariée?s?|"
+    r"collaborateurs?|collaboratrices?|collègues?(?: de formation| stagiaires?)?|"
+    r"équipes? pédagogiques?|responsables? pédagogiques?|"
+    r"bailleurs?|locataires?|preneurs?|vendeurs?|acquéreurs?|prestataires?|mandants?|mandataires?|"
+    r"bénéficiaires?|cocontractants?|soussignée?s?)"
+)
 _NOM_PROPRE = r"[A-ZÀ-Ý][\w'’]+(?:[- ][A-ZÀ-Ý][\w'’]+)*"
 
 REGLES_LISTES = [
     Regle("syndicat", "SYNDICAT", rf"\b(?:(?:délégué|adhérent|représentant|élu|militant|syndiqué)e?s? (?:syndicale?s? |du personnel |à la |au |de la |du )?)?{_SYNDICATS}\b", 0.9),
     Regle("syndicat_mandat", "SYNDICAT", r"\b(?:délégué|représentant)e?s? syndica(?:l|le|ux|les)\b", 0.9),
     Regle("sante", "SANTE", rf"\b(?:{'|'.join(_SANTE)})\b", 0.9, ignorer_casse=True),
+    Regle("role", "ROLE", rf"(?<![\w-]){_ROLES}(?![\w-])", 0.6, ignorer_casse=True),
     # Règle 1 : un lieu accolé à une fonction (« la directrice du site de Lyon »).
     Regle("lieu_site", "LIEU", rf"\b{_SITES} (?:de |d'|du |des |de la ){_NOM_PROPRE}", 0.8),
     Regle(

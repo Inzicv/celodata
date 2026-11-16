@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from celodata import journal, pdf, suivi
+from celodata import journal, pdf, prereglages, suivi
 from celodata.detection.base import Detecteur, Detection
 from celodata.detection.fusion import DetecteurCompose
 from celodata.detection.listes import fonctions_a_verifier
@@ -89,6 +89,10 @@ class Api:
         self._detecteur: Detecteur | None = None
         self._avec_modele = False
         self._derniere: dict[tuple[int, int, str], Detection] = {}
+        # Catégories que le préréglage en cours laisse en clair.
+        self._en_clair: frozenset[str] = frozenset()
+        # Les préréglages tels que l'écran les lit, relus à chaque changement.
+        self._prereglages: dict = {}
         # Dernier fichier Word, Excel ou PDF chargé.
         self._charge: _Charge | None = None
         self._verrou = threading.Lock()
@@ -150,6 +154,7 @@ class Api:
             except MotDePasseIncorrect:
                 return {"ok": False, "erreur": "Mot de passe incorrect."}
             dossier = self._table.reglage("dossier_surveille")
+            self._relire_prereglages()
         if dossier and Path(dossier).is_dir():
             self._demarrer_surveillance(Path(dossier))
         return {"ok": True, "valeurs": len(self._table)}
@@ -188,11 +193,19 @@ class Api:
     def _analyser(self, texte: str) -> tuple[list[Detection], list[Detection]]:
         """Les passages à masquer et les fonctions « à vérifier ». Le verrou doit être tenu."""
         detections = analyser(texte, self._detecteur, self._table)
+        masquees = prereglages.retenir(detections, self._en_clair)
         suggestions = [
             s
             for s in fonctions_a_verifier(texte)
-            if all(s.fin <= d.debut or s.debut >= d.fin for d in detections)
+            if all(s.fin <= d.debut or s.debut >= d.fin for d in masquees)
             and not self._table.est_ignoree(texte[s.debut : s.fin])
+        ]
+        # Une fonction « à vérifier » passe avant un passage que le préréglage laisse en clair.
+        detections = [
+            d
+            for d in detections
+            if not prereglages.est_laisse(d, self._en_clair)
+            or all(d.fin <= s.debut or d.debut >= s.fin for s in suggestions)
         ]
         return detections, suggestions
 
@@ -200,7 +213,11 @@ class Api:
         self._derniere = {(d.debut, d.fin, d.type): d for d in detections}
         return {
             "modele": self._avec_modele,
-            "detections": [{"debut": d.debut, "fin": d.fin, "type": d.type} for d in detections],
+            # `hors` : la catégorie est laissée en clair par le préréglage, le passage est montré décoché.
+            "detections": [
+                {"debut": d.debut, "fin": d.fin, "type": d.type, "hors": prereglages.est_laisse(d, self._en_clair)}
+                for d in detections
+            ],
             "suggestions": [{"debut": d.debut, "fin": d.fin, "type": d.type} for d in suggestions],
         }
 
@@ -457,7 +474,9 @@ class Api:
         traitement = CAVIARDAGE if traitement == CAVIARDAGE else "pseudonymisation"
         sortie = Path(chemin) / dossier_sortie(traitement)
         with self._verrou:
-            resultats = traiter_dossier(Path(chemin), sortie, self._detecteur, self._table, traitement)
+            resultats = traiter_dossier(
+                Path(chemin), sortie, self._detecteur, self._table, traitement, self._en_clair
+            )
         return {
             "ok": True,
             "dossier": str(chemin),
@@ -493,7 +512,7 @@ class Api:
                     "id": cle,
                     "nom": d["nom"],
                     "etat": d["etat"],
-                    "masques": len(d.get("detections", [])),
+                    "masques": len(prereglages.retenir(d.get("detections", []), self._en_clair)),
                     "a_verifier": len(d.get("suggestions", [])),
                     "pages_scannees": d.get("pages_scannees", 0),
                     "erreur": d.get("erreur", ""),
@@ -588,6 +607,57 @@ class Api:
             }
         if not arret.is_set():
             self._documents[cle] = resultat
+
+    # ---------- préréglages ----------
+
+    def _relire_prereglages(self) -> None:
+        """À appeler quand la table vient d'être ouverte ou qu'un préréglage change. Le verrou doit être tenu."""
+        liste = prereglages.tous(self._table)
+        courant = prereglages.courant(self._table)
+        self._en_clair = frozenset(liste[courant])
+        self._prereglages = {
+            "courant": courant,
+            "categories": list(prereglages.CATEGORIES),
+            "liste": [
+                {
+                    "nom": nom,
+                    "laisses": list(laisses),
+                    "origine": nom in prereglages.ORIGINE,
+                    "modifie": nom in prereglages.ORIGINE and tuple(laisses) != prereglages.ORIGINE[nom],
+                }
+                for nom, laisses in liste.items()
+            ],
+        }
+
+    def prereglages(self) -> dict:
+        """Les préréglages, celui en cours, et les catégories qu'un préréglage peut laisser en clair."""
+        return self._prereglages
+
+    def choisir_prereglage(self, nom: str) -> dict:
+        with self._verrou:
+            try:
+                prereglages.choisir(self._table, nom)
+            except ValueError as e:
+                return {"ok": False, "erreur": str(e)}
+            self._relire_prereglages()
+        return {"ok": True}
+
+    def enregistrer_prereglage(self, nom: str, laisses: list[str]) -> dict:
+        """Crée ou modifie un préréglage : `laisses` sont les catégories laissées en clair."""
+        with self._verrou:
+            try:
+                prereglages.enregistrer(self._table, nom, laisses)
+            except ValueError as e:
+                return {"ok": False, "erreur": str(e)}
+            self._relire_prereglages()
+        return {"ok": True}
+
+    def supprimer_prereglage(self, nom: str) -> dict:
+        """Supprime un préréglage créé ici, ou remet un préréglage d'origine comme au départ."""
+        with self._verrou:
+            prereglages.supprimer(self._table, nom)
+            self._relire_prereglages()
+        return {"ok": True}
 
     # ---------- règles du projet ----------
 

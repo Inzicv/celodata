@@ -97,3 +97,55 @@ def test_formats_fixes_du_jeu_a_100_pour_cent(regles):
     for nom, texte, attendus in charger_jeu(Path(__file__).parent.parent / "jeu_de_test"):
         bilan = evaluer(nom, texte, attendus, regles.detecter(texte))
         assert bilan.fixe_ok == bilan.fixe_total, bilan.rates
+
+
+@pytest.mark.parametrize(
+    ("texte", "attendu"),
+    [
+        ("conformément au règlement général sur la protection des données du 27 avril 2016", ("DATE_LOI", "27 avril 2016")),
+        ("la loi n° 78-17 du 6 janvier 1978 modifiée", ("DATE_LOI", "6 janvier 1978")),
+        ("un stage de six mois", ("DUREE", "six mois")),
+        ("dans un délai de 48 heures", ("DUREE", "48 heures")),
+        ("âgée de 34 ans", ("AGE", "34 ans")),
+        ("La stagiaire est suivie par un tuteur", ("ROLE", "stagiaire")),
+        ("avec l'équipe pédagogique", ("ROLE", "équipe pédagogique")),
+    ],
+)
+def test_categories_fines(regles, texte, attendu):
+    assert attendu in trouve(regles, texte)
+
+
+def test_une_date_de_contrat_reste_une_date(regles):
+    texte = "Le contrat prend effet le 2 mars 2026. La salariée, âgée de 34 ans, signe."
+    trouves = regler_chevauchements(regles.detecter(texte))
+    types = {(d.type, texte[d.debut : d.fin]) for d in trouves}
+    assert ("DATE", "2 mars 2026") in types
+    assert ("AGE", "34 ans") in types and not any(t == "DUREE" for t, _ in types)
+
+
+def test_la_date_d_une_loi_passe_avant_la_date(regles):
+    texte = "en application de la loi du 10 juillet 2014 relative aux stages"
+    assert [d.type for d in regler_chevauchements(regles.detecter(texte))] == ["DATE_LOI"]
+
+
+def test_un_terme_generique_est_range_a_part():
+    from celodata.detection.fusion import declasser
+
+    texte = "L'organisme de formation Institut Valmont suit le compte svc_backup à grande échelle."
+
+    def modele(valeur, type_):
+        debut = texte.index(valeur)
+        return Detection(debut, debut + len(valeur), type_, 0.8, "modele")
+
+    recu = [
+        modele("L'organisme de formation", "ORGANISATION"),
+        modele("Institut Valmont", "ORGANISATION"),
+        modele("svc_backup", "ROLE"),
+        modele("grande échelle", "VILLE"),
+    ]
+    assert [d.type for d in declasser(texte, recu)] == ["COMMUN", "ORGANISATION", "LOGIN", "COMMUN"]
+    # Dans un texte écrit sans majuscules, un nom en minuscules peut être un vrai nom : rien n'est déclassé.
+    minuscules = "bonjour, je suis cliente chez dupont et fils depuis mars."
+    debut = minuscules.index("dupont et fils")
+    nom = [Detection(debut, debut + 14, "ORGANISATION", 0.8, "modele")]
+    assert declasser(minuscules, nom) == nom

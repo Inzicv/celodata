@@ -7,6 +7,7 @@
 """
 
 import re
+from dataclasses import replace
 
 from celodata.detection.base import Detecteur, Detection
 
@@ -14,8 +15,46 @@ SOURCE_REGLES = "regles"
 SOURCE_PROPAGATION = "propagation"
 
 # Types dont la valeur n'est pas recherchée ailleurs : trop courts ou trop communs.
-_SANS_PROPAGATION = frozenset({"DATE", "DATE_NAISSANCE", "MONTANT", "SANTE", "SYNDICAT"})
+_SANS_PROPAGATION = frozenset({"DATE", "DATE_NAISSANCE", "DATE_LOI", "DUREE", "AGE", "MONTANT", "SANTE", "SYNDICAT"})
 _LONGUEUR_MIN_PROPAGATION = 4
+
+
+# Un nom d'organisation, de lieu ou de projet sans majuscule ni chiffre est un terme générique
+# (« l'organisme de formation », « grande échelle ») : il est rangé à part, pour rester en clair.
+_GENERIQUES = frozenset({"ORGANISATION", "VILLE", "PROJET"})
+TYPE_GENERIQUE = "COMMUN"
+_ARTICLE = re.compile(
+    r"^(?:l['’]|les? |la |une? |des? |du |d['’]|aux? |ses? |son |sa |leurs? |notre |nos |votre |vos |ce |cet |cette |ces )+",
+    re.IGNORECASE,
+)
+
+
+# Des mots ordinaires : lettres, espaces, apostrophes et traits d'union, sans chiffre ni signe.
+_MOTS = re.compile(r"[^\W\d_]+(?:[ '’-][^\W\d_]+)*")
+
+
+def _sans_majuscules(texte: str) -> bool:
+    """Vrai pour un texte écrit sans majuscules : on ne peut alors rien conclure d'un nom en minuscules."""
+    lettres = [c for c in texte if c.isalpha()]
+    return sum(c.isupper() for c in lettres) < len(lettres) / 100
+
+
+def declasser(texte: str, detections: list[Detection]) -> list[Detection]:
+    """Range en « terme générique » ce que le modèle a pris pour un nom propre sans majuscule."""
+    if _sans_majuscules(texte):
+        return detections
+    sortie = []
+    for d in detections:
+        valeur = texte[d.debut : d.fin]
+        if d.source != SOURCE_REGLES and d.type in _GENERIQUES:
+            nom = _ARTICLE.sub("", valeur)
+            if _MOTS.fullmatch(nom) and not any(c.isupper() for c in nom):
+                d = replace(d, type=TYPE_GENERIQUE)
+        elif d.source != SOURCE_REGLES and d.type == "ROLE" and not _MOTS.fullmatch(valeur):
+            # « svc_backup » n'est pas un métier : ce qui ressemble à un identifiant reste un identifiant.
+            d = replace(d, type="LOGIN")
+        sortie.append(d)
+    return sortie
 
 
 def regler_chevauchements(detections: list[Detection]) -> list[Detection]:
@@ -64,4 +103,4 @@ class DetecteurCompose:
 
     def detecter(self, texte: str) -> list[Detection]:
         detections = [d for detecteur in self._detecteurs for d in detecteur.detecter(texte)]
-        return propager(texte, regler_chevauchements(detections))
+        return propager(texte, regler_chevauchements(declasser(texte, detections)))

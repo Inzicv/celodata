@@ -102,3 +102,57 @@ def test_avancement_et_annulation(api):
     # L'annulation ne vaut que pour le travail en cours : l'analyse suivante va au bout.
     api._detecteur = DetecteurCompose("regles", [DetecteurRegles()])
     assert "detections" in api.analyser("Écrire à jean.dupont@exemple.fr")
+
+
+CONTRAT = "La stagiaire Maëlle Kervadec (matricule 20418) effectue un stage de six mois. La DRH signe."
+
+
+def test_un_prereglage_laisse_des_categories_en_clair(api):
+    def hors(analyse):
+        return {CONTRAT[d["debut"] : d["fin"]]: d["hors"] for d in analyse["detections"]}
+
+    assert api.prereglages()["courant"] == "RH / paie"
+    assert hors(api.analyser(CONTRAT)) == {"stagiaire": True, "20418": False, "six mois": True}
+    assert api.choisir_prereglage("Tout masquer")["ok"]
+    assert hors(api.analyser(CONTRAT)) == {"stagiaire": False, "20418": False, "six mois": False}
+
+    assert api.choisir_prereglage("Contrat / juridique")["ok"]
+    analyse = api.analyser(CONTRAT)
+    assert hors(analyse) == {"stagiaire": True, "20418": False, "six mois": True}
+    assert [CONTRAT[d["debut"] : d["fin"]] for d in analyse["suggestions"]] == ["DRH"]
+    assert api.choisir_prereglage("Inconnu")["ok"] is False
+
+    # Un préréglage créé ici, puis choisi : il est retenu dans la table.
+    assert api.enregistrer_prereglage("Formation", ["DUREE", "CATEGORIE_INCONNUE"])["ok"]
+    assert api.choisir_prereglage("Formation")["ok"]
+    assert hors(api.analyser(CONTRAT)) == {"stagiaire": False, "20418": False, "six mois": True}
+    formation = next(p for p in api.prereglages()["liste"] if p["nom"] == "Formation")
+    assert formation == {"nom": "Formation", "laisses": ["DUREE"], "origine": False, "modifie": False}
+    # Supprimé, on revient au préréglage par défaut.
+    assert api.supprimer_prereglage("Formation")["ok"]
+    assert api.prereglages()["courant"] == "RH / paie"
+
+    # Un préréglage d'origine se modifie, et se remet comme au départ.
+    assert api.enregistrer_prereglage("RH / paie", ["DUREE"])["ok"]
+    rh = next(p for p in api.prereglages()["liste"] if p["nom"] == "RH / paie")
+    assert rh["laisses"] == ["DUREE"] and rh["modifie"]
+    api.supprimer_prereglage("RH / paie")
+    rh = next(p for p in api.prereglages()["liste"] if p["nom"] == "RH / paie")
+    assert not rh["modifie"] and "ROLE" in rh["laisses"]
+
+
+def test_un_terme_impose_reste_masque_malgre_le_prereglage(api):
+    api.choisir_prereglage("Contrat / juridique")
+    api.ajouter_regle("terme", "six mois", "DUREE")
+    analyse = api.analyser(CONTRAT)
+    assert {CONTRAT[d["debut"] : d["fin"]]: d["hors"] for d in analyse["detections"]}["six mois"] is False
+
+
+def test_un_dossier_suit_le_prereglage(api, tmp_path):
+    (tmp_path / "contrat.txt").write_text(CONTRAT, encoding="utf-8")
+    api.choisir_prereglage("Contrat / juridique")
+    api._dialogue = lambda *_: str(tmp_path)
+    resultat = api.filtrer_dossier()
+    produit = (tmp_path / "celodata_filtré" / "contrat.txt").read_text(encoding="utf-8")
+    assert resultat["fichiers"][0]["masques"] == 1
+    assert "six mois" in produit and "stagiaire" in produit and "20418" not in produit

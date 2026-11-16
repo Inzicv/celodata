@@ -11,6 +11,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 from celodata.detection.base import Detecteur, Detection
+from celodata.prereglages import retenir
 from celodata.table import Table
 
 TYPE_SECRET = "SECRET"
@@ -65,8 +66,12 @@ def _regles_projet(texte: str, table: Table) -> list[Detection]:
     return retenues
 
 
-def analyser(texte: str, detecteur: Detecteur, table: Table) -> list[Detection]:
+def analyser(
+    texte: str, detecteur: Detecteur, table: Table, en_clair: frozenset[str] = frozenset()
+) -> list[Detection]:
     """Détecte, puis applique la mémoire du projet.
+
+    `en_clair` : les catégories que le préréglage laisse en clair. Leurs passages ne sont pas rendus.
 
     - Les règles du projet passent avant le détecteur.
     - Les valeurs que l'utilisateur a démasquées ne sont plus proposées.
@@ -82,7 +87,7 @@ def analyser(texte: str, detecteur: Detecteur, table: Table) -> list[Detection]:
         for m in re.finditer(rf"(?<![\w-]){re.escape(valeur)}(?![\w-])", texte):
             if _libre(m.start(), m.end(), detections):
                 detections.append(Detection(m.start(), m.end(), type_, 1.0, "table"))
-    return sorted(detections, key=lambda d: d.debut)
+    return sorted(retenir(detections, en_clair), key=lambda d: d.debut)
 
 
 Remplacement = tuple[int, int, str]  # début, fin, texte à mettre à la place

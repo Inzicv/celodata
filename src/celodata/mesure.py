@@ -93,11 +93,16 @@ def evaluer(nom: str, texte: str, attendus: list[Attendu], detections: list[Dete
     return bilan
 
 
-def mesurer(detecteur: Detecteur, documents: list[tuple[str, str, list[Attendu]]]) -> Bilan:
+def mesurer(
+    detecteur: Detecteur,
+    documents: list[tuple[str, str, list[Attendu]]],
+    en_clair: frozenset[str] = frozenset(),
+) -> Bilan:
+    """`en_clair` : catégories qu'un préréglage laisse en clair, pour mesurer ce qu'il masque vraiment."""
     total = Bilan()
     for nom, texte, attendus in documents:
         debut = time.perf_counter()
-        detections = detecteur.detecter(texte)
+        detections = [d for d in detecteur.detecter(texte) if d.type not in en_clair]
         bilan = evaluer(nom, texte, attendus, detections)
         bilan.duree = time.perf_counter() - debut
         total.ajouter(bilan)
@@ -106,10 +111,12 @@ def mesurer(detecteur: Detecteur, documents: list[tuple[str, str, list[Attendu]]
 
 def main(argv: list[str] | None = None) -> int:
     from celodata.detection.modeles import DETECTEURS, creer_detecteur
+    from celodata.prereglages import DEFAUT, ORIGINE
 
     parser = argparse.ArgumentParser(description="Mesure les détecteurs sur le jeu de faux documents.")
     parser.add_argument("--jeu", type=Path, default=Path("jeu_de_test"))
     parser.add_argument("--detecteurs", default=",".join(DETECTEURS))
+    parser.add_argument("--prereglage", default=DEFAUT, choices=list(ORIGINE), help="préréglage appliqué")
     parser.add_argument("--details", action="store_true", help="liste les valeurs ratées")
     args = parser.parse_args(argv)
 
@@ -118,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{len(documents)} documents, {sum(len(a) for _, _, a in documents)} valeurs à masquer\n")
     print(f"{'détecteur':14} {'texte libre':>12} {'formats fixes':>14} {'hors cible':>11} {'durée':>8}")
     for nom in args.detecteurs.split(","):
-        bilan = mesurer(creer_detecteur(nom.strip()), documents)
+        bilan = mesurer(creer_detecteur(nom.strip()), documents, frozenset(ORIGINE[args.prereglage]))
         print(
             f"{nom:14} {f'{bilan.libre_ok}/{bilan.libre_total}':>12} "
             f"{f'{bilan.fixe_ok}/{bilan.fixe_total}':>14} {bilan.hors_cible:>11} {bilan.duree:>7.1f}s"

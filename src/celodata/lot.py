@@ -37,9 +37,16 @@ class ResultatFichier:
 
 
 def traiter_dossier(
-    dossier: Path, sortie: Path, detecteur: Detecteur, table: Table, traitement: str = "pseudonymisation"
+    dossier: Path,
+    sortie: Path,
+    detecteur: Detecteur,
+    table: Table,
+    traitement: str = "pseudonymisation",
+    en_clair: frozenset[str] = frozenset(),
 ) -> list[ResultatFichier]:
     """`traitement` vaut "pseudonymisation" (jetons, réversible) ou "caviardage" (définitif).
+
+    `en_clair` : les catégories que le préréglage laisse en clair.
 
     En caviardage, un PDF reste un PDF, fait d'images, où les tampons et signatures sont aussi recouverts.
     Un PDF scanné est traité comme les autres, et signalé : sa lecture peut contenir des erreurs.
@@ -63,12 +70,12 @@ def traiter_dossier(
             if extension in FORMATS and caviardage:
                 document = ouvrir(f.name, contenu)
                 texte, remarque = document.texte, ", ".join(document.avertissements)
-                detections = document.decouper(analyser(texte, detecteur, table))
+                detections = document.decouper(analyser(texte, detecteur, table, en_clair))
                 produit = appliquer_caviardage(document, detections)
             elif extension == ".pdf":
                 lu = pdf.lire(contenu)
                 texte = lu.texte
-                detections = analyser(texte, detecteur, table)
+                detections = analyser(texte, detecteur, table, en_clair)
                 notes = []
                 if lu.pages_scannees:
                     # Une lecture de scan fait des erreurs : ce fichier est à relire en priorité.
@@ -87,11 +94,11 @@ def traiter_dossier(
                 remarque = ", ".join(notes)
             elif extension in FORMATS:
                 texte = ouvrir(f.name, contenu).texte
-                filtre = filtrer_fichier(f.name, contenu, detecteur, table)
+                filtre = filtrer_fichier(f.name, contenu, detecteur, table, en_clair)
                 detections, produit, remarque = filtre.detections, filtre.contenu, ", ".join(filtre.avertissements)
             else:
                 texte = lire(f.name, contenu)
-                detections = analyser(texte, detecteur, table)
+                detections = analyser(texte, detecteur, table, en_clair)
                 if caviardage:
                     produit = caviarder(texte, detections).texte.encode("utf-8")
                 else:

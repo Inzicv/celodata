@@ -1,6 +1,6 @@
 # Jeu de test
 
-Dix faux documents français, avec la liste des valeurs qui doivent être masquées dans chacun.
+Onze faux documents français, avec la liste des valeurs qui doivent être masquées dans chacun.
 
 Toutes les données sont inventées. Les IBAN, numéros de sécurité sociale et SIRET ont une clé de contrôle valide pour que les règles de détection puissent les vérifier, mais ils ne correspondent à personne. Ne jamais ajouter ici de vraies données.
 
@@ -42,3 +42,4 @@ La valeur doit apparaître telle quelle dans le texte. Elle est considérée com
 | `08_cv` | organisations nombreuses, adresse, lien de profil |
 | `09_ticket_support` | logs, IPv4, IPv6, adresse MAC, logins, secrets |
 | `10_note_rh` | données sensibles de l'article 9 |
+| `11_contrat_stage` | rôles (« la stagiaire », « l'organisme de formation »), durées et dates de lois, qui ne sont pas à masquer d'office |

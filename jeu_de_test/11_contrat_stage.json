@@ -1,0 +1,16 @@
+[
+  {"categorie": "organisation", "valeur": "Institut Valmont Formation"},
+  {"categorie": "siret", "valeur": "732 829 320 00074"},
+  {"categorie": "adresse", "valeur": "14 rue des Tanneurs, 37000 Tours"},
+  {"categorie": "nom", "valeur": "Hélène Castaing"},
+  {"categorie": "organisation", "valeur": "Atelier Brunoy Conseil"},
+  {"categorie": "adresse", "valeur": "8 avenue du Maréchal Foch, 45000 Orléans"},
+  {"categorie": "nom", "valeur": "Idriss Benhamou"},
+  {"categorie": "nom", "valeur": "Maëlle Kervadec"},
+  {"categorie": "date_naissance", "valeur": "3 février 1998"},
+  {"categorie": "adresse", "valeur": "22 impasse des Lilas, 37100 Tours"},
+  {"categorie": "telephone", "valeur": "06 12 55 48 90"},
+  {"categorie": "mail", "valeur": "maelle.kervadec@exemple.fr"},
+  {"categorie": "iban", "valeur": "FR76 3000 6000 0112 3456 7890 189"},
+  {"categorie": "sante", "valeur": "arrêt maladie"}
+]
