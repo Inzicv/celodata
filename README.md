@@ -49,7 +49,7 @@ Beaucoup d'entreprises interdisent les assistants IA par peur de la fuite de don
 
 Un texte suit cinq étapes.
 
-1. **Détection.** Deux détecteurs lisent le texte. Les règles reconnaissent les formats fixes (mail, téléphone, numéro de sécurité sociale, SIRET, IBAN, plaque, adresse IP, date) et vérifient les clés de contrôle quand il y en a. Le modèle d'entités reconnaît ce qui n'a pas de format : noms, organisations, adresses, matricules, montants, noms de projets.
+1. **Détection.** Deux détecteurs lisent le texte. Les règles reconnaissent les formats fixes (mail, téléphone, numéro de sécurité sociale, SIRET, IBAN, plaque, adresse IP, date) et vérifient les clés de contrôle quand il y en a. Le modèle d'entités local — par défaut [`fastino/gliner2-privacy-filter-PII-multi`](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi) (GLiNER2-PII, licence Apache 2.0, tourne sur CPU sans carte graphique) — reconnaît ce qui n'a pas de format : noms, organisations, adresses, matricules, montants, noms de projets.
 2. **Fusion.** Quand deux détections se chevauchent, la plus longue l'emporte, puis celle au score le plus élevé. Chaque valeur trouvée une fois est ensuite recherchée dans tout le texte. Les règles du projet (termes toujours ou jamais masqués) passent avant le reste.
 3. **Aperçu.** L'utilisateur voit les passages surlignés. Il peut en retirer ou en ajouter. Chaque correction est retenue pour les textes suivants.
 4. **Remplacement.** Chaque valeur reçoit un jeton lisible, par exemple `PERSONNE_12`. La même valeur reçoit toujours le même jeton dans une table donnée. Les secrets ne reçoivent pas de jeton : ils deviennent `[SECRET_SUPPRIMÉ]`.
@@ -102,7 +102,7 @@ Il faut Windows 10 ou 11 et [uv](https://docs.astral.sh/uv/). Depuis le dossier 
 uv sync --extra modeles --extra passerelle
 ```
 
-Le modèle d'entités (plusieurs centaines de Mo) est téléchargé depuis Hugging Face à sa première utilisation. Ensuite tout tourne sans connexion.
+Le modèle d'entités par défaut (`fastino/gliner2-privacy-filter-PII-multi`, quelques centaines de Mo, licence Apache 2.0) est téléchargé depuis Hugging Face à sa première utilisation. Ensuite tout tourne sur CPU sans connexion. D'autres modèles locaux sont déjà branchés dans `src/celodata/detection/modeles.py` (`urchade/gliner_multi_pii-v1`, `Jean-Baptiste/camembert-ner`).
 
 Pour un premier essai guidé, avec de faux documents fournis, suivre [docs/tutoriel-essai.md](docs/tutoriel-essai.md).
 
