@@ -1,8 +1,12 @@
 # Celodata
 
+[![CI](https://github.com/Inzicv/celodata/actions/workflows/ci.yml/badge.svg)](https://github.com/Inzicv/celodata/actions/workflows/ci.yml)
+[![Licence Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+
 Celodata remplace les données personnelles d'un document français par des jetons, sur votre machine, avant l'envoi à une IA. Il remet ensuite les vraies valeurs dans la réponse.
 
-Il sait aussi caviarder un document : les données sont alors retirées pour de bon, sans retour possible.
+Il sait aussi **caviarder** un document : les données sont alors retirées pour de bon, sans retour possible.
 
 ```
 Document d'origine        Ce que l'IA reçoit              Réponse restaurée
@@ -14,25 +18,25 @@ est enregistré.           enregistré.                     FR76 3000…
 
 ![Écran de vérification de Celodata sur un faux contrat PDF](docs/apercu-appli.png)
 
-Le projet est libre (Apache 2.0) et en cours de construction. Il se lance depuis le code source : il n'y a pas encore d'installeur.
+> Projet libre sous licence Apache 2.0 · distribué depuis les sources via `uv` (installeur Windows prévu).
 
 ## Sommaire
 
 - [Pourquoi](#pourquoi)
 - [Ce que Celodata fait et ne fait pas](#ce-que-celodata-fait-et-ne-fait-pas)
-- [Comment ça marche](#comment-ça-marche)
 - [Les deux façons de l'utiliser](#les-deux-façons-de-lutiliser)
-- [Installer](#installer)
+- [Installer et démarrer](#installer-et-démarrer)
+- [Comment ça marche](#comment-ça-marche)
 - [L'appli Windows](#lappli-windows)
 - [La passerelle serveur](#la-passerelle-serveur)
 - [Sécurité](#sécurité)
-- [Le code](#le-code)
-- [Mesure et tests](#mesure-et-tests)
+- [Architecture, mesure et tests](#architecture-mesure-et-tests)
 - [Limites connues](#limites-connues)
+- [Feuille de route et contribution](#feuille-de-route-et-contribution)
 
 ## Pourquoi
 
-Beaucoup d'entreprises interdisent les assistants IA par peur de la fuite de données. Celodata leur donne un filtre local, vérifiable et en français, pour qu'elles puissent autoriser ces outils. Il sert aussi à sensibiliser l'employé : l'aperçu lui montre ce que son document contient avant qu'il ne parte.
+Beaucoup d'entreprises freinent l'usage des assistants IA par crainte de fuite de données, ou doivent caviarder manuellement des contrats et dossiers RH avant de les transmettre à un tiers. Celodata leur donne un filtre local, vérifiable et pensé pour le français (NIR, SIRET, IBAN, données de santé article 9, syndicats, fonctions uniques). L'aperçu sensibilise aussi l'utilisateur en lui montrant ce que son document contient avant qu'il ne parte.
 
 ## Ce que Celodata fait et ne fait pas
 
@@ -45,25 +49,63 @@ Beaucoup d'entreprises interdisent les assistants IA par peur de la fuite de don
 | Supprimer pour de bon les mots de passe, jetons et clés d'API | Rendre un secret supprimé : il n'est pas restauré au retour |
 | Tout traiter sur le poste, sans connexion sortante ni télémétrie | Récupérer une table dont le mot de passe est perdu |
 
+## Les deux façons de l'utiliser
+
+| | Appli Windows | Passerelle serveur |
+|---|---|---|
+| Pour qui | L'employé qui utilise ChatGPT, Claude ou un autre assistant sur le site de l'éditeur, ou qui doit caviarder des documents | L'entreprise qui appelle une IA par son API (Open WebUI, LibreChat, applications internes) |
+| Où elle tourne | Sur le poste de l'employé (Windows 10/11) | Sur un serveur de l'entreprise (Linux, macOS ou Windows), entre l'outil et l'IA |
+| Geste de l'utilisateur | Filtrer, vérifier, copier/exporter, restaurer la réponse | Aucun : chaque demande est filtrée, chaque réponse restaurée |
+| Aperçu avant envoi | Oui | Non : ce que le détecteur rate part vers l'IA |
+| Table | Une par poste, liée à la session Windows | Une par utilisateur, protégée par sa clé d'accès |
+
+La passerelle ne s'intercale pas devant ChatGPT ou Claude utilisés sur le site de l'éditeur : pour ceux-là, il faut l'appli.
+
+## Installer et démarrer
+
+Prérequis : [uv](https://docs.astral.sh/uv/) et Python 3.11–3.13 (Windows 10/11 pour l'appli ; Linux, macOS ou Windows pour la passerelle et le moteur).
+
+1. Installer les dépendances depuis le dossier du projet :
+
+```bash
+uv sync --extra modeles --extra passerelle
+```
+
+2. Télécharger une seule fois le modèle d'entités local ([`fastino/gliner2-privacy-filter-PII-multi`](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi), quelques centaines de Mo, licence Apache 2.0) :
+
+```bash
+uv run --extra modeles celodata --telecharger-modele
+```
+
+Ensuite, **aucune connexion sortante** n'est ouverte par l'appli (`HF_HUB_OFFLINE=1` est forcé au démarrage) et tout tourne sur CPU sans carte graphique (~1 à 2 s par page).
+
+3. Lancer l'appli :
+
+```bash
+uv run --extra modeles celodata
+```
+
+Pour un premier essai guidé avec de faux documents fournis, suivre [docs/tutoriel-essai.md](docs/tutoriel-essai.md).
+
 ## Comment ça marche
 
-Un texte suit cinq étapes.
+Un texte suit cinq étapes :
 
-1. **Détection.** Deux détecteurs lisent le texte. Les règles reconnaissent les formats fixes (mail, téléphone, numéro de sécurité sociale, SIRET, IBAN, plaque, adresse IP, date) et vérifient les clés de contrôle quand il y en a. Le modèle d'entités local — par défaut [`fastino/gliner2-privacy-filter-PII-multi`](https://huggingface.co/fastino/gliner2-privacy-filter-PII-multi) (GLiNER2-PII, licence Apache 2.0, tourne sur CPU sans carte graphique) — reconnaît ce qui n'a pas de format : noms, organisations, adresses, matricules, montants, noms de projets.
-2. **Fusion.** Quand deux détections se chevauchent, la plus longue l'emporte, puis celle au score le plus élevé. Chaque valeur trouvée une fois est ensuite recherchée dans tout le texte. Les règles du projet (termes toujours ou jamais masqués) passent avant le reste.
-3. **Aperçu.** L'utilisateur voit les passages surlignés. Il peut en retirer ou en ajouter. Chaque correction est retenue pour les textes suivants.
-4. **Remplacement.** Chaque valeur reçoit un jeton lisible, par exemple `PERSONNE_12`. La même valeur reçoit toujours le même jeton dans une table donnée. Les secrets ne reçoivent pas de jeton : ils deviennent `[SECRET_SUPPRIMÉ]`.
-5. **Retour.** Dans la réponse de l'IA, les jetons sont retrouvés et remplacés par les vraies valeurs. Les formes qu'une IA produit en recopiant sont reconnues aussi : `Personne 12`, `PERSONNE-12`, `[PERSONNE_12]`. Un jeton inconnu de la table est laissé tel quel et signalé.
-
-La correspondance entre valeurs et jetons est rangée dans une **table** : un fichier chiffré, protégé par un mot de passe, qui ne quitte pas la machine.
+1. **Détection.** Deux détecteurs lisent le texte :
+   - Les **règles françaises** (`regex`) reconnaissent les formats fixes (mail, téléphone, NIR, SIRET/SIREN, TVA, IBAN, BIC, plaque, IP, MAC, dates, termes de santé et syndicats) et vérifient les clés de contrôle.
+   - Le **modèle d'entités local** — par défaut `fastino/gliner2-privacy-filter-PII-multi` (GLiNER2-PII, Apache 2.0, interchangeable avec `urchade/gliner_multi_pii-v1` ou `Jean-Baptiste/camembert-ner` dans `src/celodata/detection/modeles.py`) — reconnaît ce qui n'a pas de format : noms, organisations, adresses, matricules, montants, noms de projets.
+2. **Fusion.** En cas de chevauchement, les règles passent avant le modèle, puis la détection la plus longue et au score le plus élevé. Chaque valeur trouvée est propagée dans tout le texte. Les règles du projet passent avant le reste.
+3. **Aperçu.** L'utilisateur voit les passages surlignés et peut en retirer ou en ajouter. Chaque correction est retenue pour les documents suivants.
+4. **Remplacement.** Chaque valeur reçoit un jeton lisible (`PERSONNE_12`), stable dans la table. Les secrets deviennent `[SECRET_SUPPRIMÉ]` et ne sont jamais stockés.
+5. **Retour.** Dans la réponse de l'IA, les jetons sont restaurés même s'ils ont été déformés (`Personne 12`, `PERSONNE-12`, `[PERSONNE_12]`). Les jetons inconnus sont laissés tels quels et signalés.
 
 ### Pseudonymiser ou caviarder
 
-Le choix se fait au dépôt du document, avant l'analyse. Il vaut aussi pour un dossier entier.
+Le choix se fait au dépôt du document, avant l'analyse (et reste modifiable à l'export). Il vaut aussi pour un dossier entier.
 
 | | Pseudonymiser | Caviarder |
 |---|---|---|
-| Ce que devient une donnée | Un jeton, par exemple `PERSONNE_1` | Une marque noire |
+| Ce que devient une donnée | Un jeton, par exemple `PERSONNE_1` | Une marque noire (`█████` ou rectangle noir) |
 | Retour possible | Oui, avec la table | Non |
 | Rangé dans la table | La valeur, chiffrée | Rien |
 | Usage | Travailler avec une IA puis restaurer sa réponse | Transmettre un document à un tiers |
@@ -80,69 +122,35 @@ Le choix se fait au dépôt du document, avant l'analyse. Il vaut aussi pour un 
 | Tampon, signature, mot manuscrit d'un PDF | non repris dans le Word | recouvert d'un rectangle noir |
 | Anciens formats (`.doc`, `.xls`) | non lus, signalés | non lus, signalés |
 
-Un PDF scanné est lu par la reconnaissance de caractères de Windows, sur le poste. Un PDF caviardé ne contient plus aucun texte : chaque page est une image, mise en page gardée.
-
-## Les deux façons de l'utiliser
-
-| | Appli Windows | Passerelle serveur |
-|---|---|---|
-| Pour qui | L'employé qui utilise ChatGPT, Claude ou un autre assistant sur le site de l'éditeur | L'entreprise qui appelle une IA par son API : outil de discussion installé chez elle (Open WebUI, LibreChat) ou applications maison |
-| Où elle tourne | Sur le poste de l'employé | Sur un serveur de l'entreprise, entre l'outil et l'IA |
-| Geste de l'utilisateur | Filtrer, copier, coller dans l'IA, coller la réponse pour la restaurer | Aucun : chaque demande est filtrée, chaque réponse restaurée |
-| Aperçu avant envoi | Oui | Non : ce que le détecteur rate part vers l'IA |
-| Table | Une par poste | Une par utilisateur, protégée par sa clé d'accès |
-
-La passerelle ne fonctionne pas avec les abonnements ChatGPT ou Claude utilisés sur le site de l'éditeur. Pour ceux-là, il faut l'appli.
-
-## Installer
-
-Il faut Windows 10 ou 11 et [uv](https://docs.astral.sh/uv/). Depuis le dossier du projet :
-
-```bash
-uv sync --extra modeles --extra passerelle
-```
-
-Le modèle d'entités par défaut (`fastino/gliner2-privacy-filter-PII-multi`, quelques centaines de Mo, licence Apache 2.0) est téléchargé depuis Hugging Face à sa première utilisation. Ensuite tout tourne sur CPU sans connexion. D'autres modèles locaux sont déjà branchés dans `src/celodata/detection/modeles.py` (`urchade/gliner_multi_pii-v1`, `Jean-Baptiste/camembert-ner`).
-
-Pour un premier essai guidé, avec de faux documents fournis, suivre [docs/tutoriel-essai.md](docs/tutoriel-essai.md).
+Un PDF scanné est lu par la reconnaissance de caractères de Windows, sur le poste. Un PDF caviardé ne contient plus aucun texte : chaque page est rendue en image à 200 DPI, mise en page gardée.
 
 ## L'appli Windows
 
-```bash
-uv run --extra modeles celodata
-```
+1. **Ouvrir** : choisir un mot de passe (table rangée dans `%LOCALAPPDATA%\Celodata`, liée au poste, protégée par Windows Hello si disponible).
+2. **Déposer** : choisir le traitement (pseudonymiser ou caviarder) et le préréglage, puis glisser un fichier, le choisir ou coller un texte.
+3. **Vérifier** : le document apparaît surligné, avec la liste classée par type à droite. Décocher ce qui peut rester, sélectionner du texte pour en masquer davantage. Pour un PDF, la vue « Pages » permet de contrôler ou tracer les zones graphiques (tampons, signatures).
+4. **Exporter** : enregistrer le fichier ou copier le texte.
+5. **Restaurer** : pour un document pseudonymisé, coller la réponse de l'IA dans l'onglet « Restaurer » ou y ouvrir le fichier qu'elle a rendu.
 
-1. Choisir un mot de passe. Il protège la table, rangée dans `%LOCALAPPDATA%\Celodata`. Il n'existe aucun moyen de le récupérer. La table est aussi liée au poste, et Windows Hello est demandé à l'ouverture si le poste en a un (voir [Sécurité](#sécurité)).
-2. **Déposer** : choisir le traitement (pseudonymiser ou caviarder) et le préréglage, puis glisser un fichier dans la fenêtre, le choisir, ou coller un texte. Le document ne s'affiche qu'une fois analysé.
-3. **Vérifier** : le document apparaît avec ses données surlignées, et leur liste à droite, classée par type. Décocher ce qui peut rester, sélectionner du texte pour en masquer davantage.
-4. **Exporter** : enregistrer le fichier ou copier le texte, pseudonymisé ou caviardé selon le choix fait au dépôt.
-5. Pour un document pseudonymisé : coller la réponse de l'IA dans l'onglet « Restaurer », ou y ouvrir le fichier qu'elle a rendu.
-
-L'appli a cinq onglets.
+L'appli a cinq onglets :
 
 | Onglet | Contenu |
 |---|---|
-| Protéger un document | Les trois étapes ci-dessus. Aussi : traiter un dossier entier, en pseudonymisation ou en caviardage. |
+| Protéger | Les trois étapes ci-dessus, plus le traitement d'un dossier entier (résultats dans `celodata_filtré` ou `celodata_caviardé`, originaux intacts). |
 | Restaurer | Remet les vraies valeurs dans une réponse collée ou dans un fichier Word, Excel ou texte. |
-| Dossier surveillé | Les documents déposés dans un dossier choisi sont analysés en tâche de fond et attendent ici, prêts à vérifier. |
-| Règles | Termes toujours masqués, motifs (expressions régulières), termes jamais masqués. Les préréglages. « Déplacer la table » vers un autre poste. |
-| Journal | Une ligne par traitement : date, document, traitement, nombre de passages masqués par type et par origine. Aucune vraie valeur. |
+| Dossier surveillé | Les documents déposés dans un dossier choisi sont analysés en tâche de fond (en mémoire) et attendent ici, prêts à vérifier. |
+| Règles | Préréglages par métier, termes toujours/jamais masqués, motifs (regex), gestion de la table (déplacer vers un autre poste, changer le mot de passe, purger les anciennes valeurs). |
+| Journal | Historique des traitements (décomptes par type et par origine, aucune vraie valeur) et export en CSV. |
 
-À savoir :
-
-- **Dossier entier.** Les fichiers produits sont rangés dans un sous-dossier `celodata_filtré` ou `celodata_caviardé`. Les originaux ne sont pas modifiés. Il n'y a pas d'aperçu : ces fichiers sont à relire avant de les transmettre. Un PDF scanné est traité comme les autres et signalé dans le tableau : c'est lui qu'il faut relire en priorité.
-- **Dossier surveillé.** Rien n'est enregistré sans validation : l'appli prépare l'analyse, vous vérifiez puis vous exportez. Le dossier est retenu d'une ouverture à l'autre. Les documents en attente sont gardés en mémoire, pas sur disque.
-- **Tampons et signatures.** Sur un PDF, l'appli repère les endroits où il y a de l'encre sans texte lu : tampon, signature, mot manuscrit, logo, passage que la lecture a raté. En caviardage, ces zones sont recouvertes par défaut. À l'étape « Vérifier », la vue « Pages » montre chaque page en image : un clic sur une zone la laisse visible, un rectangle tracé à la souris en ajoute une.
-- **PDF scanné.** Il faut que le français soit installé dans Windows. Une lecture de scan n'est jamais parfaite : un nom ou un numéro mal lu n'est ni masqué ni caviardé. Le document est à relire en entier à l'étape « Vérifier ».
-- **Sans le modèle d'entités**, l'appli fonctionne avec les règles seules et l'indique. Les noms ne sont alors pas détectés.
+> **Sans le modèle d'entités**, l'appli fonctionne avec les règles seules et l'indique dans le rail en bas à gauche (les noms propres ne sont alors pas détectés).
 
 ## La passerelle serveur
 
-La passerelle parle le format de l'API d'OpenAI. Elle a trois adresses : `POST /v1/chat/completions`, `GET /v1/models` et `GET /sante`.
+La passerelle expose le format OpenAI sur trois adresses uniquement : `POST /v1/chat/completions`, `GET /v1/models` et `GET /sante`.
 
 1. Copier [docs/passerelle.exemple.toml](docs/passerelle.exemple.toml) sous le nom `passerelle.toml` et y mettre l'adresse de l'IA.
 2. Mettre la clé de l'IA dans la variable d'environnement `CELODATA_CLE_IA`.
-3. Créer un utilisateur. Sa clé d'accès s'affiche une seule fois :
+3. Créer un utilisateur (sa clé d'accès s'affiche une seule fois et sert aussi de mot de passe à sa table) :
 
 ```bash
 uv run --extra passerelle celodata-passerelle utilisateur alice
@@ -154,35 +162,34 @@ uv run --extra passerelle celodata-passerelle utilisateur alice
 uv run --extra modeles --extra passerelle celodata-passerelle servir
 ```
 
-5. Dans l'outil de discussion, indiquer `http://127.0.0.1:8787/v1` comme adresse de l'IA et la clé d'accès de l'utilisateur comme clé.
+5. Dans votre outil de discussion (Open WebUI, LibreChat…), indiquer `http://127.0.0.1:8787/v1` et la clé de l'utilisateur.
 
 À savoir :
 
-- La clé d'accès d'un utilisateur est aussi le mot de passe de sa table. Le serveur n'en garde que l'empreinte. Une clé perdue rend ses anciens textes impossibles à restaurer.
 - La clé de l'utilisateur n'est jamais transmise à l'IA : la passerelle la remplace par celle de l'entreprise.
-- Les réponses mot à mot (flux) sont restaurées au fil de l'eau, sans laisser passer de morceau de jeton.
-- Les images et les fichiers joints à une demande sont refusés, car ils ne peuvent pas être filtrés.
-- La passerelle ne fait pas le HTTPS elle-même : il faut la placer derrière un serveur qui le fait.
+- Les réponses en flux (SSE) sont restaurées au fil de l'eau, sans laisser passer de morceau de jeton.
+- Les images et fichiers joints à une demande sont refusés, car ils ne peuvent pas être filtrés.
+- Les tables ouvertes en mémoire expirent automatiquement après inactivité (`ttl_session`, 30 min par défaut).
+- La passerelle ne gère pas le HTTPS elle-même : la placer derrière un reverse proxy (Caddy, Nginx…).
 
 ## Sécurité
 
 | Sujet | Ce qui est fait |
 |---|---|
-| Table de correspondance | Fichier SQLite. Chaque valeur est chiffrée en AES-GCM. Les clés de la table sont rangées sous une enveloppe dont la clé est dérivée du mot de passe avec Argon2id. |
-| Lien au poste (appli Windows) | La clé de l'enveloppe dépend aussi d'un secret gardé par Windows pour ce compte et ce poste (DPAPI), dans un fichier `.poste` à côté de la table. Une table copiée ailleurs ne s'ouvre pas, même avec le mot de passe. Une sauvegarde faite avant ce lien ne s'ouvre, elle, qu'avec le mot de passe : supprimez les anciennes copies. |
-| Windows Hello (appli Windows) | Demandé après le mot de passe si le poste en a un. C'est une barrière d'accès à l'appli, pas un chiffrement : la protection chiffrée vient du mot de passe et du lien au poste. |
-| Changer de poste | « Déplacer la table », dans l'onglet Règles, enregistre une copie que le mot de passe seul ouvre. Elle est liée au nouveau poste à sa première ouverture. |
-| Session Windows perdue ou réinstallée | La table est perdue, comme pour un mot de passe oublié. Aucune récupération possible. |
-| Recherche d'une valeur déjà connue | Par empreinte HMAC : la table ne contient aucune valeur en clair. |
-| Mot de passe perdu | Aucune récupération possible. |
-| Secrets (mots de passe, jetons, clés d'API) | Supprimés, jamais rangés dans la table, jamais restaurés. |
-| Journal | Décomptes seulement, le nom du fichier traité y est chiffré. |
-| Réseau | L'appli n'ouvre aucune connexion sortante. La passerelle ne parle qu'à l'API configurée. |
-| Fichiers Word et Excel | Auteur, société et autres propriétés vidés dans le fichier filtré. |
+| Table de correspondance | Fichier SQLite. Chaque valeur est chiffrée en AES-GCM (jeton authentifié en AAD). Les clés sont sous enveloppe chiffrée dérivée du mot de passe via Argon2id. |
+| Lien au poste (appli Windows) | La clé d'enveloppe dépend aussi d'un secret protégé par Windows DPAPI (`.poste`). Une table copiée sur un autre poste ne s'ouvre pas, même avec le mot de passe. |
+| Windows Hello (appli Windows) | Demandé après le mot de passe si le poste en a un. Barrière d'accès à l'appli (la protection cryptographique vient du mot de passe et de DPAPI). |
+| Changer de poste / mot de passe | « Déplacer la table » crée une copie protégée par le mot de passe seul (liée au nouveau poste à l'ouverture). Le mot de passe se change dans l'onglet Règles sans rechiffrer les valeurs. |
+| Mot de passe ou session perdus | Aucune récupération possible : la réidentification devient définitivement impossible. |
+| Recherche de valeurs connues | Par empreinte HMAC : aucune valeur en clair dans la table. |
+| Secrets (mots de passe, clés d'API) | Supprimés pour de bon, jamais rangés dans la table, jamais restaurés. |
+| Journal | Décomptes seulement, nom de fichier chiffré. Exportable en CSV. |
+| Réseau | L'appli n'ouvre aucune connexion sortante (`HF_HUB_OFFLINE=1`). La passerelle ne parle qu'à l'API configurée. |
+| Fichiers Word et Excel | Auteur, société et autres propriétés vidés ; suivi des modifications et commentaires également filtrés dans Word. |
 
-## Le code
+## Architecture, mesure et tests
 
-Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habillages du même moteur et de la même table.
+Le moteur est une bibliothèque Python partagée par l'appli et la passerelle :
 
 ```
         Appli Windows                    Passerelle serveur
@@ -194,70 +201,62 @@ Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habil
    ┌─────────────┬─────────────┬──────────────┬─────────────┐
    │  Détection  │   Fichiers  │    Table     │   Journal   │
    │  detection/ │ documents.py│   table.py   │  journal.py │
-   │             │ fichiers.py │              │             │
-   │             │   ocr.py    │              │             │
+   │             │ fichiers.py │   poste.py   │             │
+   │             │ pdf.py/ocr  │              │             │
    └─────────────┴─────────────┴──────────────┴─────────────┘
 ```
 
+<details>
+<summary>Détail des fichiers du dépôt</summary>
+
 | Fichier (dans `src/celodata`) | Rôle |
 |---|---|
-| `detection/base.py` | Le contrat commun : un détecteur reçoit un texte et rend une liste de `Detection` (position, type, score, source). |
-| `detection/regles.py`, `regle.py`, `controles.py` | Les règles françaises (`regex`) et les clés de contrôle (Luhn, NIR, IBAN, TVA). |
-| `detection/listes.py` | Termes de santé et de syndicat, fonctions uniques (DRH, PDG) à signaler. |
-| `detection/modeles.py` | Les modèles d'entités. GLiNER2-PII par défaut, interchangeable. |
-| `detection/fusion.py` | Règle les chevauchements et propage chaque valeur trouvée à tout le texte. |
-| `moteur.py` | Analyse, remplacement par les jetons, caviardage, restauration tolérante. |
-| `table.py` | La table chiffrée : valeurs, termes ignorés, règles du projet, réglages, journal. |
-| `journal.py` | Écrit une ligne de journal par filtrage et par restauration. |
-| `documents.py` | Lit le texte d'un fichier texte, Word ou Excel. Confie les PDF à `pdf.py`. |
-| `fichiers.py` | Filtre, caviarde et restaure un Word ou un Excel en gardant sa mise en forme. Rend un PDF en Word neuf. |
-| `pdf.py` | Lit un PDF avec la place de chaque caractère sur la page. Repère les zones sans texte lu (tampons, signatures). Rend un PDF caviardé, fait d'images. |
-| `ocr.py` | Lit une page scannée avec la reconnaissance de caractères de Windows, et donne la place de chaque mot. |
-| `lot.py` | Traite un dossier entier. |
-| `appli/fenetre.py`, `api.py`, `ecran.html`, `ecran.css`, `ecran.js` | La fenêtre (pywebview), les actions appelées par l'écran, l'écran lui-même. |
-| `passerelle/relais.py` | Filtre une demande au format OpenAI et restaure la réponse, y compris en flux. |
-| `passerelle/serveur.py` | Le serveur (Starlette), les réglages, les utilisateurs et leurs clés. |
-| `mesure.py` | Mesure un détecteur sur le jeu de test. |
+| `detection/base.py` | Contrat commun (`Detecteur`, `Detection`). |
+| `detection/regles.py`, `regle.py`, `controles.py` | Règles françaises (`regex`) et clés de contrôle (Luhn, NIR, IBAN, TVA, IPv6). |
+| `detection/listes.py` | Termes de santé et syndicat (article 9), rôles, fonctions uniques à signaler. |
+| `detection/modeles.py` | Modèles d'entités locaux (GLiNER2-PII par défaut, interchangeable). |
+| `detection/fusion.py` | Résolution des chevauchements, déclassement des génériques et propagation. |
+| `moteur.py` | Analyse (avec protection anti-ReDoS), pseudonymisation, caviardage, restauration tolérante. |
+| `table.py`, `poste.py` | Table chiffrée SQLite (Argon2id + AES-GCM + HMAC) et secret de poste DPAPI. |
+| `prereglages.py`, `journal.py`, `suivi.py` | Préréglages par métier, journal chiffré, suivi d'avancement et annulation. |
+| `documents.py`, `fichiers.py` | Lecture et filtrage/restauration avec mise en forme (Word, Excel, texte). |
+| `pdf.py`, `ocr.py` | Lecture PDF (pdfium + OCR Windows), repérage tampons/signatures, caviardage en images. |
+| `lot.py` | Traitement d'un dossier entier. |
+| `appli/fenetre.py`, `api.py`, `hello.py`, `ecran.{html,css,js}` | Interface Windows (`pywebview`), Windows Hello et API locale. |
+| `passerelle/relais.py`, `serveur.py` | Relais OpenAI (y compris streaming SSE) et serveur Starlette. |
+| `mesure.py` | Évaluation d'un détecteur sur le jeu de test. |
 
-Le reste du dépôt :
+Autres dossiers : [docs](docs/conception.md) (conception, cadrage CNIL, tutoriel), [jeu_de_test](jeu_de_test/README.md) (11 faux documents français annotés, aucune donnée réelle), `outils` (scripts d'essai), `tests` (suite `pytest`).
 
-| Dossier | Contenu |
-|---|---|
-| [docs](docs/conception.md) | La conception, les décisions et les résultats mesurés à chaque étape. Le tutoriel d'essai. Un exemple de réglages de la passerelle. |
-| [jeu_de_test](jeu_de_test/README.md) | Dix faux documents français annotés. Aucune donnée réelle. |
-| `outils` | De quoi suivre le tutoriel : fabrique de faux fichiers, fausse IA locale, envoi d'une demande à la passerelle. |
-| `tests` | Les tests automatiques. |
+</details>
 
-Pour changer de modèle d'entités, il suffit d'écrire un détecteur qui respecte le contrat de `detection/base.py` et de le déclarer dans `detection/modeles.py`. Le reste du code n'y touche pas.
+### Mesure et tests
 
-## Mesure et tests
-
-Mesurer les détecteurs sur le jeu de test :
+Sur le jeu de test interne (11 faux documents français ; résultats indicatifs, voir [docs/conception.md](docs/conception.md)) : **100 % sur les formats fixes** (83/83) et **133/134 sur le texte libre** avec `celodata` (règles + GLiNER2-PII + fusion).
 
 ```bash
+# Mesurer un détecteur sur le jeu de test
 uv run --extra modeles celodata-mesure --details
-```
 
-Lancer les tests :
-
-```bash
+# Lancer les vérifications (lint, syntaxe JS, tests)
+uv run ruff check src tests outils
+node --check src/celodata/appli/ecran.js
 uv run pytest
 ```
 
-Les tests et les mesures n'utilisent que de faux documents. Aucune donnée réelle n'est dans ce dépôt.
-
-
 ## Limites connues
 
-- Aucun détecteur ne trouve tout. L'aperçu de l'appli sert à rattraper ce qui est raté. La passerelle n'a pas d'aperçu.
-- Une personne peut rester reconnaissable par recoupement (une fonction unique, un lieu, une date), même sans son nom. L'appli signale les fonctions uniques sans les masquer d'office.
-- Le jeu de test est petit : dix documents. Les chiffres mesurés ne valent que pour lui.
-- Les images d'un Word ou d'un Excel ne sont pas filtrées. L'appli le signale.
-- Le repérage des tampons et signatures est approché. Il peut prendre un logo, et il peut manquer un tampon très pâle ou une signature qui touche du texte. La vue « Pages » sert à corriger. Dans un dossier traité sans aperçu, il n'y a pas de correction.
-- Les tampons et signatures ne sont repérés que dans les PDF, pas dans les images d'un Word ou d'un Excel.
-- Le dossier surveillé n'est suivi que lorsque l'appli est ouverte, et ses sous-dossiers ne sont pas suivis.
-- L'appli ne fonctionne que sous Windows.
+- Aucun détecteur ne trouve tout. L'aperçu de l'appli sert à rattraper ce qui est raté ; la passerelle n'a pas d'aperçu.
+- Une personne peut rester reconnaissable par recoupement (fonction unique, lieu, date) même sans son nom. L'appli signale les fonctions uniques sans les masquer d'office.
+- Une même personne écrite de deux façons (« Stéphane Girard » puis « Girard ») reçoit deux jetons distincts.
+- Le jeu de test est petit (11 documents) : les chiffres mesurés ne valent que pour lui.
+- Les images d'un Word ou d'un Excel ne sont pas filtrées (l'appli le signale).
+- Le repérage des tampons et signatures sur PDF est approché : il peut prendre un logo ou manquer un tampon très pâle. La vue « Pages » sert à corriger.
+- Le dossier surveillé n'est suivi que lorsque l'appli est ouverte, sans ses sous-dossiers.
+- L'appli de bureau ne fonctionne que sous Windows (la passerelle et le moteur fonctionnent aussi sous Linux et macOS).
 
-## Licence
+## Feuille de route et contribution
 
-Apache 2.0. Voir [LICENSE](LICENSE).
+Chantiers à venir : installeur Windows (sans installation manuelle de Python/`uv`), évaluation d'ONNX Runtime pour alléger le modèle et accélérer l'inférence CPU, regroupement de variantes d'un même nom (« Prénom Nom » / « Nom »).
+
+Les contributions sont les bienvenues sous licence Apache 2.0 : ajout de faux documents français au jeu de test (jamais de données réelles), signalement de faux négatifs ou faux positifs, amélioration des règles ou de l'interface.

@@ -29,11 +29,24 @@ def chemin_table_par_defaut() -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Celodata : filtrer un texte avant de l'envoyer à une IA.")
     parser.add_argument("--table", type=Path, default=chemin_table_par_defaut(), help="fichier de la table chiffrée")
+    parser.add_argument(
+        "--telecharger-modele",
+        action="store_true",
+        help="télécharge le modèle d'entités depuis Hugging Face puis quitte (une seule fois, avant usage hors ligne)",
+    )
     args = parser.parse_args(argv)
+
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+    if args.telecharger_modele:
+        from celodata.detection.modeles import DETECTEURS, MODELE_PAR_DEFAUT
+
+        print(f"Téléchargement du modèle local ({MODELE_PAR_DEFAUT})…")
+        DETECTEURS[MODELE_PAR_DEFAUT]()
+        print("Modèle prêt : Celodata fonctionne désormais sans connexion.")
+        return 0
 
     # Aucune connexion sortante : le modèle doit déjà être sur la machine.
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
-    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 
     import webview
 
