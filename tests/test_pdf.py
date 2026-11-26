@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from test_documents import pdf
 
 from celodata import ocr
 from celodata.appli.api import Api
@@ -14,7 +15,6 @@ from celodata.documents import DocumentIllisible, lire, lire_detail
 from celodata.fichiers import texte_en_word
 from celodata.lot import DOSSIER_SORTIE, traiter_dossier
 from celodata.table import Table
-from test_documents import pdf
 
 OPTIONS = {"memoire_kio": 64, "iterations": 1}
 TELEPHONE = "04 72 99 88 77"

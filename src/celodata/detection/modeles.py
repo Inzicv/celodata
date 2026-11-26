@@ -150,3 +150,16 @@ def creer_detecteur(nom: str = DETECTEUR_PAR_DEFAUT) -> Detecteur:
     if nom not in DETECTEURS:
         raise ValueError(f"Détecteur inconnu : {nom}. Disponibles : {', '.join(DETECTEURS)}")
     return DETECTEURS[nom]()
+
+
+def detecteur_par_defaut() -> tuple[Detecteur, bool]:
+    """Rend le détecteur complet, ou les règles seules si le modèle d'entités est absent."""
+    from celodata.detection.fusion import DetecteurCompose
+    from celodata.detection.regles import DetecteurRegles
+
+    regles = DetecteurRegles()
+    try:
+        modele = DETECTEURS[MODELE_PAR_DEFAUT]()
+    except Exception:
+        return DetecteurCompose("regles", [regles]), False
+    return DetecteurCompose("celodata", [regles, modele]), True

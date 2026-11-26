@@ -6,6 +6,8 @@ import time
 import pytest
 from docx import Document
 from pypdf import PdfReader
+from test_documents import pdf as faux_pdf
+from test_pdf import LIGNES, OPTIONS, TELEPHONE, lecture_des_scans, regles_seules, scan
 
 from celodata import ocr, pdf
 from celodata.appli import api as module_api
@@ -14,8 +16,6 @@ from celodata.detection.base import Detection
 from celodata.lot import DOSSIER_CAVIARDE, traiter_dossier
 from celodata.moteur import MARQUE_CAVIARD, caviarder
 from celodata.table import Table
-from test_documents import pdf as faux_pdf
-from test_pdf import LIGNES, OPTIONS, TELEPHONE, lecture_des_scans, regles_seules, scan
 
 
 def texte_du_pdf(contenu: bytes) -> str:
@@ -113,7 +113,6 @@ def test_un_dossier_caviarde(tmp_path):
 def page_tamponnee() -> bytes:
     """Un PDF d'une page : trois lignes de texte, un tampon rond, une signature, un trait de soulignement."""
     from PIL import Image, ImageDraw, ImageFont
-
     from test_pdf import POLICE
 
     page = Image.new("L", (2480, 3508), 255)

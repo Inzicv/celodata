@@ -156,3 +156,53 @@ def test_un_dossier_suit_le_prereglage(api, tmp_path):
     produit = (tmp_path / "celodata_filtré" / "contrat.txt").read_text(encoding="utf-8")
     assert resultat["fichiers"][0]["masques"] == 1
     assert "six mois" in produit and "stagiaire" in produit and "20418" not in produit
+
+
+def test_changer_mot_de_passe(tmp_path):
+    chemin = tmp_path / "p.celodata"
+    a = Api(chemin, regles_seules, {"memoire_kio": 64, "iterations": 1})
+    assert a.ouvrir("ancien mot de passe")["ok"]
+    a.filtrer("Appeler le 04 72 99 88 77.", [{"debut": 11, "fin": 25, "type": "TELEPHONE"}], [])
+
+    assert a.changer_mot_de_passe("ancien mot de passe", "court")["ok"] is False
+    assert a.changer_mot_de_passe("mauvais", "nouveau mot de passe")["ok"] is False
+    assert a.changer_mot_de_passe("ancien mot de passe", "nouveau mot de passe")["ok"] is True
+
+    assert Api(chemin, regles_seules).ouvrir("ancien mot de passe")["ok"] is False
+    b = Api(chemin, regles_seules)
+    assert b.ouvrir("nouveau mot de passe")["ok"] is True
+    assert b.restaurer("Rappeler TELEPHONE_1.")["texte"] == "Rappeler 04 72 99 88 77."
+
+
+def test_purger_table_et_exporter_journal(tmp_path):
+    csv_path = tmp_path / "journal.csv"
+    a = Api(":memory:", regles_seules, {"memoire_kio": 64, "iterations": 1}, dialogue=lambda *_: str(csv_path))
+    assert a.ouvrir("mot de passe de test")["ok"]
+    a.filtrer("Appeler le 04 72 99 88 77.", [{"debut": 11, "fin": 25, "type": "TELEPHONE"}], [], fichier="note.txt")
+
+    assert a.purger_table(30) == {"ok": True, "supprimees": 0, "restantes": 1}
+    assert a.purger_table(0) == {"ok": True, "supprimees": 1, "restantes": 0}
+
+    export = a.exporter_journal()
+    assert export["ok"] and export["lignes"] == 1
+    contenu = csv_path.read_text(encoding="utf-8-sig")
+    assert "date;action;traitement" in contenu
+    assert "note.txt" in contenu and "TELEPHONE:1" in contenu
+
+
+def test_ecran_assemble_et_syntaxe_js():
+    import shutil
+    import subprocess
+
+    from celodata.appli.fenetre import DOSSIER_ECRAN, charger_ecran
+
+    html_brut = (DOSSIER_ECRAN / "ecran.html").read_text(encoding="utf-8")
+    assert '\\"' not in html_brut
+    assemble = charger_ecran()
+    assert "<style>" in assemble and "<script>" in assemble
+    assert 'href="ecran.css"' not in assemble and 'src="ecran.js"' not in assemble
+    js = (DOSSIER_ECRAN / "ecran.js").read_text(encoding="utf-8")
+    assert "toast(" not in js
+    if shutil.which("node"):
+        res = subprocess.run(["node", "--check", str(DOSSIER_ECRAN / "ecran.js")], capture_output=True, text=True)
+        assert res.returncode == 0, res.stderr

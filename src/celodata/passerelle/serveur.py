@@ -20,6 +20,7 @@ import re
 import secrets
 import sys
 import threading
+import time
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -34,10 +35,13 @@ from starlette.routing import Route
 
 from celodata import __version__, journal
 from celodata.detection.base import Detecteur
+from celodata.detection.modeles import detecteur_par_defaut
 from celodata.passerelle.relais import DemandeRefusee, FluxRestaure, Session, filtrer_demande, restaurer_reponse
 from celodata.table import MotDePasseIncorrect, Table
 
 NOM_VALIDE = re.compile(r"[a-z0-9][a-z0-9_.-]{0,63}")
+# Durée d'inactivité (en secondes) avant fermeture automatique d'une table utilisateur en mémoire.
+TTL_SESSION_DEFAUT = 1800.0
 
 
 @dataclass
@@ -47,6 +51,7 @@ class Reglages:
     dossier: Path
     hote: str = "127.0.0.1"
     port: int = 8787
+    ttl_session: float = TTL_SESSION_DEFAUT
 
     @property
     def fichier_utilisateurs(self) -> Path:
@@ -64,6 +69,7 @@ def lire_reglages(chemin: Path) -> Reglages:
         dossier=(chemin.parent / passerelle.get("dossier", "donnees")).resolve(),
         hote=passerelle.get("hote", "127.0.0.1"),
         port=int(passerelle.get("port", 8787)),
+        ttl_session=float(passerelle.get("ttl_session", TTL_SESSION_DEFAUT)),
     )
 
 
@@ -99,12 +105,6 @@ def ajouter_utilisateur(reglages: Reglages, nom: str) -> str:
 # ---------- serveur ----------
 
 
-def _detecteur_par_defaut() -> tuple[Detecteur, bool]:
-    from celodata.appli.api import detecteur_par_defaut
-
-    return detecteur_par_defaut()
-
-
 def _erreur(statut: int, message: str) -> JSONResponse:
     return JSONResponse({"error": {"message": message, "type": "celodata", "code": statut}}, status_code=statut)
 
@@ -113,7 +113,7 @@ class Passerelle:
     def __init__(
         self,
         reglages: Reglages,
-        fabrique: Callable[[], tuple[Detecteur, bool]] = _detecteur_par_defaut,
+        fabrique: Callable[[], tuple[Detecteur, bool]] = detecteur_par_defaut,
         transport: httpx.AsyncBaseTransport | None = None,
         options_table: dict | None = None,
     ) -> None:
@@ -123,8 +123,11 @@ class Passerelle:
         self._detecteur: Detecteur | None = None
         self.avec_modele = False
         self._sessions: dict[str, Session] = {}
-        # Le modèle d'entités et les tables ne servent qu'une demande à la fois.
-        self._verrou = threading.Lock()
+        # Cache mémoire de utilisateurs.json, invalidé dès que mtime ou taille change.
+        self._cache_utilisateurs: tuple[tuple[int, int] | None, dict[str, str]] = (None, {})
+        # Verrou du modèle d'entités (inférence), séparé de la gestion des sessions et des verrous par utilisateur.
+        self._verrou_detecteur = threading.Lock()
+        self._verrou_sessions = threading.Lock()
         self._client = httpx.AsyncClient(transport=transport, timeout=httpx.Timeout(300, connect=15))
         self.appli = Starlette(
             routes=[
@@ -139,11 +142,28 @@ class Passerelle:
     async def _vie(self, appli: Starlette):
         yield
         await self._client.aclose()
+        with self._verrou_sessions:
+            for session in self._sessions.values():
+                with session.verrou:
+                    session.table.fermer()
+            self._sessions.clear()
 
     def charger(self) -> None:
-        with self._verrou:
+        with self._verrou_detecteur:
             if self._detecteur is None:
                 self._detecteur, self.avec_modele = self._fabrique()
+
+    def _utilisateurs(self) -> dict[str, str]:
+        chemin = self.reglages.fichier_utilisateurs
+        try:
+            st = chemin.stat()
+            cle_stat: tuple[int, int] | None = (st.st_mtime_ns, st.st_size)
+        except FileNotFoundError:
+            cle_stat = None
+        if cle_stat != self._cache_utilisateurs[0]:
+            donnees = lire_utilisateurs(self.reglages) if cle_stat is not None else {}
+            self._cache_utilisateurs = (cle_stat, donnees)
+        return self._cache_utilisateurs[1]
 
     def _identifier(self, request: Request) -> tuple[str, str] | None:
         entete = request.headers.get("authorization", "")
@@ -151,27 +171,50 @@ class Passerelle:
             return None
         cle = entete[7:].strip()
         empreinte = _empreinte(cle)
-        for nom, attendue in lire_utilisateurs(self.reglages).items():
+        for nom, attendue in self._utilisateurs().items():
             if hmac.compare_digest(empreinte, attendue):
                 return nom, cle
         return None
 
+    def _purger_sessions_inactives(self, maintenant: float) -> None:
+        ttl = self.reglages.ttl_session
+        if ttl <= 0:
+            return
+        expirees = [
+            nom for nom, s in self._sessions.items() if maintenant - s.derniere_activite > ttl
+        ]
+        for nom in expirees:
+            session = self._sessions.pop(nom, None)
+            if session is not None and session.verrou.acquire(blocking=False):
+                try:
+                    session.table.fermer()
+                finally:
+                    session.verrou.release()
+
     def _session(self, nom: str, cle: str) -> Session:
-        if nom not in self._sessions:
-            self.reglages.dossier.mkdir(parents=True, exist_ok=True)
-            table = Table.ouvrir(self.reglages.dossier / f"{nom}.celodata", cle, **self._options_table)
-            self._sessions[nom] = Session(table)
-        return self._sessions[nom]
+        maintenant = time.monotonic()
+        with self._verrou_sessions:
+            self._purger_sessions_inactives(maintenant)
+            session = self._sessions.get(nom)
+            if session is None:
+                self.reglages.dossier.mkdir(parents=True, exist_ok=True)
+                table = Table.ouvrir(self.reglages.dossier / f"{nom}.celodata", cle, **self._options_table)
+                session = Session(table)
+                self._sessions[nom] = session
+            session.derniere_activite = maintenant
+            return session
 
     def _preparer(self, nom: str, cle: str, corps: dict) -> tuple[Session, dict, FluxRestaure | None]:
         self.charger()
-        with self._verrou:
-            session = self._session(nom, cle)
+        session = self._session(nom, cle)
+        with self._verrou_detecteur, session.verrou:
+            session.derniere_activite = time.monotonic()
             filtre = filtrer_demande(corps, session, self._detecteur)
             return session, filtre, FluxRestaure(session) if corps.get("stream") else None
 
-    def _sous_verrou(self, fonction, *arguments):
-        with self._verrou:
+    def _sous_verrou_session(self, session: Session, fonction, *arguments):
+        with session.verrou:
+            session.derniere_activite = time.monotonic()
             return fonction(*arguments)
 
     def _entetes_ia(self) -> dict[str, str]:
@@ -228,7 +271,9 @@ class Passerelle:
                 donnees = reponse.json()
             except ValueError:
                 return _erreur(502, "La réponse de l'IA n'est pas un JSON valide.")
-            return JSONResponse(await run_in_threadpool(self._sous_verrou, restaurer_reponse, donnees, session))
+            return JSONResponse(
+                await run_in_threadpool(self._sous_verrou_session, session, restaurer_reponse, donnees, session)
+            )
         return StreamingResponse(self._diffuser(reponse, flux, session), media_type="text/event-stream")
 
     async def _diffuser(self, reponse: httpx.Response, flux: FluxRestaure, session: Session):
@@ -247,14 +292,16 @@ class Passerelle:
                 except ValueError:
                     # Un morceau illisible n'est pas transmis : il ne peut pas être restauré.
                     continue
-                yield ligne(await run_in_threadpool(self._sous_verrou, flux.morceau, donnees))
-            reste = await run_in_threadpool(self._sous_verrou, flux.reste)
+                yield ligne(await run_in_threadpool(self._sous_verrou_session, session, flux.morceau, donnees))
+            reste = await run_in_threadpool(self._sous_verrou_session, session, flux.reste)
             if reste:
                 yield ligne(reste)
             yield "data: [DONE]\n\n"
         finally:
             await reponse.aclose()
-            await run_in_threadpool(self._sous_verrou, journal.restauration, session.table, flux.bilan)
+            await run_in_threadpool(
+                self._sous_verrou_session, session, journal.restauration, session.table, flux.bilan
+            )
 
 
 # ---------- ligne de commande ----------

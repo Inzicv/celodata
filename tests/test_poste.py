@@ -143,6 +143,17 @@ def test_appli_lie_la_table_et_refuse_un_autre_poste(tmp_path):
     assert not poste.fichier(chemin).exists()
 
 
+def test_mauvais_mot_de_passe_ne_cree_pas_de_fichier_poste(tmp_path):
+    chemin = tmp_path / "non_liee.celodata"
+    with Table.ouvrir(chemin, "bon mot de passe", **LEGER):
+        pass
+    faux = FauxPoste()
+    assert Api(chemin, regles_seules, LEGER, poste=faux).ouvrir("mauvais mot")["ok"] is False
+    assert not poste.fichier(chemin).exists()
+    assert Api(chemin, regles_seules, LEGER, poste=faux).ouvrir("bon mot de passe")["liee"] is True
+    assert poste.fichier(chemin).exists()
+
+
 def test_windows_hello(tmp_path):
     chemin = tmp_path / "p.celodata"
     demandes = []

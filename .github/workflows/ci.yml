@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Installer les dépendances
+        run: uv sync --extra passerelle
+      - name: Vérifier le style Python (ruff)
+        run: uv run ruff check src tests outils
+      - name: Vérifier la syntaxe JavaScript
+        run: node --check src/celodata/appli/ecran.js
+      - name: Lancer les tests
+        run: uv run pytest -q

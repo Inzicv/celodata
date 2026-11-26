@@ -7,7 +7,18 @@ import argparse
 import os
 from pathlib import Path
 
-ECRAN = Path(__file__).parent / "ecran.html"
+DOSSIER_ECRAN = Path(__file__).parent
+ECRAN = DOSSIER_ECRAN / "ecran.html"
+
+
+def charger_ecran() -> str:
+    """Assemble ecran.html avec ses feuilles de style et son script, pour pywebview sans serveur local."""
+    html = ECRAN.read_text(encoding="utf-8")
+    css = (DOSSIER_ECRAN / "ecran.css").read_text(encoding="utf-8")
+    js = (DOSSIER_ECRAN / "ecran.js").read_text(encoding="utf-8")
+    html = html.replace('<link rel="stylesheet" href="ecran.css">', f"<style>\n{css}</style>", 1)
+    html = html.replace('<script src="ecran.js"></script>', f"<script>\n{js}</script>", 1)
+    return html
 
 
 def chemin_table_par_defaut() -> Path:
@@ -46,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
 
     webview.create_window(
         "Celodata",
-        html=ECRAN.read_text(encoding="utf-8"),
+        html=charger_ecran(),
         js_api=Api(
             args.table,
             dialogue=dialogue,

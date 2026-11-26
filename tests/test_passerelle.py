@@ -169,9 +169,9 @@ def test_reponse_en_flux_avec_jeton_coupe(banc):
     corps = {"stream": True, "messages": [{"role": "user", "content": f"Appeler le {TELEPHONE} ou {MAIL}."}]}
     reponse = demander(client, cles["alice"], corps)
     assert reponse.headers["content-type"].startswith("text/event-stream")
-    lignes = [l[6:] for l in reponse.text.split("\n") if l.startswith("data: ")]
+    lignes = [ligne[6:] for ligne in reponse.text.split("\n") if ligne.startswith("data: ")]
     assert lignes[-1] == "[DONE]"
-    deltas = [json.loads(l)["choices"][0]["delta"] for l in lignes[:-1]]
+    deltas = [json.loads(ligne)["choices"][0]["delta"] for ligne in lignes[:-1]]
     textes = [d.get("content", "") for d in deltas]
     assert "".join(textes) == f"Rappelez {TELEPHONE} demain, ou {MAIL}"
     # Aucun morceau de jeton n'est montré à l'utilisateur.
@@ -189,3 +189,20 @@ def test_flux_qui_s_arrete_sans_prevenir():
         assert flux.reste()["choices"][0]["delta"]["content"] == "12/03/1984"
         assert flux.reste() is None
         assert flux.bilan.approximatifs == ["date naissance 1"]
+
+
+def test_session_expire_et_cache_utilisateurs_se_rafraichit(tmp_path):
+    ia = FausseIA()
+    reglages = Reglages("http://ia.invalid/v1", "cle-ia", tmp_path, ttl_session=60.0)
+    cle_alice = ajouter_utilisateur(reglages, "alice")
+    passerelle = Passerelle(reglages, regles_seules, httpx.MockTransport(ia), OPTIONS)
+    with TestClient(passerelle.appli) as client:
+        assert demander(client, cle_alice, {"messages": [{"role": "user", "content": "bonjour"}]}).status_code == 200
+        assert "alice" in passerelle._sessions
+
+        # Un utilisateur ajouté à chaud est reconnu sans redémarrer la passerelle.
+        cle_chloe = ajouter_utilisateur(reglages, "chloe")
+        # Simule l'inactivité d'Alice au-delà du TTL.
+        passerelle._sessions["alice"].derniere_activite -= 120.0
+        assert demander(client, cle_chloe, {"messages": [{"role": "user", "content": "salut"}]}).status_code == 200
+        assert "alice" not in passerelle._sessions and "chloe" in passerelle._sessions

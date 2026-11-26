@@ -1,6 +1,6 @@
 # Conception de Celodata
 
-Ce document décrit ce qu'on construit, dans quel ordre, et pourquoi. Il s'appuie sur le cadrage et sur les décisions du brainstorm, rangés dans le dossier `.claude`.
+Ce document décrit ce qu'on construit, dans quel ordre, et pourquoi. Il s'appuie sur le cadrage et sur les décisions du brainstorm, rangés dans le dossier `docs/cadrage`.
 
 ## 1. Ce que le système doit faire
 

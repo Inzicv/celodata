@@ -75,8 +75,10 @@ def pdf_scanne(source: list[str], cible: Path, police: Path) -> None:
 
 def pdf_texte(source: list[str], cible: Path) -> None:
     """Un PDF d'une page avec du vrai texte, écrit à la main pour ne dépendre d'aucun outil."""
-    echapper = lambda l: l.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")  # noqa: E731
-    texte = " ".join(f"({echapper(l)}) Tj T*" for l in source)
+    def echapper(ligne: str) -> str:
+        return ligne.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+
+    texte = " ".join(f"({echapper(ligne)}) Tj T*" for ligne in source)
     flux = f"BT /F1 10 Tf 13 TL 50 790 Td {texte} ET".encode("cp1252", errors="replace")
     objets = [
         b"<< /Type /Catalog /Pages 2 0 R >>",

@@ -43,19 +43,19 @@ uv run --extra modeles celodata --table essais/essai.celodata
 L'option `--table` range la table d'essai dans le dossier `essais`, à part de la vraie table.
 
 1. Choisir un mot de passe d'au moins 8 caractères et le confirmer.
-2. Attendre que « Chargement du modèle… », en haut à droite, devienne « Prêt · règles et modèle d'entités ».
+2. Attendre que « Chargement du modèle… », en bas à gauche du rail, devienne « Noms et numéros détectés ».
 
-Si l'appli affiche « Règles seules · les noms ne sont pas détectés », le modèle n'est pas sur la machine.
+Si l'appli affiche « Règles seules : les noms ne sont pas détectés », le modèle n'est pas sur la machine.
 
 ### Essai 1 : un texte collé
 
 1. Ouvrir `essais/mail_paie.txt` dans le Bloc-notes et tout copier.
-2. Dans l'appli, cliquer sur « Coller un texte », coller, puis « Analyser ».
+2. Dans l'appli, laisser « Pseudonymiser », cliquer sur « Coller un texte », coller, puis « Analyser le texte ».
 3. Le document apparaît. Vérifier que les noms, le téléphone, le matricule et l'IBAN sont surlignés, et listés à droite par type.
 4. Décocher une ligne de la liste : le passage est barré dans le document, et toutes ses autres occurrences aussi. Cliquer sur un passage surligné fait la même chose.
 5. Cliquer sur une valeur de la liste : le document défile jusqu'à elle.
 6. Sélectionner un mot à la souris dans le document : la boîte « Masquer comme » apparaît. Choisir un type, cliquer sur « Masquer ».
-7. « Continuer », laisser « Pseudonymiser », puis « Copier le texte ». Le texte s'affiche dessous et se trouve dans le presse-papiers.
+7. Cliquer sur le bouton « Pseudonymiser … » en bas à droite, puis « Copier pour l'IA ». Le texte s'affiche dessous et se trouve dans le presse-papiers.
 
 ### Essai 2 : le retour
 
@@ -68,14 +68,14 @@ Si l'appli affiche « Règles seules · les noms ne sont pas détectés », le m
 
 ### Essai 3 : un Word
 
-1. Onglet « Protéger un document », « Protéger un autre document » si besoin, puis « Choisir un fichier… » et `essais/contrat_travail.docx`. On peut aussi glisser le fichier dans la fenêtre.
+1. Onglet « Protéger », « Protéger un autre document » si besoin, puis « Choisir un fichier » et `essais/contrat_travail.docx`. On peut aussi glisser le fichier dans la fenêtre.
 2. Le texte ne s'affiche pas tout de suite : l'appli montre « Analyse de… », puis le document déjà surligné.
-3. « Continuer », « Pseudonymiser », « Enregistrer le fichier… », garder le nom proposé.
+3. Cliquer sur « Pseudonymiser … », puis « Enregistrer le Word », garder le nom proposé.
 4. Ouvrir le fichier produit dans Word.
 
 À vérifier dans Word : les jetons à la place des valeurs, le gras toujours là, et dans Fichier > Informations, plus d'auteur « Camille Faux-Nom ».
 
-Puis le retour : onglet « Restaurer », « Restaurer un fichier… », choisir le fichier filtré, enregistrer. Le Word restauré doit être identique à l'original.
+Puis le retour : onglet « Restaurer », « Restaurer un fichier », choisir le fichier filtré, enregistrer. Le Word restauré doit être identique à l'original.
 
 ### Essai 4 : un Excel
 
@@ -83,11 +83,11 @@ Même parcours avec `essais/fichier_clients.xlsx`. À vérifier dans Excel : cha
 
 ### Essai 5 : caviarder un PDF, puis un PDF scanné
 
-1. Ouvrir `essais/reclamation.pdf`. « Continuer », choisir « Caviarder », « Enregistrer le fichier… ».
+1. Sur l'écran « Déposer », choisir « Caviarder », puis ouvrir `essais/reclamation.pdf`. Cliquer sur « Caviarder … », puis « Enregistrer le PDF ».
 2. Ouvrir le PDF produit. Il doit avoir la même mise en page, avec des rectangles noirs sur les données. Essayer d'y sélectionner du texte : il n'y en a plus, chaque page est une image.
 3. Ouvrir `essais/note_rh_scannee.pdf`. Un avertissement demande de relire tout le document.
 4. Regarder de près les erreurs de lecture (un `10` lu `IO`, par exemple) et ce qui reste en clair à cause d'elles. C'est la limite à connaître.
-5. « Continuer », « Caviarder », « Enregistrer le fichier… ». Vérifier les rectangles noirs sur le scan.
+5. Cliquer sur « Caviarder … », puis « Enregistrer le PDF ». Vérifier les rectangles noirs sur le scan.
 
 Pour comparer : sur le même PDF, « Pseudonymiser » produit un Word qui contient le texte avec des jetons.
 
@@ -95,28 +95,28 @@ Tampons et signatures : les faux PDF d'essai n'en ont pas. Pour essayer, ouvrir 
 
 ### Essai 6 : un dossier entier
 
-1. Sur le premier écran, dans « Traiter un dossier entier », laisser « Pseudonymiser » et cliquer sur « Choisir le dossier… ». Choisir le dossier `essais`.
+1. Sur le premier écran, laisser « Pseudonymiser », ouvrir « Traiter un dossier entier » et cliquer sur « Choisir le dossier ». Choisir le dossier `essais`.
 2. Attendre le tableau de résultats.
-3. Recommencer avec « Caviarder ».
+3. Basculer sur « Caviarder » plus haut, puis recommencer.
 
 À vérifier : `essais/celodata_filtré` contient le Word, l'Excel, le texte et le PDF (devenu Word). `essais/celodata_caviardé` contient le Word, l'Excel, le texte et le PDF (resté PDF, en images). Le PDF scanné est traité lui aussi, avec la mention « scan lu par reconnaissance de caractères, à relire ». La colonne « À vérifier » compte les fonctions (DRH, PDG) laissées en clair.
 
 ### Essai 7 : le dossier surveillé
 
 1. Créer un dossier vide, par exemple `essais/depots`.
-2. Onglet « Dossier surveillé », « Choisir un dossier… », choisir ce dossier.
+2. Onglet « Dossier surveillé », « Choisir un dossier », choisir ce dossier.
 3. Dans l'Explorateur, copier `essais/reclamation.pdf` dans ce dossier.
 4. Revenir à l'appli sans rien cliquer : en quelques secondes, le document apparaît dans la liste, « Prêt », et un compteur s'affiche sur l'onglet.
-5. Cliquer sur « Vérifier » : le document s'ouvre déjà analysé. « Continuer », « Caviarder », « Enregistrer le fichier… ».
+5. Cliquer sur « Vérifier » : le document s'ouvre déjà analysé. Cliquer sur « Caviarder … » (ou « Pseudonymiser … »), puis enregistrer le fichier.
 
-À vérifier : rien n'a été écrit dans le dossier avant l'enregistrement, et la ligne passe à « Traité ». Fermer puis rouvrir l'appli : le dossier est toujours surveillé.
+À vérifier : rien n'a été écrit dans le dossier avant l'enregistrement, et la ligne passe à « Exporté ». Fermer puis rouvrir l'appli : le dossier est toujours surveillé.
 
 ### Essai 8 : les règles et le journal
 
-1. Onglet « Règles ». Ajouter « Toujours masquer ce terme » avec un mot du mail, par exemple `régularisation`.
-2. Revenir à « Protéger un document », recoller le mail, « Analyser » : le mot est maintenant surligné.
+1. Onglet « Règles ». Ajouter « Toujours masquer » avec un mot du mail, par exemple `régularisation`.
+2. Revenir à « Protéger », recoller le mail, « Analyser le texte » : le mot est maintenant surligné.
 3. Dans « Règles », la liste montre aussi les passages décochés à l'essai 1. « Retirer » les supprime.
-4. Onglet « Journal » : une ligne par traitement, qui dit s'il s'agit d'une pseudonymisation ou d'un caviardage, avec des décomptes et aucune vraie valeur.
+4. Onglet « Journal » : une ligne par traitement, qui dit s'il s'agit d'une pseudonymisation ou d'un caviardage, avec des décomptes et aucune vraie valeur. Le bouton « Exporter en CSV » enregistre le journal complet.
 
 ### Essai 9 (facultatif) : une vraie IA
 

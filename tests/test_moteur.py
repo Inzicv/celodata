@@ -118,3 +118,13 @@ def test_aller_retour_sur_le_jeu_de_test(table):
         retour = restaurer(filtre.texte, table)
         assert retour.texte == attendu, nom
         assert retour.inconnus == [], nom
+
+
+def test_motif_redos_interrompu_sans_bloquer(table, monkeypatch):
+    from celodata import moteur
+
+    monkeypatch.setattr(moteur, "DELAI_MOTIF_S", 0.05)
+    table.ajouter_regle("motif", r"(a+)+$", "AUTRE")
+    detecteur = DetecteurCompose("regles", [DetecteurRegles()])
+    # Chaîne pathologique : interrompue par le délai sans bloquer ni lever d'exception.
+    assert moteur.analyser("a" * 32 + "!", detecteur, table) == []

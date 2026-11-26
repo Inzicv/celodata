@@ -12,6 +12,8 @@ votre IBAN FR76 3000…     votre IBAN IBAN_1 est           confirmer son IBAN
 est enregistré.           enregistré.                     FR76 3000…
 ```
 
+![Écran de vérification de Celodata sur un faux contrat PDF](docs/apercu-appli.png)
+
 Le projet est libre (Apache 2.0) et en cours de construction. Il se lance depuis le code source : il n'y a pas encore d'installeur.
 
 ## Sommaire
@@ -200,7 +202,7 @@ Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habil
 | Fichier (dans `src/celodata`) | Rôle |
 |---|---|
 | `detection/base.py` | Le contrat commun : un détecteur reçoit un texte et rend une liste de `Detection` (position, type, score, source). |
-| `detection/regles.py`, `regle.py`, `controles.py` | Les règles françaises, bâties sur Presidio, et les clés de contrôle (Luhn, NIR, IBAN, TVA). |
+| `detection/regles.py`, `regle.py`, `controles.py` | Les règles françaises (`regex`) et les clés de contrôle (Luhn, NIR, IBAN, TVA). |
 | `detection/listes.py` | Termes de santé et de syndicat, fonctions uniques (DRH, PDG) à signaler. |
 | `detection/modeles.py` | Les modèles d'entités. GLiNER2-PII par défaut, interchangeable. |
 | `detection/fusion.py` | Règle les chevauchements et propage chaque valeur trouvée à tout le texte. |
@@ -212,7 +214,7 @@ Le moteur est une bibliothèque Python. L'appli et la passerelle sont deux habil
 | `pdf.py` | Lit un PDF avec la place de chaque caractère sur la page. Repère les zones sans texte lu (tampons, signatures). Rend un PDF caviardé, fait d'images. |
 | `ocr.py` | Lit une page scannée avec la reconnaissance de caractères de Windows, et donne la place de chaque mot. |
 | `lot.py` | Traite un dossier entier. |
-| `appli/fenetre.py`, `api.py`, `ecran.html` | La fenêtre (pywebview), les actions appelées par l'écran, l'écran lui-même. |
+| `appli/fenetre.py`, `api.py`, `ecran.html`, `ecran.css`, `ecran.js` | La fenêtre (pywebview), les actions appelées par l'écran, l'écran lui-même. |
 | `passerelle/relais.py` | Filtre une demande au format OpenAI et restaure la réponse, y compris en flux. |
 | `passerelle/serveur.py` | Le serveur (Starlette), les réglages, les utilisateurs et leurs clés. |
 | `mesure.py` | Mesure un détecteur sur le jeu de test. |

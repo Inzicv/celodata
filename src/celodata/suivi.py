@@ -9,7 +9,9 @@ et lève `Annule` pour arrêter. Le rappel est propre au fil qui l'a posé : un 
 import threading
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
+from typing import TypeVar
 
+T = TypeVar("T")
 Rappel = Callable[[str, int, int], None]
 
 _fil = threading.local()
@@ -35,7 +37,7 @@ def pas(etape: str, fait: int, total: int) -> None:
         rappel(etape, fait, total)
 
 
-def parcourir[T](etape: str, elements: Iterable[T]) -> Iterator[T]:
+def parcourir(etape: str, elements: Iterable[T]) -> Iterator[T]:
     """Rend les éléments un à un, en signalant l'avancement avant chacun."""
     if getattr(_fil, "rappel", None) is None:
         yield from elements

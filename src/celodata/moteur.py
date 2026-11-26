@@ -10,6 +10,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
+import regex
+
 from celodata.detection.base import Detecteur, Detection
 from celodata.prereglages import retenir
 from celodata.table import Table
@@ -18,6 +20,8 @@ TYPE_SECRET = "SECRET"
 MARQUE_SECRET = "[SECRET_SUPPRIMÉ]"
 # Caviardage : toujours la même marque, pour ne pas laisser deviner la longueur de ce qui est caché.
 MARQUE_CAVIARD = "█████"
+# Temps maximal accordé à un motif (expression régulière) saisi par l'utilisateur, contre les boucles lentes (ReDoS).
+DELAI_MOTIF_S = 1.0
 
 _FORME_EXACTE = re.compile(r"(?<![A-Za-z0-9_])([A-Z][A-Z_]*)_(\d+)(?!\d)")
 
@@ -48,16 +52,16 @@ def _regles_projet(texte: str, table: Table) -> list[Detection]:
     for regle in table.regles():
         try:
             if regle["genre"] == "terme":
-                motif = re.compile(rf"(?<![\w-]){re.escape(regle['texte'])}(?![\w-])", re.IGNORECASE)
+                motif = regex.compile(rf"(?<![\w-]){regex.escape(regle['texte'])}(?![\w-])", regex.IGNORECASE)
             else:
-                motif = re.compile(regle["texte"])
-        except re.error:
+                motif = regex.compile(regle["texte"])
+            trouvees += [
+                Detection(m.start(), m.end(), regle["type"], 1.0, "projet")
+                for m in motif.finditer(texte, timeout=DELAI_MOTIF_S)
+                if m.end() > m.start()
+            ]
+        except (regex.error, TimeoutError):
             continue
-        trouvees += [
-            Detection(m.start(), m.end(), regle["type"], 1.0, "projet")
-            for m in motif.finditer(texte)
-            if m.end() > m.start()
-        ]
     retenues: list[Detection] = []
     # La règle la plus longue l'emporte.
     for d in sorted(trouvees, key=lambda d: (d.debut - d.fin, d.debut)):
@@ -75,18 +79,22 @@ def analyser(
 
     - Les règles du projet passent avant le détecteur.
     - Les valeurs que l'utilisateur a démasquées ne sont plus proposées.
-    - Les valeurs déjà dans la table sont recherchées littéralement dans tout le texte.
+    - Les valeurs déjà dans la table sont recherchées littéralement en une seule passe dans tout le texte.
     """
     detections = _regles_projet(texte, table)
     detections += [d for d in detecteur.detecter(texte) if _libre(d.debut, d.fin, detections)]
     detections = [d for d in detections if not table.est_ignoree(texte[d.debut : d.fin])]
-    connues = sorted(table.valeurs(), key=lambda tv: -len(tv[1]))
-    for type_, valeur in connues:
-        if len(valeur) < 3 or table.est_ignoree(valeur):
-            continue
-        for m in re.finditer(rf"(?<![\w-]){re.escape(valeur)}(?![\w-])", texte):
+    par_valeur: dict[str, str] = {}
+    for type_, valeur in sorted(table.valeurs(), key=lambda tv: -len(tv[1])):
+        if len(valeur) >= 3 and valeur not in par_valeur and not table.est_ignoree(valeur):
+            par_valeur[valeur] = type_
+    if par_valeur:
+        motif = re.compile(
+            rf"(?<![\w-])(?:{'|'.join(re.escape(v) for v in par_valeur)})(?![\w-])"
+        )
+        for m in motif.finditer(texte):
             if _libre(m.start(), m.end(), detections):
-                detections.append(Detection(m.start(), m.end(), type_, 1.0, "table"))
+                detections.append(Detection(m.start(), m.end(), par_valeur[m.group(0)], 1.0, "table"))
     return sorted(retenir(detections, en_clair), key=lambda d: d.debut)
 
 

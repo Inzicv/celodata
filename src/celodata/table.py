@@ -194,11 +194,11 @@ class Table:
     def est_liee(self) -> bool:
         return self._secret_poste is not None
 
-    def exporter(self, destination: Path | str, mot_de_passe: str) -> None:
-        """Copie la table dans un fichier que le mot de passe seul ouvre, pour changer de poste.
+    def lier(self, mot_de_passe: str, secret_poste: bytes) -> None:
+        """Lie la table ouverte à ce poste, sans toucher aux valeurs déjà chiffrées."""
+        self._envelopper(mot_de_passe, secret_poste)
 
-        Le mot de passe est redemandé : c'est lui, et lui seul, qui protégera la copie.
-        """
+    def _verifier_mot_de_passe(self, mot_de_passe: str) -> None:
         meta = dict(self._db.execute("SELECT cle, valeur FROM meta"))
         try:
             if "cles" in meta:
@@ -210,6 +210,18 @@ class Table:
                 )
         except InvalidTag:
             raise MotDePasseIncorrect("Mot de passe incorrect pour cette table.") from None
+
+    def changer_mot_de_passe(self, ancien: str, nouveau: str) -> None:
+        """Change le mot de passe qui protège l'enveloppe des clés, sans rechiffrer les valeurs."""
+        self._verifier_mot_de_passe(ancien)
+        self._envelopper(nouveau, self._secret_poste)
+
+    def exporter(self, destination: Path | str, mot_de_passe: str) -> None:
+        """Copie la table dans un fichier que le mot de passe seul ouvre, pour changer de poste.
+
+        Le mot de passe est redemandé : c'est lui, et lui seul, qui protégera la copie.
+        """
+        self._verifier_mot_de_passe(mot_de_passe)
         copie = sqlite3.connect(str(destination))
         try:
             copie.execute("PRAGMA secure_delete = ON")

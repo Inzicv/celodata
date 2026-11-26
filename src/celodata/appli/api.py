@@ -5,6 +5,8 @@ publiques.
 """
 
 import base64
+import csv
+import io
 import re
 import threading
 import time
@@ -12,10 +14,12 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+import regex
+
 from celodata import journal, pdf, prereglages, suivi
 from celodata.detection.base import Detecteur, Detection
-from celodata.detection.fusion import DetecteurCompose
 from celodata.detection.listes import fonctions_a_verifier
+from celodata.detection.modeles import detecteur_par_defaut
 from celodata.documents import EXTENSIONS, EXTENSIONS_TEXTE, DocumentIllisible, lire, lire_detail
 from celodata.fichiers import (
     FORMATS,
@@ -54,19 +58,6 @@ class _Charge:
     lu: pdf.PdfLu | None = None
     # Pour un PDF : les zones sans texte repérées (tampons, signatures), en (page, cadre).
     zones: tuple = ()
-
-
-def detecteur_par_defaut() -> tuple[Detecteur, bool]:
-    """Rend le détecteur complet, ou les règles seules si le modèle d'entités est absent."""
-    from celodata.detection.modeles import DETECTEURS, MODELE_PAR_DEFAUT
-    from celodata.detection.regles import DetecteurRegles
-
-    regles = DetecteurRegles()
-    try:
-        modele = DETECTEURS[MODELE_PAR_DEFAUT]()
-    except Exception:
-        return DetecteurCompose("regles", [regles]), False
-    return DetecteurCompose("celodata", [regles, modele]), True
 
 
 THEMES = ("light", "dark")
@@ -160,6 +151,7 @@ class Api:
             if nouvelle and len(mot_de_passe) < LONGUEUR_MIN_MOT_DE_PASSE:
                 return {"ok": False, "erreur": f"Le mot de passe doit faire au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères."}
             secret = None
+            a_lier = False
             try:
                 if str(self._chemin) != ":memory:":
                     Path(self._chemin).parent.mkdir(parents=True, exist_ok=True)
@@ -168,7 +160,7 @@ class Api:
                         if secret is None:
                             if Table.liee_au_poste(self._chemin):
                                 return {"ok": False, "erreur": AUTRE_POSTE}
-                            secret = self._poste.creer(self._chemin)
+                            a_lier = True
                 table = Table.ouvrir(self._chemin, mot_de_passe, secret_poste=secret, **self._options_table)
             except MotDePasseIncorrect:
                 return {"ok": False, "erreur": "Mot de passe incorrect."}
@@ -179,6 +171,10 @@ class Api:
             if reponse is False:
                 table.fermer()
                 return {"ok": False, "erreur": "Windows Hello n'a pas confirmé votre identité. La table reste fermée."}
+            # Le secret de poste n'est créé qu'une fois l'ouverture et Windows Hello confirmés.
+            if a_lier and self._poste is not None:
+                secret = self._poste.creer(self._chemin)
+                table.lier(mot_de_passe, secret)
             self._avec_hello = reponse is True
             self._table = table
             dossier = self._table.reglage("dossier_surveille")
@@ -190,6 +186,37 @@ class Api:
     def protection(self) -> dict:
         """Ce qui protège la table ouverte, pour le dire à l'écran."""
         return {"liee": self._table is not None and self._table.est_liee(), "hello": self._avec_hello}
+
+    def changer_mot_de_passe(self, ancien: str, nouveau: str) -> dict:
+        """Change le mot de passe de la table ouverte sans toucher aux valeurs déjà chiffrées."""
+        if self._table is None:
+            return {"ok": False, "erreur": "La table n'est pas ouverte."}
+        if len(nouveau) < LONGUEUR_MIN_MOT_DE_PASSE:
+            return {"ok": False, "erreur": f"Le nouveau mot de passe doit faire au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères."}
+        if self._hello and self._hello("Changer le mot de passe de la table Celodata") is False:
+            return {"ok": False, "erreur": "Windows Hello n'a pas confirmé votre identité."}
+        with self._verrou:
+            try:
+                self._table.changer_mot_de_passe(ancien, nouveau)
+            except MotDePasseIncorrect:
+                return {"ok": False, "erreur": "Mot de passe actuel incorrect."}
+        return {"ok": True}
+
+    def purger_table(self, jours: int) -> dict:
+        """Supprime les correspondances plus vieilles que `jours` (0 pour tout supprimer)."""
+        if self._table is None:
+            return {"ok": False, "erreur": "La table n'est pas ouverte."}
+        try:
+            nb_jours = int(jours)
+        except (TypeError, ValueError):
+            return {"ok": False, "erreur": "Durée invalide."}
+        if nb_jours < 0:
+            return {"ok": False, "erreur": "La durée doit être positive ou nulle."}
+        with self._verrou:
+            # 0 jour : tout purger (y compris ce qui vient d'être ajouté).
+            supprimees = self._table.purger(-1 if nb_jours == 0 else nb_jours)
+            restantes = len(self._table)
+        return {"ok": True, "supprimees": supprimees, "restantes": restantes}
 
     def deplacer_table(self, mot_de_passe: str) -> dict:
         """Enregistre une copie de la table que le mot de passe seul ouvre, à emporter sur un autre poste."""
@@ -731,9 +758,9 @@ class Api:
                 return {"ok": False, "erreur": "Type invalide."}
             if genre == "motif":
                 try:
-                    if re.compile(texte).search(""):
+                    if regex.compile(texte).search(""):
                         return {"ok": False, "erreur": "Ce motif correspond à un texte vide."}
-                except re.error as e:
+                except regex.error as e:
                     return {"ok": False, "erreur": f"Motif invalide : {e}"}
             elif genre == "terme":
                 self._table.ne_plus_ignorer(texte)
@@ -755,3 +782,34 @@ class Api:
     def journal(self) -> list[dict]:
         with self._verrou:
             return self._table.journal()
+
+    def exporter_journal(self) -> dict:
+        """Enregistre tout le journal au format CSV (séparateur point-virgule, UTF-8 avec BOM pour Excel)."""
+        if self._table is None or self._dialogue is None:
+            return {"ok": False, "erreur": "La table n'est pas ouverte."}
+        chemin = self._dialogue("enregistrer", "journal-celodata.csv")
+        if not chemin:
+            return {"ok": False, "annule": True}
+        with self._verrou:
+            lignes = self._table.journal(limite=100_000)
+        tampon = io.StringIO()
+        ecrivain = csv.writer(tampon, delimiter=";")
+        ecrivain.writerow(["date", "action", "traitement", "mode", "document", "par_type", "par_source", "score_min", "inconnus", "approximatifs"])
+        for ligne in lignes:
+            ecrivain.writerow([
+                ligne.get("date", ""),
+                ligne.get("action", ""),
+                ligne.get("traitement", ""),
+                ligne.get("mode", ""),
+                ligne.get("fichier", ""),
+                ", ".join(f"{k}:{v}" for k, v in (ligne.get("par_type") or {}).items()),
+                ", ".join(f"{k}:{v}" for k, v in (ligne.get("par_source") or {}).items()),
+                "" if ligne.get("score_min") is None else ligne.get("score_min"),
+                ligne.get("inconnus", ""),
+                ligne.get("approximatifs", ""),
+            ])
+        try:
+            Path(chemin).write_bytes(tampon.getvalue().encode("utf-8-sig"))
+        except OSError as e:
+            return {"ok": False, "erreur": str(e)}
+        return {"ok": True, "chemin": str(chemin), "lignes": len(lignes)}

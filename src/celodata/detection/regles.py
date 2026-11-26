@@ -1,10 +1,7 @@
-"""Règles françaises pour les formats fixes, posées sur les reconnaisseurs de Presidio.
+"""Règles françaises pour les formats fixes, avec clés de contrôle.
 
-Presidio fournit l'ossature (motif, score, validation). Les motifs et les clés de contrôle
-sont écrits pour le français. Aucun modèle de langue n'est chargé : les règles tournent seules.
+Les motifs utilisent `regex` (lookbehinds de longueur variable). Aucun modèle de langue n'est chargé.
 """
-
-import re
 
 from celodata.detection import controles
 from celodata.detection.base import Detection
@@ -50,7 +47,7 @@ REGLES = [
     Regle(
         "telephone",
         "TELEPHONE",
-        rf"(?<![\w+])(?:(?:\+|00)33[ . -]?(?:\(0\)[ . -]?)?|0)[1-9](?:[ . -]?\d{{2}}){{4}}(?!\d)",
+        r"(?<![\w+])(?:(?:\+|00)33[ . -]?(?:\(0\)[ . -]?)?|0)[1-9](?:[ . -]?\d{2}){4}(?!\d)",
         0.9,
     ),
     Regle(
@@ -172,28 +169,28 @@ class DetecteurRegles:
     nom = "regles"
 
     def __init__(self, regles: list[Regle] = REGLES) -> None:
-        from presidio_analyzer import Pattern, PatternRecognizer
+        import regex
 
-        class Reconnaisseur(PatternRecognizer):
-            def __init__(self, regle: Regle) -> None:
-                self._validation = regle.validation
-                super().__init__(
-                    supported_entity=regle.type,
-                    name=regle.nom,
-                    supported_language="fr",
-                    patterns=[Pattern(regle.nom, regle.motif, regle.score)],
-                    global_regex_flags=re.MULTILINE | (re.IGNORECASE if regle.ignorer_casse else 0),
-                )
-
-            def validate_result(self, pattern_text: str) -> bool | None:
-                return self._validation(pattern_text) if self._validation else None
-
-        self._reconnaisseurs = [Reconnaisseur(r) for r in regles]
+        self._regles = [
+            (
+                r,
+                regex.compile(r.motif, regex.MULTILINE | (regex.IGNORECASE if r.ignorer_casse else 0)),
+            )
+            for r in regles
+        ]
 
     def detecter(self, texte: str) -> list[Detection]:
         detections = []
-        for reconnaisseur in self._reconnaisseurs:
-            type_ = reconnaisseur.supported_entities[0]
-            for r in reconnaisseur.analyze(texte, [type_]):
-                detections.append(Detection(r.start, r.end, type_, r.score, self.nom))
+        for regle, motif in self._regles:
+            for m in motif.finditer(texte):
+                if m.end() <= m.start():
+                    continue
+                score = regle.score
+                if regle.validation is not None:
+                    valide = regle.validation(m.group(0))
+                    if valide is False:
+                        continue
+                    if valide is True:
+                        score = 1.0
+                detections.append(Detection(m.start(), m.end(), regle.type, score, self.nom))
         return detections

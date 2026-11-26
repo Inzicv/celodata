@@ -264,7 +264,7 @@ class Excel(Formate):
                 if not any(t is not None for t in textes):
                     continue
                 dernier = max(i for i, t in enumerate(textes) if t is not None)
-                for cellule, texte in zip(rangee[: dernier + 1], textes):
+                for cellule, texte in zip(rangee[: dernier + 1], textes, strict=False):
                     if texte is not None:
                         self._emplacement(texte, poser(cellule, "value"))
                     self._separateur("\t")

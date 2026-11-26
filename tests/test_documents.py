@@ -42,8 +42,10 @@ def docx(lignes: list[str], entete: str = "", tableau: list[list[str]] | None = 
 
 def pdf(lignes: list[str]) -> bytes:
     """Un PDF d'une page, écrit à la main : assez pour vérifier l'extraction du texte."""
-    echapper = lambda l: l.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
-    texte = " ".join(f"({echapper(l)}) Tj T*" for l in lignes)
+    def echapper(ligne: str) -> str:
+        return ligne.replace("\\", r"\\").replace("(", r"\(").replace(")", r"\)")
+
+    texte = " ".join(f"({echapper(ligne)}) Tj T*" for ligne in lignes)
     flux = f"BT /F1 12 Tf 14 TL 50 780 Td {texte} ET".encode("cp1252")
     objets = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
@@ -74,7 +76,7 @@ def table():
 
 
 def test_texte_brut_utf8_et_windows():
-    assert lire("a.txt", "﻿Lefèvre\r\nfin".encode("utf-8")) == "Lefèvre\nfin"
+    assert lire("a.txt", "﻿Lefèvre\r\nfin".encode()) == "Lefèvre\nfin"
     assert lire("a.csv", "Lefèvre".encode("cp1252")) == "Lefèvre"
 
 
@@ -102,7 +104,8 @@ def test_fichiers_illisibles():
 def test_terme_et_motif_du_projet(table):
     detecteur = regles_seules()[0]
     texte = "\n".join(COURRIER) + "\nle projet ZÉPHYR avance."
-    trouves = lambda: [(texte[d.debut : d.fin], d.type, d.source) for d in analyser(texte, detecteur, table)]
+    def trouves():
+        return [(texte[d.debut : d.fin], d.type, d.source) for d in analyser(texte, detecteur, table)]
     assert ("TCK-204815", "IDENTIFIANT", "projet") not in trouves()
 
     terme = table.ajouter_regle("terme", "Zéphyr", "PROJET")

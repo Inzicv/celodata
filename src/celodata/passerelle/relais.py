@@ -5,6 +5,8 @@ Rien ici ne parle au réseau : ce module transforme des dictionnaires. Le serveu
 
 import hashlib
 import json
+import threading
+import time
 from collections import OrderedDict
 from collections.abc import Callable
 
@@ -29,6 +31,9 @@ class Session:
 
     def __init__(self, table: Table) -> None:
         self.table = table
+        # Verrou propre à cet utilisateur : ses accès table / streaming ne bloquent pas les autres.
+        self.verrou = threading.Lock()
+        self.derniere_activite = time.monotonic()
         # Une discussion renvoie tout son historique à chaque message : on ne le réanalyse pas.
         # Seuls l'empreinte du texte et son résultat filtré sont gardés.
         self.deja: OrderedDict[bytes, str] = OrderedDict()
