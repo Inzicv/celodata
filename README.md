@@ -57,7 +57,7 @@ La correspondance entre valeurs et jetons est rangée dans une **table** : un fi
 
 ### Pseudonymiser ou caviarder
 
-Le choix se fait après la vérification, au moment d'exporter.
+Le choix se fait au dépôt du document, avant l'analyse. Il vaut aussi pour un dossier entier.
 
 | | Pseudonymiser | Caviarder |
 |---|---|---|
@@ -110,10 +110,10 @@ Pour un premier essai guidé, avec de faux documents fournis, suivre [docs/tutor
 uv run --extra modeles celodata
 ```
 
-1. Choisir un mot de passe. Il protège la table, rangée dans `%LOCALAPPDATA%\Celodata`. Il n'existe aucun moyen de le récupérer.
-2. **Déposer** : glisser un fichier dans la fenêtre, le choisir, ou coller un texte. Le document ne s'affiche qu'une fois analysé.
+1. Choisir un mot de passe. Il protège la table, rangée dans `%LOCALAPPDATA%\Celodata`. Il n'existe aucun moyen de le récupérer. La table est aussi liée au poste, et Windows Hello est demandé à l'ouverture si le poste en a un (voir [Sécurité](#sécurité)).
+2. **Déposer** : choisir le traitement (pseudonymiser ou caviarder) et le préréglage, puis glisser un fichier dans la fenêtre, le choisir, ou coller un texte. Le document ne s'affiche qu'une fois analysé.
 3. **Vérifier** : le document apparaît avec ses données surlignées, et leur liste à droite, classée par type. Décocher ce qui peut rester, sélectionner du texte pour en masquer davantage.
-4. **Exporter** : choisir « Pseudonymiser » ou « Caviarder », puis enregistrer le fichier ou copier le texte.
+4. **Exporter** : enregistrer le fichier ou copier le texte, pseudonymisé ou caviardé selon le choix fait au dépôt.
 5. Pour un document pseudonymisé : coller la réponse de l'IA dans l'onglet « Restaurer », ou y ouvrir le fichier qu'elle a rendu.
 
 L'appli a cinq onglets.
@@ -123,7 +123,7 @@ L'appli a cinq onglets.
 | Protéger un document | Les trois étapes ci-dessus. Aussi : traiter un dossier entier, en pseudonymisation ou en caviardage. |
 | Restaurer | Remet les vraies valeurs dans une réponse collée ou dans un fichier Word, Excel ou texte. |
 | Dossier surveillé | Les documents déposés dans un dossier choisi sont analysés en tâche de fond et attendent ici, prêts à vérifier. |
-| Règles | Termes toujours masqués, motifs (expressions régulières), termes jamais masqués. |
+| Règles | Termes toujours masqués, motifs (expressions régulières), termes jamais masqués. Les préréglages. « Déplacer la table » vers un autre poste. |
 | Journal | Une ligne par traitement : date, document, traitement, nombre de passages masqués par type et par origine. Aucune vraie valeur. |
 
 À savoir :
@@ -166,7 +166,11 @@ uv run --extra modeles --extra passerelle celodata-passerelle servir
 
 | Sujet | Ce qui est fait |
 |---|---|
-| Table de correspondance | Fichier SQLite. Chaque valeur est chiffrée en AES-GCM. La clé est dérivée du mot de passe avec Argon2id. |
+| Table de correspondance | Fichier SQLite. Chaque valeur est chiffrée en AES-GCM. Les clés de la table sont rangées sous une enveloppe dont la clé est dérivée du mot de passe avec Argon2id. |
+| Lien au poste (appli Windows) | La clé de l'enveloppe dépend aussi d'un secret gardé par Windows pour ce compte et ce poste (DPAPI), dans un fichier `.poste` à côté de la table. Une table copiée ailleurs ne s'ouvre pas, même avec le mot de passe. Une sauvegarde faite avant ce lien ne s'ouvre, elle, qu'avec le mot de passe : supprimez les anciennes copies. |
+| Windows Hello (appli Windows) | Demandé après le mot de passe si le poste en a un. C'est une barrière d'accès à l'appli, pas un chiffrement : la protection chiffrée vient du mot de passe et du lien au poste. |
+| Changer de poste | « Déplacer la table », dans l'onglet Règles, enregistre une copie que le mot de passe seul ouvre. Elle est liée au nouveau poste à sa première ouverture. |
+| Session Windows perdue ou réinstallée | La table est perdue, comme pour un mot de passe oublié. Aucune récupération possible. |
 | Recherche d'une valeur déjà connue | Par empreinte HMAC : la table ne contient aucune valeur en clair. |
 | Mot de passe perdu | Aucune récupération possible. |
 | Secrets (mots de passe, jetons, clés d'API) | Supprimés, jamais rangés dans la table, jamais restaurés. |

@@ -26,6 +26,8 @@ def main(argv: list[str] | None = None) -> int:
 
     import webview
 
+    from celodata import poste
+    from celodata.appli import hello
     from celodata.appli.api import Api
     from celodata.documents import EXTENSIONS
 
@@ -45,7 +47,12 @@ def main(argv: list[str] | None = None) -> int:
     webview.create_window(
         "Celodata",
         html=ECRAN.read_text(encoding="utf-8"),
-        js_api=Api(args.table, dialogue=dialogue),
+        js_api=Api(
+            args.table,
+            dialogue=dialogue,
+            poste=poste if poste.disponible() else None,
+            hello=hello.verifier,
+        ),
         width=1180,
         height=860,
         min_size=(820, 600),

@@ -14,5 +14,6 @@ essais/
 
 # Tables de correspondance et journaux : ne doivent jamais être versionnés
 *.celodata
+*.poste
 *.sqlite
 *.db

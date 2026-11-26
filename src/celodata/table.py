@@ -3,7 +3,11 @@
 Un fichier SQLite par projet, qui ne quitte pas la machine.
 
 - Chaque valeur est chiffrée en AES-GCM. Le fichier ne contient aucune valeur en clair.
-- Les clés sont dérivées du mot de passe avec Argon2id. Le mot de passe n'est stocké nulle part.
+- Les clés de la table sont tirées au hasard et rangées dans le fichier sous une enveloppe
+  chiffrée. La clé de l'enveloppe est dérivée du mot de passe avec Argon2id. Le mot de passe
+  n'est stocké nulle part.
+- Avec un secret de poste (appli de bureau), la clé de l'enveloppe dépend aussi de ce secret :
+  le fichier copié ailleurs ne s'ouvre pas, même avec le bon mot de passe.
 - Une empreinte à clé (HMAC) de chaque valeur permet de retrouver son jeton sans tout déchiffrer.
 - Mot de passe perdu ou table détruite : la réidentification devient impossible. C'est voulu.
 
@@ -51,11 +55,43 @@ class MotDePasseIncorrect(Exception):
     pass
 
 
+class TableDunAutrePoste(Exception):
+    """La table est liée à un poste et son secret n'a pas été fourni."""
+
+
+_ENVELOPPE = ("sel", "memoire_kio", "iterations", "temoin", "cles", "poste")
+
+
+def _deriver(meta: dict, mot_de_passe: str, longueur: int) -> bytes:
+    return Argon2id(
+        salt=meta["sel"],
+        length=longueur,
+        iterations=int(meta["iterations"]),
+        lanes=4,
+        memory_cost=int(meta["memoire_kio"]),
+    ).derive(mot_de_passe.encode("utf-8"))
+
+
+def _cle_enveloppe(meta: dict, mot_de_passe: str, secret_poste: bytes | None) -> bytes:
+    cle = _deriver(meta, mot_de_passe, 32)
+    if secret_poste is not None:
+        cle = hmac.new(secret_poste, cle, hashlib.sha256).digest()
+    return cle
+
+
 class Table:
-    def __init__(self, connexion: sqlite3.Connection, cle_chiffrement: bytes, cle_empreinte: bytes) -> None:
+    def __init__(
+        self,
+        connexion: sqlite3.Connection,
+        cle_chiffrement: bytes,
+        cle_empreinte: bytes,
+        secret_poste: bytes | None = None,
+    ) -> None:
         self._db = connexion
+        self._cle_chiffrement = cle_chiffrement
         self._aes = AESGCM(cle_chiffrement)
         self._cle_empreinte = cle_empreinte
+        self._secret_poste = secret_poste
 
     @classmethod
     def ouvrir(
@@ -65,43 +101,123 @@ class Table:
         *,
         memoire_kio: int = 65536,
         iterations: int = 3,
+        secret_poste: bytes | None = None,
     ) -> "Table":
-        """Ouvre la table, ou la crée si le fichier n'existe pas. `:memory:` ne laisse rien sur disque."""
+        """Ouvre la table, ou la crée si le fichier n'existe pas. `:memory:` ne laisse rien sur disque.
+
+        `secret_poste` lie la table au poste. Une table qui ne l'était pas le devient à cette
+        ouverture ; une table liée ne s'ouvre plus sans lui.
+        """
         # L'appli appelle la table depuis plusieurs fils, un à la fois (verrou côté appli).
         db = sqlite3.connect(str(chemin), check_same_thread=False)
+        # Ce qui est effacé est écrasé dans le fichier : une ancienne enveloppe n'y reste pas.
+        db.execute("PRAGMA secure_delete = ON")
         db.executescript(_SCHEMA)
         # Tables créées avant l'étape 4 : les valeurs ignorées n'avaient qu'une empreinte.
         if "chiffre" not in {c[1] for c in db.execute("PRAGMA table_info(ignorees)")}:
             db.execute("ALTER TABLE ignorees ADD COLUMN nonce BLOB")
             db.execute("ALTER TABLE ignorees ADD COLUMN chiffre BLOB")
         meta = dict(db.execute("SELECT cle, valeur FROM meta"))
-        if not meta:
-            meta = {
-                "sel": os.urandom(16),
-                "memoire_kio": str(memoire_kio).encode(),
-                "iterations": str(iterations).encode(),
-            }
-        cles = Argon2id(
-            salt=meta["sel"],
-            length=64,
-            iterations=int(meta["iterations"]),
-            lanes=4,
-            memory_cost=int(meta["memoire_kio"]),
-        ).derive(mot_de_passe.encode("utf-8"))
-        table = cls(db, cles[:32], cles[32:])
-        if "temoin" in meta:
-            # Le témoin est une valeur connue chiffrée à la création : il vérifie le mot de passe.
+        if "cles" in meta:
+            liee = meta.get("poste") == b"1"
+            if liee and secret_poste is None:
+                db.close()
+                raise TableDunAutrePoste("Cette table est liée à un autre poste.")
+            enveloppe = AESGCM(_cle_enveloppe(meta, mot_de_passe, secret_poste if liee else None))
+            try:
+                cles = enveloppe.decrypt(meta["cles"][:12], meta["cles"][12:], b"cles")
+            except InvalidTag:
+                db.close()
+                raise MotDePasseIncorrect("Mot de passe incorrect pour cette table.") from None
+            table = cls(db, cles[:32], cles[32:], secret_poste)
+            if not liee and secret_poste is not None:
+                table._envelopper(mot_de_passe, secret_poste)
+        elif "temoin" in meta:
+            # Table d'avant l'enveloppe : ses clés sortent directement du mot de passe.
+            cles = _deriver(meta, mot_de_passe, 64)
+            table = cls(db, cles[:32], cles[32:], secret_poste)
             try:
                 table._aes.decrypt(meta["temoin"][:12], meta["temoin"][12:], b"temoin")
             except InvalidTag:
                 db.close()
                 raise MotDePasseIncorrect("Mot de passe incorrect pour cette table.") from None
+            if secret_poste is not None:
+                # Les clés sont gardées, mais l'ancien sel est effacé : le mot de passe seul
+                # ne permet plus de les retrouver.
+                table._envelopper(mot_de_passe, secret_poste)
         else:
-            nonce = os.urandom(12)
-            meta["temoin"] = nonce + table._aes.encrypt(nonce, _TEMOIN, b"temoin")
-            with db:
-                db.executemany("INSERT INTO meta VALUES (?, ?)", meta.items())
+            cles = os.urandom(64)
+            table = cls(db, cles[:32], cles[32:], secret_poste)
+            table._envelopper(mot_de_passe, secret_poste, memoire_kio, iterations)
         return table
+
+    def _envelopper(
+        self,
+        mot_de_passe: str,
+        secret_poste: bytes | None,
+        memoire_kio: int | None = None,
+        iterations: int | None = None,
+    ) -> None:
+        """Range les clés de la table sous une enveloppe neuve, liée ou non au poste."""
+        ancien = dict(self._db.execute("SELECT cle, valeur FROM meta WHERE cle IN ('memoire_kio', 'iterations')"))
+        meta = {
+            "sel": os.urandom(16),
+            "memoire_kio": str(memoire_kio).encode() if memoire_kio else ancien["memoire_kio"],
+            "iterations": str(iterations).encode() if iterations else ancien["iterations"],
+            "poste": b"1" if secret_poste is not None else b"0",
+        }
+        nonce = os.urandom(12)
+        cles = self._cle_chiffrement + self._cle_empreinte
+        meta["cles"] = nonce + AESGCM(_cle_enveloppe(meta, mot_de_passe, secret_poste)).encrypt(nonce, cles, b"cles")
+        with self._db:
+            self._db.execute(f"DELETE FROM meta WHERE cle IN ({', '.join('?' * len(_ENVELOPPE))})", _ENVELOPPE)
+            self._db.executemany("INSERT INTO meta VALUES (?, ?)", meta.items())
+        self._secret_poste = secret_poste
+
+    @staticmethod
+    def liee_au_poste(chemin: Path | str) -> bool:
+        """Dit, sans mot de passe, si le fichier est une table liée à un poste."""
+        if str(chemin) == ":memory:" or not Path(chemin).exists():
+            return False
+        try:
+            db = sqlite3.connect(f"{Path(chemin).resolve().as_uri()}?mode=ro", uri=True)
+        except sqlite3.Error:
+            return False
+        try:
+            ligne = db.execute("SELECT valeur FROM meta WHERE cle = 'poste'").fetchone()
+        except sqlite3.Error:
+            return False
+        finally:
+            db.close()
+        return bool(ligne) and ligne[0] == b"1"
+
+    def est_liee(self) -> bool:
+        return self._secret_poste is not None
+
+    def exporter(self, destination: Path | str, mot_de_passe: str) -> None:
+        """Copie la table dans un fichier que le mot de passe seul ouvre, pour changer de poste.
+
+        Le mot de passe est redemandé : c'est lui, et lui seul, qui protégera la copie.
+        """
+        meta = dict(self._db.execute("SELECT cle, valeur FROM meta"))
+        try:
+            if "cles" in meta:
+                enveloppe = AESGCM(_cle_enveloppe(meta, mot_de_passe, self._secret_poste))
+                enveloppe.decrypt(meta["cles"][:12], meta["cles"][12:], b"cles")
+            else:
+                AESGCM(_deriver(meta, mot_de_passe, 64)[:32]).decrypt(
+                    meta["temoin"][:12], meta["temoin"][12:], b"temoin"
+                )
+        except InvalidTag:
+            raise MotDePasseIncorrect("Mot de passe incorrect pour cette table.") from None
+        copie = sqlite3.connect(str(destination))
+        try:
+            copie.execute("PRAGMA secure_delete = ON")
+            self._db.backup(copie)
+            Table(copie, self._cle_chiffrement, self._cle_empreinte)._envelopper(mot_de_passe, None)
+            copie.execute("VACUUM")
+        finally:
+            copie.close()
 
     def _empreinte(self, valeur: str) -> bytes:
         return hmac.new(self._cle_empreinte, valeur.encode("utf-8"), hashlib.sha256).digest()

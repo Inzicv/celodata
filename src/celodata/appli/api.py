@@ -27,9 +27,14 @@ from celodata.fichiers import (
 )
 from celodata.lot import dossier_sortie, traiter_dossier
 from celodata.moteur import analyser, caviarder, pseudonymiser, restaurer
-from celodata.table import MotDePasseIncorrect, Table
+from celodata.poste import PosteInconnu
+from celodata.table import MotDePasseIncorrect, Table, TableDunAutrePoste
 
 LONGUEUR_MIN_MOT_DE_PASSE = 8
+AUTRE_POSTE = (
+    "Cette table est liée à un autre poste ou à une autre session Windows : elle ne peut pas s'ouvrir ici. "
+    "Sur le poste d'origine, utilisez « Déplacer la table » dans l'onglet Règles."
+)
 _TYPE_VALIDE = re.compile(r"[A-Z][A-Z_]*")
 CAVIARDAGE = "caviardage"
 # Le dossier surveillé est relu à cet intervalle, en secondes.
@@ -74,7 +79,14 @@ class Api:
         fabrique: Callable[[], tuple[Detecteur, bool]] = detecteur_par_defaut,
         options_table: dict | None = None,
         dialogue: Callable[..., str | None] | None = None,
+        poste=None,
+        hello: Callable[[str], bool | None] | None = None,
     ) -> None:
+        # `poste` : le module qui garde le secret de poste (`celodata.poste`), ou rien.
+        # `hello(message)` demande Windows Hello : vrai, faux, ou `None` si le poste n'en a pas.
+        self._poste = poste
+        self._hello = hello
+        self._avec_hello = False
         self._chemin = chemin_table
         self._fabrique = fabrique
         self._options_table = options_table or {}
@@ -147,17 +159,59 @@ class Api:
             nouvelle = not self.etat()["table_existe"]
             if nouvelle and len(mot_de_passe) < LONGUEUR_MIN_MOT_DE_PASSE:
                 return {"ok": False, "erreur": f"Le mot de passe doit faire au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères."}
+            secret = None
             try:
                 if str(self._chemin) != ":memory:":
                     Path(self._chemin).parent.mkdir(parents=True, exist_ok=True)
-                self._table = Table.ouvrir(self._chemin, mot_de_passe, **self._options_table)
+                    if self._poste is not None:
+                        secret = self._poste.lire(self._chemin)
+                        if secret is None:
+                            if Table.liee_au_poste(self._chemin):
+                                return {"ok": False, "erreur": AUTRE_POSTE}
+                            secret = self._poste.creer(self._chemin)
+                table = Table.ouvrir(self._chemin, mot_de_passe, secret_poste=secret, **self._options_table)
             except MotDePasseIncorrect:
                 return {"ok": False, "erreur": "Mot de passe incorrect."}
+            except (PosteInconnu, TableDunAutrePoste):
+                return {"ok": False, "erreur": AUTRE_POSTE}
+            # Le mot de passe est bon : Windows Hello confirme que c'est bien la personne du poste.
+            reponse = self._hello("Ouvrir la table de Celodata") if self._hello else None
+            if reponse is False:
+                table.fermer()
+                return {"ok": False, "erreur": "Windows Hello n'a pas confirmé votre identité. La table reste fermée."}
+            self._avec_hello = reponse is True
+            self._table = table
             dossier = self._table.reglage("dossier_surveille")
             self._relire_prereglages()
         if dossier and Path(dossier).is_dir():
             self._demarrer_surveillance(Path(dossier))
-        return {"ok": True, "valeurs": len(self._table)}
+        return {"ok": True, "valeurs": len(self._table), **self.protection()}
+
+    def protection(self) -> dict:
+        """Ce qui protège la table ouverte, pour le dire à l'écran."""
+        return {"liee": self._table is not None and self._table.est_liee(), "hello": self._avec_hello}
+
+    def deplacer_table(self, mot_de_passe: str) -> dict:
+        """Enregistre une copie de la table que le mot de passe seul ouvre, à emporter sur un autre poste."""
+        if self._table is None or self._dialogue is None:
+            return {"ok": False, "erreur": "La table n'est pas ouverte."}
+        if self._hello and self._hello("Copier la table de Celodata pour un autre poste") is False:
+            return {"ok": False, "erreur": "Windows Hello n'a pas confirmé votre identité."}
+        choix = self._dialogue("enregistrer", "table-a-deplacer.celodata")
+        if not choix:
+            return {"ok": False, "annule": True}
+        destination = Path(choix)
+        if str(self._chemin) != ":memory:" and destination.resolve() == Path(self._chemin).resolve():
+            return {"ok": False, "erreur": "Choisissez un autre emplacement que celui de la table en cours."}
+        with self._verrou:
+            try:
+                destination.unlink(missing_ok=True)
+                self._table.exporter(destination, mot_de_passe)
+            except MotDePasseIncorrect:
+                return {"ok": False, "erreur": "Mot de passe incorrect."}
+            except OSError:
+                return {"ok": False, "erreur": "La copie n'a pas pu être écrite à cet emplacement."}
+        return {"ok": True, "chemin": str(destination)}
 
     def preparer(self) -> dict:
         """Charge le détecteur. Le modèle d'entités met plusieurs secondes à se charger."""

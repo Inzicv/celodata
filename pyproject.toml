@@ -21,6 +21,7 @@ dependencies = [
     "winrt-windows-globalization>=4!10.0.28000.2957 ; sys_platform == 'win32'",
     "winrt-windows-graphics-imaging>=4!10.0.28000.2957 ; sys_platform == 'win32'",
     "winrt-windows-media-ocr>=4!10.0.28000.2957 ; sys_platform == 'win32'",
+    "winrt-windows-security-credentials-ui>=4!10.0.28000.2957 ; sys_platform == 'win32'",
     "winrt-windows-storage-streams>=4!10.0.28000.2957 ; sys_platform == 'win32'",
 ]
 

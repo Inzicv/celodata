@@ -110,6 +110,7 @@ dependencies = [
     { name = "winrt-windows-globalization", marker = "sys_platform == 'win32'" },
     { name = "winrt-windows-graphics-imaging", marker = "sys_platform == 'win32'" },
     { name = "winrt-windows-media-ocr", marker = "sys_platform == 'win32'" },
+    { name = "winrt-windows-security-credentials-ui", marker = "sys_platform == 'win32'" },
     { name = "winrt-windows-storage-streams", marker = "sys_platform == 'win32'" },
 ]
 
@@ -159,6 +160,7 @@ requires-dist = [
     { name = "winrt-windows-globalization", marker = "sys_platform == 'win32'", specifier = ">=4!10.0.28000.2957" },
     { name = "winrt-windows-graphics-imaging", marker = "sys_platform == 'win32'", specifier = ">=4!10.0.28000.2957" },
     { name = "winrt-windows-media-ocr", marker = "sys_platform == 'win32'", specifier = ">=4!10.0.28000.2957" },
+    { name = "winrt-windows-security-credentials-ui", marker = "sys_platform == 'win32'", specifier = ">=4!10.0.28000.2957" },
     { name = "winrt-windows-storage-streams", marker = "sys_platform == 'win32'", specifier = ">=4!10.0.28000.2957" },
 ]
 provides-extras = ["modeles", "passerelle"]
@@ -2312,6 +2314,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/79/f3/a644dbf5800354620c2d1392de9b674fd8b9c3c37af788d5e423b3c16e59/winrt_windows_media_ocr-4!10.0.28000.2957.tar.gz", hash = "sha256:9502c925ed3b371fae097e59a72783fec32eee85c44e233517b984d3e1fbc758", size = 7035, upload-time = "2026-10-31T23:45:07.101Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/e7/341b69f049081213665ad0630505482c3ba137678aaf66dc9031a78b5925/winrt_windows_media_ocr-4!10.0.28000.2957-py3-none-any.whl", hash = "sha256:945140b8964e0583018e69968cfbcbfee336ec2940542009cd861ab5a51af8ec", size = 8947, upload-time = "2026-10-31T23:40:35.496Z" },
+]
+
+[[package]]
+name = "winrt-windows-security-credentials-ui"
+version = "4!10.0.28000.2957"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "winrt-runtime" },
+    { name = "winrt-windows-foundation" },
+    { name = "winrt-windows-storage-streams" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/24/f9/e11c57866d01d02714c3aa1764ba83ae8bbe559132034daf16219b1b73e6/winrt_windows_security_credentials_ui-4!10.0.28000.2957.tar.gz", hash = "sha256:79501ed0a82ca268af89900c3fe1ac777098d9bfbc1c1766978ea855a51a6a46", size = 6360, upload-time = "2026-10-31T23:45:30.976Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/06/ab7b2817444a4e37591ff8a505622ca616ef9c32b845da294e2e597ce285/winrt_windows_security_credentials_ui-4!10.0.28000.2957-py3-none-any.whl", hash = "sha256:3a48e70654f60d029b0a5ac8bd78c30db509b38127966b8b919af14fda31937b", size = 8384, upload-time = "2026-10-31T23:41:09.417Z" },
 ]
 
 [[package]]

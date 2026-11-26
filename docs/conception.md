@@ -283,6 +283,30 @@ Vérifié par programme et dans un navigateur, sur les faux documents d'essai :
 
 Non vérifié : la vraie fenêtre Windows, de vrais scans, de vrais tampons et signatures, des PDF tournés ou à plusieurs colonnes, la tenue en mémoire sur de gros PDF.
 
+### Résultat de l'étape 9 (26 novembre 2026)
+
+Deux demandes : régler plus finement ce qui est masqué, et mieux protéger la table sur le poste.
+
+**Traitement et préréglage au dépôt.** Le choix entre pseudonymiser et caviarder se fait maintenant à l'étape « Déposer », avant l'analyse, pour un texte, un document ou un dossier. Il remplace le choix à l'export de l'étape 8.
+
+**Catégories plus fines.** La détection range à part les rôles et métiers, les termes génériques, les durées, les dates de textes de loi et les âges. Un préréglage dit quelles catégories restent en clair : elles sont quand même listées, décochées. Quatre préréglages d'origine, modifiables dans l'onglet Règles ; l'appli démarre sur « RH / paie ». Les termes imposés et les secrets sont toujours masqués. Un faux contrat de stage rejoint le jeu de test.
+
+**Enveloppe des clés.** Les clés de la table sont tirées au hasard et rangées dans le fichier sous une enveloppe chiffrée. Seule la clé de l'enveloppe vient du mot de passe (Argon2id). Une table d'avant l'étape 9 est reprise telle quelle : ses clés sont gardées et mises sous enveloppe à sa première ouverture dans l'appli.
+
+**Lien au poste.** Dans l'appli, la clé de l'enveloppe dépend aussi d'un secret de 32 octets gardé par Windows pour ce compte et ce poste (DPAPI), dans un fichier `.poste` à côté de la table. Une table copiée ailleurs ne s'ouvre pas, même avec le mot de passe. L'ancien sel est effacé du fichier (`secure_delete`) quand une table est liée. « Déplacer la table » enregistre une copie que le mot de passe seul ouvre, liée au nouveau poste à sa première ouverture. La passerelle n'est pas concernée : ses tables restent protégées par la clé d'accès de chaque utilisateur.
+
+**Windows Hello.** Demandé après le mot de passe, et avant « Déplacer la table », si le poste en a un. C'est une barrière d'accès à l'appli, pas un chiffrement. Un refus ou un silence de deux minutes laisse la table fermée.
+
+Contreparties :
+
+- une session Windows perdue ou réinstallée fait perdre la table, comme un mot de passe oublié ;
+- une sauvegarde faite avant le lien s'ouvre encore avec le mot de passe seul ;
+- Windows Hello ne protège pas contre quelqu'un qui a déjà le mot de passe et la session Windows ouverte.
+
+Vérifié par programme : table liée refusée sans son secret ou avec un autre, ancienne table reprise puis liée, copie déplacée ouverte avec le mot de passe seul puis liée au nouveau poste, mot de passe vérifié avant toute demande Windows Hello, vrai secret DPAPI créé, relu et refusé quand il vient d'ailleurs. 123 tests passent. Windows Hello est disponible sur le poste d'essai.
+
+Non vérifié : la vraie demande Windows Hello dans la fenêtre de l'appli, et l'ouverture d'une table copiée sur un second poste réel.
+
 ## 7. Étapes
 
 | Étape | Contenu | C'est fini quand |
@@ -296,13 +320,14 @@ Non vérifié : la vraie fenêtre Windows, de vrais scans, de vrais tampons et s
 | 6 | Fichiers Word et Excel filtrés et restaurés dans leur format | Un Word et un Excel filtrés puis restaurés redonnent leur contenu, mise en forme gardée |
 | 7 | PDF rendus en Word filtré, PDF scannés lus sur le poste | Un PDF de texte et un PDF scanné donnent chacun un Word filtré |
 | 8 | Caviardage, PDF caviardés en image, dossier surveillé, nouvel écran | Un PDF de texte et un PDF scanné sortent caviardés, sans texte sous les rectangles |
+| 9 | Préréglages, table liée au poste, Windows Hello | Une table copiée sur un autre poste ne s'ouvre pas, même avec le mot de passe |
 
 L'extension de navigateur, un temps envisagée, est écartée (décision du 14 novembre 2026, voir la section 8).
 
 ## 8. À revoir plus tard
 
 - Le format des jetons, quand on aura vu comment plusieurs IA les déforment.
-- Le stockage de la clé : trousseau Windows, puis coffre d'entreprise.
+- Le stockage de la clé : la table de l'appli est liée au poste par DPAPI depuis l'étape 9. Reste le coffre d'entreprise, et la passerelle.
 - Le traitement en flux pour les gros logs, et les fausses valeurs qui gardent le format (IP, chemins), au moment du profil logs.
 - Un adaptateur pour brancher le moteur dans LiteLLM, si une entreprise le demande.
 - La formulation « 100 % hors ligne » : elle vaut pour l'appli. La passerelle envoie par nature le texte filtré vers l'IA, et rien d'autre.

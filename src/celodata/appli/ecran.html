@@ -304,7 +304,7 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
       <button type="button" data-t="" aria-pressed="true">Auto</button>
     </div>
     <span id="etat" role="status"></span>
-    <span>Table chiffrée, aucune connexion sortante.</span>
+    <span id="protection">Table chiffrée, aucune connexion sortante.</span>
   </div>
 </aside>
 
@@ -542,6 +542,16 @@ mark.vise { box-shadow: 0 0 0 2px var(--accent); }
       <p class="info" style="margin:8px 0 0">Gardez le nom pour modifier ce préréglage, changez-le pour en créer un autre.</p>
       <div class="message" id="pre-erreur" role="alert"></div>
     </div>
+    <div class="carte" id="bloc-table">
+      <h3>Protection de la table</h3>
+      <p class="aide" id="table-etat"></p>
+      <p class="aide">Pour changer de poste, enregistrez ici une copie de la table. Cette copie n'est protégée que par votre mot de passe : transportez-la vous-même, puis supprimez-la une fois ouverte sur le nouveau poste, où elle sera liée à son tour.</p>
+      <form class="barre" id="table-form">
+        <input type="password" id="table-mdp" style="flex:1 1 220px;min-width:0" placeholder="Mot de passe de la table" aria-label="Mot de passe de la table" autocomplete="off" required>
+        <button class="second" type="submit">Déplacer la table vers un autre poste</button>
+      </form>
+      <div class="message" id="table-message" role="status"></div>
+    </div>
     <div class="message" id="regle-erreur" role="alert"></div>
     <div class="carte">
       <form id="regle-form" style="display:grid;gap:12px">
@@ -716,12 +726,37 @@ $("porte-form").addEventListener("submit", async ev => {
   if ($("porte").dataset.nouvelle && $("mdp").value !== $("mdp2").value) {
     erreur.textContent = "Les deux mots de passe sont différents."; return;
   }
+  const bouton = $("porte-ok"), libelle = bouton.textContent;
+  bouton.disabled = true;
+  bouton.textContent = "Ouverture… Windows peut vous demander de confirmer";
   const r = await api().ouvrir($("mdp").value);
+  bouton.disabled = false;
+  bouton.textContent = libelle;
   $("mdp").value = $("mdp2").value = "";
   if (!r.ok) { erreur.textContent = r.erreur; return; }
   entrer();
 });
+function direProtection(p) {
+  const lien = p.liee
+    ? "La table est liée à ce poste : copiée ailleurs, elle ne s'ouvre pas, même avec le mot de passe."
+    : "La table n'est protégée que par son mot de passe.";
+  const hello = p.hello
+    ? " Windows Hello est demandé à chaque ouverture."
+    : " Ce poste n'a pas Windows Hello : seul le mot de passe est demandé.";
+  $("table-etat").textContent = lien + hello + (p.liee ? " Si votre session Windows est perdue ou réinstallée, la table l'est aussi." : "");
+  $("protection").textContent = (p.liee ? "Table liée à ce poste" : "Table chiffrée") + (p.hello ? ", Windows Hello" : "") + ", aucune connexion sortante.";
+}
+$("table-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const message = $("table-message");
+  message.textContent = "";
+  const r = await api().deplacer_table($("table-mdp").value);
+  $("table-mdp").value = "";
+  if (r.annule) return;
+  message.textContent = r.ok ? `Copie enregistrée : ${r.chemin}` : r.erreur;
+});
 function entrer() {
+  api().protection().then(direProtection);
   $("porte").hidden = true; $("rail").hidden = false; $("filtrer").hidden = false;
   $("etat").textContent = "Chargement du modèle…";
   api().preparer().then(r => {
